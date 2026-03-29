@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Quản lý CTĐT - Gợi ý Môn học CNTT</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <style>
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+    body { font-family: 'Inter', sans-serif; }
+    .primary-gradient { background: linear-gradient(135deg, #005bbf 0%, #1a73e8 100%); }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #c1c6d6; border-radius: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin .8s linear infinite; display:inline-block; }
+    /* Modal */
+    #modal { display:none; } #modal.open { display:flex; }
+    /* Toast */
+    #toast { transition: opacity .3s; }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: { extend: { colors: {
+        "primary-container": "#1a73e8", "on-background": "#191c1d", "outline": "#727785",
+        "error-container": "#ffdad6", "surface-container-lowest": "#ffffff",
+        "on-surface-variant": "#414754", "outline-variant": "#c1c6d6",
+        "surface": "#f8f9fa", "surface-container-low": "#f3f4f5", "primary": "#005bbf",
+        "secondary-fixed": "#d8e2ff", "on-surface": "#191c1d", "primary-fixed-dim": "#adc7ff",
+        "background": "#f8f9fa", "primary-fixed": "#d8e2ff", "surface-container": "#edeeef",
+        "error": "#ba1a1a", "on-primary": "#ffffff", "surface-container-high": "#e7e8e9",
+        "on-error-container": "#93000a",
+      }}}
+    }
+  </script>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+
+<!-- ── SIDEBAR ─────────────────────────────────────────────────────────────── -->
+<aside class="h-screen w-64 fixed left-0 top-0 flex flex-col py-6 px-4 bg-slate-50 z-50">
+  <div class="flex items-center gap-3 px-2 mb-10">
+    <div class="w-10 h-10 primary-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">admin_panel_settings</span>
+    </div>
+    <div>
+      <h1 class="text-lg font-bold text-blue-800 leading-none">Admin</h1>
+      <p class="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">Quản trị CTĐT</p>
+    </div>
+  </div>
+
+  <nav class="flex-1 space-y-1">
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-blue-700 font-bold border-r-4 border-blue-700 bg-slate-200/60 transition-colors text-left">
+      <span class="material-symbols-outlined">auto_stories</span><span class="text-sm">Quản lý môn học</span>
+    </a>
+    <a href="home.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:bg-slate-200 transition-colors text-left">
+      <span class="material-symbols-outlined">school</span><span class="text-sm">Cổng sinh viên</span>
+    </a>
+  </nav>
+
+  <div class="mt-auto pt-4 border-t border-slate-200">
+    <div class="flex items-center gap-3 px-2 mb-3">
+      <div class="w-9 h-9 rounded-full primary-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0" id="adminAvatar">A</div>
+      <div class="overflow-hidden">
+        <p class="text-sm font-bold text-on-surface truncate" id="adminName">Admin</p>
+        <p class="text-[10px] text-on-surface-variant">Quản trị viên</p>
+      </div>
+    </div>
+    <button onclick="doLogout()"
+      class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-200 hover:text-red-600 transition-colors">
+      <span class="material-symbols-outlined text-lg">logout</span>Đăng xuất
+    </button>
+  </div>
+</aside>
+
+<!-- ── TOPBAR ───────────────────────────────────────────────────────────────── -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-white flex items-center justify-between px-8 z-40 shadow-sm">
+  <div>
+    <nav class="flex items-center gap-1 text-xs font-bold text-outline uppercase tracking-widest mb-0.5">
+      <span>Admin</span>
+      <span class="material-symbols-outlined text-xs">chevron_right</span>
+      <span class="text-primary">Quản lý CTĐT</span>
+    </nav>
+    <h2 class="text-lg font-bold text-on-surface">Chương trình đào tạo</h2>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="relative">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
+      <input id="searchInput" type="text" placeholder="Tìm mã môn, tên môn..."
+        class="w-64 bg-surface-container-high border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-outline"/>
+    </div>
+    <button onclick="openModal()" class="primary-gradient text-on-primary px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-all">
+      <span class="material-symbols-outlined text-lg">add</span>Thêm môn
+    </button>
+  </div>
+</header>
+
+<!-- ── MAIN CONTENT ────────────────────────────────────────────────────────── -->
+<main class="ml-64 pt-20 px-8 pb-12 min-h-screen">
+
+  <!-- Stats + Import -->
+  <div class="grid grid-cols-12 gap-4 mb-6">
+    <div class="col-span-12 lg:col-span-3 bg-surface-container-lowest p-5 rounded-xl shadow-sm">
+      <span class="material-symbols-outlined text-primary text-2xl mb-2 block">menu_book</span>
+      <p class="text-3xl font-extrabold text-on-surface" id="statTotal">—</p>
+      <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mt-1">Tổng số môn học</p>
+    </div>
+    <div class="col-span-12 lg:col-span-3 bg-surface-container-lowest p-5 rounded-xl shadow-sm">
+      <span class="material-symbols-outlined text-primary text-2xl mb-2 block">school</span>
+      <p class="text-3xl font-extrabold text-on-surface">7480201</p>
+      <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mt-1">Mã ngành CNTT</p>
+    </div>
+    <!-- Import zone -->
+    <div class="col-span-12 lg:col-span-6 bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl p-6 flex items-center gap-5 hover:border-primary hover:bg-primary-fixed/20 transition-all cursor-pointer group" onclick="doImport()">
+      <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform flex-shrink-0">
+        <span class="material-symbols-outlined text-primary text-2xl">upload_file</span>
+      </div>
+      <div class="flex-1">
+        <p class="font-bold text-on-surface">Import CTĐT từ file mặc định</p>
+        <p class="text-xs text-on-surface-variant mt-0.5">Nhấn để tải lại từ file <code class="bg-white px-1 rounded text-primary">7480201.docx</code> trên server</p>
+      </div>
+      <div id="importSpinner" class="hidden">
+        <span class="material-symbols-outlined text-primary spin">progress_activity</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import result -->
+  <div id="importResult" class="hidden mb-4"></div>
+
+  <!-- Course table -->
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-outline-variant/10 flex items-center justify-between">
+      <h3 class="font-bold text-on-surface">Danh sách môn học trong CTĐT</h3>
+      <span class="text-xs font-bold text-on-surface-variant" id="tableCount"></span>
+    </div>
+
+    <div id="tableLoading" class="flex items-center gap-3 px-6 py-10 text-on-surface-variant">
+      <span class="material-symbols-outlined spin">progress_activity</span>Đang tải dữ liệu...
+    </div>
+
+    <div class="overflow-x-auto" id="tableWrap" style="display:none">
+      <table class="w-full text-sm text-left border-separate border-spacing-y-0">
+        <thead class="bg-surface-container-low">
+          <tr>
+            <th class="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Mã môn</th>
+            <th class="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Tên môn học</th>
+            <th class="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-center">Tín chỉ</th>
+            <th class="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="courseTbody" class="divide-y divide-outline-variant/10"></tbody>
+      </table>
+    </div>
+
+    <!-- Empty state -->
+    <div id="tableEmpty" class="hidden px-6 py-10 text-center">
+      <span class="material-symbols-outlined text-3xl text-outline mb-2 block">inbox</span>
+      <p class="text-sm text-on-surface-variant">Chưa có môn học nào. Import CTĐT hoặc thêm môn mới.</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-outline-variant/10 flex items-center justify-between" id="paginationBar">
+      <p class="text-xs font-bold text-on-surface-variant" id="pageInfo"></p>
+      <div class="flex items-center gap-2" id="paginationBtns"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ── MODAL: THÊM / SỬA MÔN ──────────────────────────────────────────────── -->
+<div id="modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="px-6 py-5 border-b border-outline-variant/10 flex items-center justify-between">
+      <h3 class="font-bold text-on-surface" id="modalTitle">Thêm môn học</h3>
+      <button onclick="closeModal()" class="text-outline hover:text-on-surface transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form id="courseForm" class="p-6 space-y-4">
+      <input type="hidden" id="editId"/>
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Mã môn học <span class="text-error">*</span></label>
+        <input id="fCode" type="text" placeholder="vd. INT1306" required
+          class="w-full h-11 px-4 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-mono"/>
+      </div>
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Tên môn học <span class="text-error">*</span></label>
+        <input id="fName" type="text" placeholder="vd. Lập trình hướng đối tượng" required
+          class="w-full h-11 px-4 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"/>
+      </div>
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Số tín chỉ</label>
+        <input id="fCredits" type="number" step="0.5" min="0" placeholder="vd. 3"
+          class="w-full h-11 px-4 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"/>
+      </div>
+      <div id="modalError" class="hidden text-sm text-error bg-error-container px-4 py-3 rounded-lg"></div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal()"
+          class="flex-1 h-11 border border-outline-variant/40 rounded-lg text-sm font-bold text-on-surface-variant hover:bg-surface-container transition-all">
+          Hủy
+        </button>
+        <button type="submit" id="modalSaveBtn"
+          class="flex-1 h-11 primary-gradient text-on-primary rounded-lg text-sm font-bold shadow-md hover:opacity-90 active:scale-[0.99] transition-all">
+          Lưu
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── TOAST ───────────────────────────────────────────────────────────────── -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+  <div class="flex items-center gap-3 bg-on-background text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium">
+    <span class="material-symbols-outlined text-lg" id="toastIcon">check_circle</span>
+    <span id="toastMsg"></span>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'http://127.0.0.1:8000';
+const token = localStorage.getItem('access_token') || '';
+if (!token) window.location.replace('index.html');
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+async function callApi(path, options = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, options);
+    let data; try { data = await res.json(); } catch { data = {}; }
+    return { ok: res.ok, status: res.status, data };
+  } catch { return { ok: false, status: 0, data: { detail: 'Không thể kết nối tới server.' } }; }
+}
+function auth(extra = {}) { return { Authorization: `Bearer ${token}`, ...extra }; }
+
+function extractError(data) {
+  if (typeof data?.detail === 'string') return data.detail;
+  if (Array.isArray(data?.detail)) return data.detail.map(e => e.msg || JSON.stringify(e)).join('; ');
+  return 'Đã xảy ra lỗi.';
+}
+
+function toast(msg, ok = true) {
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = ok ? 'check_circle' : 'error';
+  el.classList.remove('hidden'); el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.classList.add('hidden'), 300); }, 3000);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+(async () => {
+  const me = await callApi('/auth/me', { headers: auth() });
+  if (!me.ok) { localStorage.removeItem('access_token'); window.location.replace('index.html'); return; }
+  const name = me.data.full_name || me.data.username;
+  document.getElementById('adminName').textContent = name;
+  document.getElementById('adminAvatar').textContent = name.charAt(0).toUpperCase();
+  loadCourses();
+})();
+
+function doLogout() { localStorage.removeItem('access_token'); window.location.replace('index.html'); }
+
+// ── Course data & pagination ───────────────────────────────────────────────────
+let allCourses = [];
+let filteredCourses = [];
+const PAGE_SIZE = 20;
+let currentPage = 1;
+
+async function loadCourses(q = '') {
+  document.getElementById('tableLoading').classList.remove('hidden');
+  document.getElementById('tableWrap').style.display = 'none';
+  document.getElementById('tableEmpty').classList.add('hidden');
+
+  const path = q ? `/admin/courses?q=${encodeURIComponent(q)}` : '/admin/courses';
+  const res = await callApi(path, { headers: auth() });
+
+  document.getElementById('tableLoading').classList.add('hidden');
+
+  if (!res.ok) { toast(extractError(res.data), false); return; }
+
+  allCourses = res.data;
+  filteredCourses = allCourses;
+  document.getElementById('statTotal').textContent = allCourses.length;
+  currentPage = 1;
+  renderTable();
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageData = filteredCourses.slice(start, start + PAGE_SIZE);
+  const total = filteredCourses.length;
+
+  if (total === 0) {
+    document.getElementById('tableWrap').style.display = 'none';
+    document.getElementById('tableEmpty').classList.remove('hidden');
+    document.getElementById('tableCount').textContent = '';
+    document.getElementById('pageInfo').textContent = '';
+    document.getElementById('paginationBtns').innerHTML = '';
+    return;
+  }
+
+  document.getElementById('tableWrap').style.display = '';
+  document.getElementById('tableEmpty').classList.add('hidden');
+  document.getElementById('tableCount').textContent = `${total} môn`;
+  document.getElementById('pageInfo').textContent =
+    `Hiển thị ${start + 1}–${Math.min(start + PAGE_SIZE, total)} / ${total} môn`;
+
+  document.getElementById('courseTbody').innerHTML = pageData.map(c => `
+    <tr class="hover:bg-surface-container-low transition-colors group">
+      <td class="px-6 py-4 font-mono text-sm font-bold text-primary">${c.course_code}</td>
+      <td class="px-6 py-4 text-on-surface">${c.course_name}</td>
+      <td class="px-6 py-4 text-center font-bold text-on-surface-variant">${c.credits ?? '—'}</td>
+      <td class="px-6 py-4 text-right">
+        <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick='openModal(${JSON.stringify(c)})'
+            class="p-1.5 rounded-lg hover:bg-primary-fixed text-outline hover:text-primary transition-all">
+            <span class="material-symbols-outlined text-lg">edit</span>
+          </button>
+          <button onclick="deleteCourse(${c.id}, '${c.course_name.replace(/'/g, "\\'")}')"
+            class="p-1.5 rounded-lg hover:bg-error-container text-outline hover:text-error transition-all">
+            <span class="material-symbols-outlined text-lg">delete</span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  // Pagination buttons
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const btnContainer = document.getElementById('paginationBtns');
+  btnContainer.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center hover:bg-primary-fixed transition-all disabled:opacity-40';
+  prevBtn.disabled = currentPage === 1;
+  prevBtn.innerHTML = '<span class="material-symbols-outlined text-lg">chevron_left</span>';
+  prevBtn.onclick = () => { currentPage--; renderTable(); };
+  btnContainer.appendChild(prevBtn);
+
+  for (let p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) {
+    const btn = document.createElement('button');
+    btn.className = `w-9 h-9 rounded-lg text-sm font-bold transition-all ${p === currentPage
+      ? 'primary-gradient text-white shadow-md' : 'bg-white border border-outline-variant text-on-surface hover:bg-primary-fixed'}`;
+    btn.textContent = p;
+    btn.onclick = ((pg) => () => { currentPage = pg; renderTable(); })(p);
+    btnContainer.appendChild(btn);
+  }
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center hover:bg-primary-fixed transition-all disabled:opacity-40';
+  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.innerHTML = '<span class="material-symbols-outlined text-lg">chevron_right</span>';
+  nextBtn.onclick = () => { currentPage++; renderTable(); };
+  btnContainer.appendChild(nextBtn);
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────────
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input', function () {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    const q = this.value.trim();
+    if (q.length === 0 || q.length >= 2) loadCourses(q);
+  }, 350);
+});
+
+// ── Modal: Add / Edit ──────────────────────────────────────────────────────────
+function openModal(course = null) {
+  document.getElementById('editId').value = course?.id ?? '';
+  document.getElementById('fCode').value = course?.course_code ?? '';
+  document.getElementById('fName').value = course?.course_name ?? '';
+  document.getElementById('fCredits').value = course?.credits ?? '';
+  document.getElementById('modalTitle').textContent = course ? 'Chỉnh sửa môn học' : 'Thêm môn học mới';
+  document.getElementById('modalError').classList.add('hidden');
+  document.getElementById('fCode').disabled = !!course; // code is immutable on edit
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+document.getElementById('courseForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  document.getElementById('modalError').classList.add('hidden');
+
+  const id = document.getElementById('editId').value;
+  const payload = {
+    course_code: document.getElementById('fCode').value.trim(),
+    course_name: document.getElementById('fName').value.trim(),
+    credits: document.getElementById('fCredits').value ? Number(document.getElementById('fCredits').value) : null,
+  };
+
+  const btn = document.getElementById('modalSaveBtn');
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  const res = id
+    ? await callApi(`/admin/courses/${id}`, { method: 'PUT', headers: auth({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) })
+    : await callApi('/admin/courses',         { method: 'POST', headers: auth({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) });
+
+  btn.disabled = false; btn.textContent = 'Lưu';
+
+  if (!res.ok) {
+    const errEl = document.getElementById('modalError');
+    errEl.textContent = extractError(res.data);
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  closeModal();
+  toast(id ? 'Cập nhật môn học thành công!' : 'Thêm môn học thành công!');
+  loadCourses(document.getElementById('searchInput').value.trim());
+});
+
+// Close modal on backdrop click
+document.getElementById('modal').addEventListener('click', function (e) {
+  if (e.target === this) closeModal();
+});
+
+// ── Delete ─────────────────────────────────────────────────────────────────────
+async function deleteCourse(id, name) {
+  if (!confirm(`Xác nhận xóa môn học:\n"${name}"?\n\nThao tác này không thể hoàn tác.`)) return;
+
+  const res = await callApi(`/admin/courses/${id}`, { method: 'DELETE', headers: auth() });
+  if (res.ok) {
+    toast(`Đã xóa môn "${name}"`);
+    loadCourses(document.getElementById('searchInput').value.trim());
+  } else {
+    toast(extractError(res.data), false);
+  }
+}
+
+// ── Import curriculum ──────────────────────────────────────────────────────────
+async function doImport() {
+  if (!confirm('Import sẽ tải lại toàn bộ CTĐT từ file 7480201.docx trên server và ghi đè dữ liệu hiện tại.\n\nTiếp tục?')) return;
+
+  document.getElementById('importSpinner').classList.remove('hidden');
+  const resultEl = document.getElementById('importResult');
+  resultEl.classList.add('hidden');
+
+  const res = await callApi('/curriculum/import', {
+    method: 'POST',
+    headers: auth(),
+  });
+
+  document.getElementById('importSpinner').classList.add('hidden');
+
+  if (res.ok) {
+    const d = res.data;
+    resultEl.innerHTML = `
+      <div class="bg-green-50 border border-green-200 text-green-800 px-5 py-4 rounded-xl flex items-start gap-3">
+        <span class="material-symbols-outlined text-green-600 mt-0.5" style="font-variation-settings:'FILL' 1">check_circle</span>
+        <div class="text-sm">
+          <p class="font-bold mb-1">Import thành công — ${d.program_code}</p>
+          <p>${d.parsed_courses} môn phân tích · ${d.inserted_courses} thêm mới · ${d.updated_courses} cập nhật · ${d.deleted_courses} xóa</p>
+          ${d.assumptions?.length ? `<p class="mt-2 text-xs text-green-700">${d.assumptions.join(' · ')}</p>` : ''}
+        </div>
+      </div>`;
+    resultEl.classList.remove('hidden');
+    toast('Import CTĐT thành công!');
+    loadCourses();
+  } else {
+    resultEl.innerHTML = `
+      <div class="bg-error-container border border-error/20 text-on-error-container px-5 py-4 rounded-xl flex items-start gap-3">
+        <span class="material-symbols-outlined text-error mt-0.5" style="font-variation-settings:'FILL' 1">error</span>
+        <p class="text-sm font-medium">${extractError(res.data)}</p>
+      </div>`;
+    resultEl.classList.remove('hidden');
+    toast(extractError(res.data), false);
+  }
+}
+</script>
+</body>
+</html>

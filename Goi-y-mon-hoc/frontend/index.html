@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Gợi ý Môn học CNTT - Đăng nhập</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <style>
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    body { font-family: 'Inter', sans-serif; }
+    .cta-gradient { background: linear-gradient(135deg, #005bbf 0%, #1a73e8 100%); }
+    .glass-panel { background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); }
+    /* Both panels overlap the same grid cell → box height = max(login, register) */
+    .panel-stack { display: grid; }
+    .panel-stack > div { grid-area: 1 / 1; transition: opacity .15s, visibility .15s; }
+    .panel-stack > div.panel-hidden { visibility: hidden; pointer-events: none; opacity: 0; }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: { extend: { colors: {
+        "primary-container": "#1a73e8", "on-background": "#191c1d", "outline": "#727785",
+        "error-container": "#ffdad6", "surface-container-lowest": "#ffffff",
+        "on-surface-variant": "#414754", "outline-variant": "#c1c6d6",
+        "surface": "#f8f9fa", "surface-container-low": "#f3f4f5", "primary": "#005bbf",
+        "secondary-fixed": "#d8e2ff", "on-surface": "#191c1d", "primary-fixed-dim": "#adc7ff",
+        "background": "#f8f9fa", "primary-fixed": "#d8e2ff", "surface-container": "#edeeef",
+        "error": "#ba1a1a", "on-primary": "#ffffff", "surface-container-high": "#e7e8e9",
+      }}}
+    }
+  </script>
+</head>
+<body class="bg-surface text-on-background min-h-screen flex flex-col justify-center items-center p-4 sm:p-12 overflow-hidden relative">
+
+  <div class="absolute top-[-10%] left-[-5%] w-96 h-96 bg-primary-fixed-dim opacity-20 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="absolute bottom-[-5%] right-[-5%] w-80 h-80 bg-secondary-fixed opacity-20 rounded-full blur-[100px] pointer-events-none"></div>
+
+  <main class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 bg-surface-container-lowest rounded-xl overflow-hidden shadow-2xl relative z-10">
+
+    <!-- Left: Branding -->
+    <section class="hidden lg:flex flex-col justify-between p-12 bg-surface-container-low border-r border-outline-variant/10">
+      <div>
+        <div class="flex items-center gap-3 mb-12">
+          <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg">
+            <span class="material-symbols-outlined text-on-primary text-2xl">school</span>
+          </div>
+          <span class="text-xl font-extrabold tracking-tight text-primary">Gợi ý Môn học CNTT</span>
+        </div>
+        <h2 class="text-4xl font-bold tracking-tight text-on-surface leading-tight mb-6">
+          Nâng tầm<br/><span class="text-primary-container">hành trình học tập.</span>
+        </h2>
+        <p class="text-on-surface-variant max-w-sm leading-relaxed mb-8">Theo dõi tiến độ tín chỉ, nhận gợi ý môn học cá nhân hóa và ước tính thời gian tốt nghiệp theo CTĐT ngành CNTT.</p>
+        <ul class="space-y-3">
+          <li class="flex items-center gap-3 text-sm text-on-surface-variant">
+            <span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings:'FILL' 1">check_circle</span>
+            Theo dõi tín chỉ tích lũy theo thời gian thực
+          </li>
+          <li class="flex items-center gap-3 text-sm text-on-surface-variant">
+            <span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings:'FILL' 1">check_circle</span>
+            Gợi ý môn học dựa trên kết quả học tập của bạn
+          </li>
+          <li class="flex items-center gap-3 text-sm text-on-surface-variant">
+            <span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings:'FILL' 1">check_circle</span>
+            Tư vấn lộ trình và định hướng nghề nghiệp qua AI
+          </li>
+        </ul>
+      </div>
+      <span class="text-xs font-semibold uppercase tracking-widest text-outline">Dành cho sinh viên ngành CNTT</span>
+    </section>
+
+    <!-- Right: Form -->
+    <section class="p-8 sm:p-12 flex flex-col justify-center">
+      <div class="max-w-md mx-auto w-full">
+
+        <!-- Mobile logo -->
+        <div class="lg:hidden flex items-center gap-2 mb-8">
+          <span class="material-symbols-outlined text-primary text-3xl">school</span>
+          <span class="text-lg font-extrabold tracking-tight text-primary">Gợi ý Môn học CNTT</span>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="flex gap-1 bg-surface-container-high p-1 rounded-xl mb-8">
+          <button id="tabLoginBtn" onclick="showTab('login')"
+            class="flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-primary shadow-sm transition-all">
+            Đăng nhập
+          </button>
+          <button id="tabRegisterBtn" onclick="showTab('register')"
+            class="flex-1 py-2.5 rounded-lg text-sm font-bold text-on-surface-variant hover:text-primary transition-all">
+            Đăng ký
+          </button>
+        </div>
+
+        <!-- ── PANELS (grid-overlap so both always set the box height) ── -->
+        <div class="panel-stack">
+        <div id="loginPanel">
+          <div class="mb-7">
+            <h1 class="text-2xl font-bold text-on-surface mb-1">Chào mừng trở lại!</h1>
+            <p class="text-on-surface-variant text-sm">Nhập thông tin để tiếp tục.</p>
+          </div>
+          <form id="loginForm" class="space-y-5">
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Tên đăng nhập</label>
+              <div class="relative">
+                <input id="loginUsername" type="text" placeholder="vd. sv001"
+                  class="w-full h-11 pl-10 pr-4 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline/50 outline-none"/>
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline/60 text-lg">person</span>
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Mật khẩu</label>
+              <div class="relative">
+                <input id="loginPassword" type="password" placeholder="••••••••"
+                  class="w-full h-11 pl-10 pr-4 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline/50 outline-none"/>
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline/60 text-lg">lock</span>
+              </div>
+            </div>
+            <div id="loginError" class="hidden text-sm text-error bg-error-container px-4 py-3 rounded-lg"></div>
+            <button type="submit" id="loginBtn"
+              class="cta-gradient w-full h-12 rounded-xl text-on-primary font-bold text-sm shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all">
+              Đăng nhập
+              <span class="material-symbols-outlined text-lg">arrow_forward</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- ── REGISTER PANEL ── -->
+        <div id="registerPanel" class="panel-hidden">
+          <div class="mb-7">
+            <h1 class="text-2xl font-bold text-on-surface mb-1">Tạo tài khoản mới</h1>
+            <p class="text-on-surface-variant text-sm">Điền thông tin để bắt đầu theo dõi tiến độ.</p>
+          </div>
+          <form id="registerForm" class="space-y-4">
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Họ và tên</label>
+              <div class="relative">
+                <input id="regFullName" type="text" placeholder="Nguyễn Văn A"
+                  class="w-full h-11 pl-10 pr-4 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline/50 outline-none"/>
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline/60 text-lg">badge</span>
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Tên đăng nhập</label>
+              <div class="relative">
+                <input id="regUsername" type="text" placeholder="vd. sv001 (tối thiểu 3 ký tự)"
+                  class="w-full h-11 pl-10 pr-4 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline/50 outline-none"/>
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline/60 text-lg">person</span>
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Mật khẩu</label>
+              <div class="relative">
+                <input id="regPassword" type="password" placeholder="••••••••"
+                  class="w-full h-11 pl-10 pr-4 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline/50 outline-none"/>
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline/60 text-lg">lock</span>
+              </div>
+              <div class="mt-2 p-3 bg-surface-container-high rounded-lg">
+                <p class="text-[10px] font-extrabold text-outline uppercase tracking-widest mb-2">Yêu cầu mật khẩu</p>
+                <div class="grid grid-cols-2 gap-y-1.5 gap-x-4">
+                  <div id="req-len" class="flex items-center gap-1.5 text-[11px] font-medium text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[13px] text-outline/40">radio_button_unchecked</span>8+ ký tự
+                  </div>
+                  <div id="req-upper" class="flex items-center gap-1.5 text-[11px] font-medium text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[13px] text-outline/40">radio_button_unchecked</span>Chữ hoa (A–Z)
+                  </div>
+                  <div id="req-lower" class="flex items-center gap-1.5 text-[11px] font-medium text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[13px] text-outline/40">radio_button_unchecked</span>Chữ thường (a–z)
+                  </div>
+                  <div id="req-digit" class="flex items-center gap-1.5 text-[11px] font-medium text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[13px] text-outline/40">radio_button_unchecked</span>Chữ số (0–9)
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="registerError" class="hidden text-sm text-error bg-error-container px-4 py-3 rounded-lg"></div>
+            <button type="submit" id="registerBtn"
+              class="cta-gradient w-full h-12 rounded-xl text-on-primary font-bold text-sm shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all">
+              Tạo tài khoản
+              <span class="material-symbols-outlined text-lg">person_add</span>
+            </button>
+          </form>
+        </div>
+        </div><!-- /.panel-stack -->
+
+        <footer class="mt-8 text-center">
+          <p class="text-[11px] text-outline font-medium">© 2025 Hệ thống Gợi ý Môn học CNTT — 7480201</p>
+        </footer>
+      </div>
+    </section>
+  </main>
+
+<script>
+const API_BASE = 'http://127.0.0.1:8000';
+
+// ── Tab switching ──────────────────────────────────────────────────────────────
+function showTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('loginPanel').classList.toggle('panel-hidden', !isLogin);
+  document.getElementById('registerPanel').classList.toggle('panel-hidden', isLogin);
+  const activeClass = 'flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-primary shadow-sm transition-all';
+  const inactiveClass = 'flex-1 py-2.5 rounded-lg text-sm font-bold text-on-surface-variant hover:text-primary transition-all';
+  document.getElementById('tabLoginBtn').className = isLogin ? activeClass : inactiveClass;
+  document.getElementById('tabRegisterBtn').className = isLogin ? inactiveClass : activeClass;
+}
+
+// ── Password requirements ──────────────────────────────────────────────────────
+document.getElementById('regPassword').addEventListener('input', function () {
+  const v = this.value;
+  setReq('req-len',   v.length >= 8);
+  setReq('req-upper', /[A-Z]/.test(v));
+  setReq('req-lower', /[a-z]/.test(v));
+  setReq('req-digit', /[0-9]/.test(v));
+});
+
+function setReq(id, ok) {
+  const el = document.getElementById(id);
+  const icon = el.querySelector('.material-symbols-outlined');
+  icon.textContent = ok ? 'check_circle' : 'radio_button_unchecked';
+  icon.className = `material-symbols-outlined text-[13px] ${ok ? 'text-primary' : 'text-outline/40'}`;
+}
+
+// ── API helper ─────────────────────────────────────────────────────────────────
+async function callApi(path, options = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, options);
+    let data; try { data = await res.json(); } catch { data = {}; }
+    return { ok: res.ok, data };
+  } catch { return { ok: false, data: { detail: 'Không thể kết nối tới server.' } }; }
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function hideError(id) { document.getElementById(id).classList.add('hidden'); }
+
+function extractError(data) {
+  if (typeof data?.detail === 'string') return data.detail;
+  if (Array.isArray(data?.detail)) return data.detail.map(e => e.msg || e.message || JSON.stringify(e)).join('; ');
+  return 'Đã xảy ra lỗi.';
+}
+
+// ── Login ──────────────────────────────────────────────────────────────────────
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError('loginError');
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> Đang đăng nhập...';
+
+  const res = await callApi('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: document.getElementById('loginUsername').value.trim(),
+      password: document.getElementById('loginPassword').value,
+    }),
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = 'Đăng nhập <span class="material-symbols-outlined text-lg">arrow_forward</span>';
+
+  if (res.ok && res.data.access_token) {
+    localStorage.setItem('access_token', res.data.access_token);
+    window.location.replace('home.html');
+  } else {
+    showError('loginError', extractError(res.data) || 'Tên tài khoản hoặc mật khẩu không đúng.');
+  }
+});
+
+// ── Register ───────────────────────────────────────────────────────────────────
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError('registerError');
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> Đang tạo tài khoản...';
+
+  const username = document.getElementById('regUsername').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const full_name = document.getElementById('regFullName').value.trim() || null;
+
+  const registerRes = await callApi('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, full_name }),
+  });
+
+  if (!registerRes.ok) {
+    btn.disabled = false;
+    btn.innerHTML = 'Tạo tài khoản <span class="material-symbols-outlined text-lg">person_add</span>';
+    showError('registerError', extractError(registerRes.data));
+    return;
+  }
+
+  // Auto-login after register
+  const loginRes = await callApi('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = 'Tạo tài khoản <span class="material-symbols-outlined text-lg">person_add</span>';
+
+  if (loginRes.ok && loginRes.data.access_token) {
+    localStorage.setItem('access_token', loginRes.data.access_token);
+    window.location.replace('home.html');
+  } else {
+    showError('registerError', 'Tài khoản đã được tạo. Vui lòng đăng nhập.');
+    showTab('login');
+  }
+});
+
+// ── Redirect if already logged in ─────────────────────────────────────────────
+(async () => {
+  const token = localStorage.getItem('access_token');
+  if (!token) return;
+  const res = await callApi('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+  if (res.ok) window.location.replace('home.html');
+})();
+</script>
+</body>
+</html>

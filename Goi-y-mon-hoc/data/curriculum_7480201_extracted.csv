@@ -1,0 +1,146 @@
+﻿course_code,course_name,source_docx,source_pdf
+7000002,Kỹ năng giao tiếp và làm việc theo nhóm,1,1
+7000004,Kỹ năng tư duy phản biện,1,1
+7010102,Đại số tuyến tính,1,1
+7010103,Giải tích 1,1,1
+7010104,Giải tích 2,1,1
+7010108,Logic đại cương,1,1
+7010111,Phương pháp tính,1,1
+7010120,Xác suất thống kê,1,1
+7010202,Thí nghiệm vật lý,1,1
+7010204,Vật lý 1,1,1
+7010304,Hóa đại cương,1,1
+7010601,Tiếng Anh 1,1,1
+7010602,Tiếng Anh 2,1,1
+7010701,Giáo dục thể chất 1,1,1
+7010702,Giáo dục thể chất 2,1,1
+7010703,Giáo dục thể chất 3,1,1
+7020103,Pháp luật đại cương,1,1
+7020105,Triết học Mác – Lênin,1,1
+7020201,Tư tưởng Hồ Chí Minh,1,1
+7020202,Chủ nghĩa xã hội khoa học,1,1
+7020301,Lịch sử Đảng Cộng Sản Việt Nam,1,1
+7020302,Kinh tế chính trị Mác – Lênin,1,1
+7050303,Cơ sở Hệ thông tin địa lý (GIS),1,1
+7050362,Cơ sở viễn thám và ứng dụng,1,1
+7080102,Chuyên đề (định hướng doanh nghiệp phần mềm),1,1
+7080103,Cơ sở dữ liệu nâng cao,1,1
+7080104,Công nghệ phần mềm,1,1
+7080105,Đạo đức máy tính,1,1
+7080106,Đồ án CNPM,1,1
+7080107,Kiểm thử và đảm bảo chất lượng phần mềm + BTL,1,1
+7080108,Lập trình .NET 1 + BTL,1,1
+7080109,Lập trình .NET 2 + BTL,1,1
+7080110,Đồ án tốt nghiệp CNPM,1,1
+7080111,Mã nguồn mở,1,1
+7080112,Nguyên lý Hệ điều hành,1,1
+7080113,Phân tích và thiết kế hệ thống + BTL,1,1
+7080114,"Phân tích, thiết kế hướng đối tượng với UML",1,1
+7080115,Phát triển ứng dụng cho thiết bị di động + BTL,1,1
+7080116,Phát triển ứng dụng Web + BTL,1,1
+7080118,Thiết kế Website,1,1
+7080119,Thực tập tốt nghiệp CNPM,1,1
+7080120,Tiếng Anh cho ngành CNTT,1,0
+7080121,Toán rời rạc cho CNTT,1,1
+7080122,Trí tuệ nhân tạo + BTL,1,1
+7080123,Tương tác người máy + BTL,1,1
+7080124,Xử lý ngôn ngữ tự nhiên,1,1
+7080202,An toàn và bảo mật HTTT,1,1
+7080204,Các hệ cơ sở tri thức,1,1
+7080205,Các hệ thống thông tin thông minh,1,1
+7080206,Cấu trúc dữ liệu và giải thuật,1,1
+7080207,Cơ sở dữ liệu,1,1
+7080208,Cơ sở lập trình,1,1
+7080209,Công nghệ đa phương tiện,1,1
+7080210,Đồ án HTTT,1,1
+7080211,Hệ quản trị cơ sở dữ liệu,1,1
+7080212,Hệ thống phân tán,1,1
+7080213,Học máy + BTL,1,1
+7080214,Kho dữ liệu,1,1
+7080215,Kỹ thuật Hadoop/Mapreduce,1,1
+7080216,Kỹ thuật lập trình hướng đối tượng với C++ + BTL,1,1
+7080217,Lập trình nâng cao,1,1
+7080218,Đồ án tốt nghiệp HTTT,1,1
+7080219,Lý thuyết đồ thị cho tin học,1,1
+7080220,Ngôn ngữ lập trình Python,1,1
+7080224,Thực tập tốt nghiệp HTTT,1,1
+7080226,Tin học đại cương + TH (khối kỹ thuật),1,1
+7080230,Các công nghệ dữ liệu lớn,1,1
+7080232,Ngôn ngữ lập trình R cho phân tích dữ liệu,1,1
+7080234,Chuẩn kỹ năng sử dụng Công nghệ Thông tin,1,1
+7080301,Cơ sở dữ liệu phân tán,1,1
+7080302,Cơ sở xử lý ảnh số,1,1
+7080307,GIS cho người phát triển ứng dụng,1,1
+7080308,Hệ quản trị nội dung mã nguồn mở,1,1
+7080309,Hệ thống cơ sở dữ liệu không gian,1,1
+7080310,Hệ thông tin địa lý,1,1
+7080311,Đồ án tốt nghiệp CNTTDH,1,1
+7080313,Thông tin địa học đại cương,1,1
+7080314,Thực tập tốt nghiệp CNTTDH,1,1
+7080316,Lập trình Python 2,1,1
+7080319,Trực quan hóa dữ liệu,1,1
+7080321,Phân tích thông tin địa lý,1,1
+7080323,Dịch vụ dựa trên địa điểm,1,1
+7080324,Phát triển ứng dụng web GIS với Python và Javascript,1,1
+7080325,Phát triển ứng dụng di động đa nền tảng 1,1,1
+7080402,Địa thống kê + BTL,1,1
+7080403,Đồ án Thông tin địa học,1,1
+7080405,Thông tin Địa học trong đánh giá cảnh quan,1,1
+7080406,Thông tin địa học trong đánh giá tài nguyên,1,1
+7080407,Thông tin địa học trong đánh giá thiên tai,1,1
+7080408,Ứng dụng Matlab trong khoa học Trái đất,1,1
+7080504,Điện toán đám mây và ứng dụng,1,1
+7080505,Điện toán di động,1,1
+7080506,Đồ án KHMT,1,1
+7080507,Dữ liệu lớn và ứng dụng,1,1
+7080508,Khai phá dữ liệu,1,1
+7080509,Khoa học dữ liệu,1,1
+7080510,Kỹ nghệ tri thức và học máy,1,1
+7080511,Lập trình game,1,1
+7080512,Lập trình hướng đối tượng với Java,1,1
+7080513,Đồ án tốt nghiệp KHMT,1,1
+7080514,Nhập môn ngành CNTT,1,1
+7080515,Phân tích và thiết kế hướng đối tượng,1,1
+7080516,Phân tích và thiết kế thuật toán,1,1
+7080517,Phát triển ứng dụng IoT,1,1
+7080518,Thị giác máy tính,1,1
+7080519,Thực tập tốt nghiệp KHMT,1,1
+7080520,Web ngữ nghĩa,1,0
+7080541,Khai phá dữ liệu,1,1
+7080603,Đồ án Tin học kinh tế,1,1
+7080604,Đồ án tốt nghiệp THKT,1,1
+7080605,Hệ thống Thông tin quản lý,1,1
+7080609,Marketing điện tử cơ bản,1,1
+7080611,Phát triển phần mềm quản lý + TH,1,1
+7080615,Thống kê & ứng dụng tin học,1,1
+7080616,Thuật toán hóa các bài toán kinh tế,1,1
+7080617,Thực tập tốt nghiệp THKT,1,1
+7080622,Tối ưu hóa thuật toán,1,0
+7080626,Thương mại điện tử,1,1
+7080627,Kinh tế thông tin,1,1
+7080628,Kinh tế lượng ứng dụng,1,1
+7080631,Trí tuệ nhân tạo trong marketing,1,1
+7080633,Kế toán máy,1,1
+7080634,Quản trị dự án CNTT,1,1
+7080635,Marketing điện tử,1,1
+7080636,Tin học văn phòng nâng cao,1,1
+7080637,Quản trị các nguồn lực thông tin,1,1
+7080638,Phát triển phần mềm quản lý,1,1
+7080703,Cơ sở an ninh mạng +BTL,1,1
+7080712,Kiến trúc máy tính,1,1
+7080713,Kiến trúc và hạ tầng mạng IoT,1,1
+7080715,Đồ án tốt nghiệp MMT,1,1
+7080716,Mã nguồn mở chuyên ngành mạng +BTL,1,1
+7080717,Mạng máy tính + BTL,1,1
+7080720,Quản trị hệ thống + BTL,1,1
+7080721,Quản trị mạng + BTL,1,1
+7080723,Thực tập tốt nghiệp MMT,1,1
+7080724,Tiếng Anh chuyên ngành mạng,1,1
+7080728,An ninh mạng + BTL,1,1
+7080729,Đồ án Mạng máy tính,1,1
+7080730,Lập trình mạng +BTL,1,1
+7080731,Thiết kế mạng+ BTL,1,1
+7080732,Truyền dữ liệu và mạng máy tính nâng cao+BTL,1,1
+7300101,Đường lối quân sự của Đảng,1,1
+7300102,Công tác quốc phòng,1,1
+7300201,Quân sự chung và chiến thuật,1,1
