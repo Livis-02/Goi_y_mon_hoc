@@ -1,0 +1,421 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Sẵn sàng tốt nghiệp</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.15s; animation-timing-function: ease-out; }
+    #sidebarMount, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+
+    /* Circular progress (SVG) */
+    .ring-bg { fill: none; stroke: #e2e8f0; stroke-width: 8; }
+    .ring-fg { fill: none; stroke-width: 8; stroke-linecap: round;
+               transform: rotate(-90deg); transform-origin: center; }
+  </style>
+  <script>
+    tailwind.config = { darkMode:'class', theme:{ extend:{ colors:{
+      primary:'#1a146b','on-surface':'#0f172a',outline:'#94a3b8',
+    }}}}
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<!-- Tailwind safelist (dynamic colors used by JS in suggested-courses lists) -->
+<div class="hidden" aria-hidden="true">
+  <span class="bg-[#eef2ff] hover:bg-[#eef2ff] text-[#1a146b] border-indigo-200 bg-[#eef2ff]/40"></span>
+  <span class="bg-[#dcfce7] hover:bg-[#dcfce7] text-emerald-700 border-[#86efac] bg-[#dcfce7]/40"></span>
+  <span class="bg-violet-50 hover:bg-violet-50 text-violet-700 border-violet-200 bg-violet-50/40"></span>
+</div>
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+<div id="sidebarMount"></div>
+
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d] truncate">Sẵn sàng tốt nghiệp</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-5xl mx-auto space-y-5">
+
+    <!-- Group nav bar (shared with roadmap.html, goals.html) -->
+    <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] shadow-sm p-1 flex gap-1 overflow-x-auto">
+      <a href="roadmap.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+        <span class="material-symbols-outlined msym text-base">route</span>Kế hoạch học tập
+      </a>
+      <a href="goals.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+        <span class="material-symbols-outlined msym text-base">my_location</span>Mục tiêu &amp; Mô phỏng
+      </a>
+      <a href="readiness.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 bg-[#1a146b] text-white shadow-sm">
+        <span class="material-symbols-outlined msym text-base">workspace_premium</span>Sẵn sàng tốt nghiệp
+      </a>
+    </div>
+
+    <!-- Loading -->
+    <div id="rdLoading" class="space-y-4">
+      <div class="bg-[#ffffff] rounded-2xl p-10 border border-[#c8c5d3] animate-pulse h-32"></div>
+      <div class="bg-[#ffffff] rounded-2xl p-6 border border-[#c8c5d3] animate-pulse h-64"></div>
+    </div>
+
+    <!-- Content -->
+    <div id="rdContent" class="hidden space-y-5 fade-in">
+
+      <!-- Hero summary -->
+      <div class="bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl text-white p-6 shadow-md">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          <div class="md:col-span-2">
+            <p class="text-[10px] uppercase tracking-wider text-indigo-100 font-bold">Lộ trình tốt nghiệp</p>
+            <h1 class="text-xl lg:text-2xl font-bold mt-1">3 cột mốc cần đạt</h1>
+            <p class="text-sm text-indigo-100 mt-1" id="rdSummary">Đang tải...</p>
+          </div>
+          <div class="text-right md:text-right">
+            <p class="text-[10px] uppercase text-indigo-200">TC tích lũy</p>
+            <p class="text-3xl font-extrabold" id="rdEarnedCredits">—</p>
+            <p class="text-[10px] text-indigo-200 mt-0.5"><span id="rdEarnedDetail">—</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 readiness cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div id="rdGradCard" class="bg-[#ffffff] rounded-2xl border-2 p-5 shadow-sm"></div>
+        <div id="rdInternshipCard" class="bg-[#ffffff] rounded-2xl border-2 p-5 shadow-sm"></div>
+        <div id="rdThesisCard" class="bg-[#ffffff] rounded-2xl border-2 p-5 shadow-sm"></div>
+      </div>
+
+      <!-- Detailed sections -->
+      <div class="space-y-5">
+
+        <!-- Graduation detail -->
+        <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+          <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+            <span class="material-symbols-outlined msym text-[#312e81] text-base">school</span>
+            <h3 class="font-semibold text-sm text-[#0b1c30]">Tốt nghiệp — chi tiết</h3>
+          </div>
+          <div class="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p class="text-[10px] uppercase tracking-wider text-[#777682] font-bold mb-1">TC còn cần</p>
+              <p class="text-2xl font-extrabold text-[#0b1c30]" id="rdGradRemainingTc">—</p>
+              <p class="text-[11px] text-[#777682] mt-0.5">trên ngưỡng <span id="rdGradThreshold">—</span> TC</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase tracking-wider text-[#777682] font-bold mb-1">TB TC mỗi kỳ</p>
+              <p class="text-2xl font-extrabold text-[#0b1c30]" id="rdAvgPerTerm">—</p>
+              <p class="text-[11px] text-[#777682] mt-0.5"><span id="rdTermsStudied">—</span> kỳ đã học</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase tracking-wider text-[#777682] font-bold mb-1">Dự kiến TN</p>
+              <p class="text-2xl font-extrabold text-[#1a146b]" id="rdProjectedTerm">—</p>
+              <p class="text-[11px] text-[#777682] mt-0.5"><span id="rdEstTermsRemaining">—</span> kỳ nữa</p>
+            </div>
+          </div>
+          <div class="px-5 pb-4">
+            <div id="rdGradMet" class="space-y-1.5"></div>
+            <div id="rdGradBlockers" class="space-y-1.5 mt-2"></div>
+            <div id="rdGradSuggested" class="mt-3 hidden"></div>
+          </div>
+        </section>
+
+        <!-- Internship detail -->
+        <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+          <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+            <span class="material-symbols-outlined msym text-emerald-500 text-base">work_history</span>
+            <h3 class="font-semibold text-sm text-[#0b1c30]">Thực tập doanh nghiệp — chi tiết</h3>
+          </div>
+          <div class="px-5 py-4">
+            <p class="text-sm text-[#0b1c30] mb-3"><span id="rdInternshipCourseLabel">—</span></p>
+            <div id="rdInternshipMet" class="space-y-1.5"></div>
+            <div id="rdInternshipBlockers" class="space-y-1.5 mt-2"></div>
+            <div id="rdInternshipSuggested" class="mt-3 hidden"></div>
+          </div>
+        </section>
+
+        <!-- Thesis detail -->
+        <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+          <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+            <span class="material-symbols-outlined msym text-violet-500 text-base">menu_book</span>
+            <h3 class="font-semibold text-sm text-[#0b1c30]">Đồ án tốt nghiệp — chi tiết</h3>
+          </div>
+          <div class="px-5 py-4">
+            <p class="text-sm text-[#0b1c30] mb-3"><span id="rdThesisCourseLabel">—</span></p>
+            <div id="rdThesisMet" class="space-y-1.5"></div>
+            <div id="rdThesisBlockers" class="space-y-1.5 mt-2"></div>
+            <div id="rdThesisSuggested" class="mt-3 hidden"></div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="floating-chat.js"></script>
+<script>
+const API = window.API_BASE;
+function H(extra={}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg, type='info', duration=3000) {
+  const cls = { success:'bg-[#dcfce7]0', error:'bg-[#ba1a1a]', warning:'bg-amber-500', info:'bg-[#eef2ff]0' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto px-4 py-2.5 ${cls[type]||cls.info} text-white text-sm font-medium rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+const STATUS_META = {
+  ready:     { label: 'Sẵn sàng', icon: 'check_circle', color: 'emerald', borderCls: 'border-emerald-300' },
+  almost:    { label: 'Gần đạt',  icon: 'pending',      color: 'amber',   borderCls: 'border-amber-300' },
+  not_ready: { label: 'Chưa đạt', icon: 'priority_high', color: 'rose',   borderCls: 'border-rose-300' },
+};
+
+let _data = null;
+
+checkAuth();
+
+(async function init() {
+  try {
+    const ur = await fetch(`${API}/auth/me`, { headers: H() });
+    if (ur.ok) {
+      const u = await ur.json();
+      updateTopbarUser(u);
+    }
+  } catch {}
+  await loadReadiness();
+})();
+
+async function loadReadiness() {
+  try {
+    const res = await fetch(`${API}/me/readiness`, { headers: H() });
+    if (!res.ok) {
+      document.getElementById('rdLoading').classList.add('hidden');
+      showToast('Lỗi tải dữ liệu', 'error');
+      return;
+    }
+    _data = await res.json();
+    document.getElementById('rdLoading').classList.add('hidden');
+    document.getElementById('rdContent').classList.remove('hidden');
+    _renderHero();
+    _renderCard('rdGradCard', 'Tốt nghiệp', 'school', _data.graduation);
+    _renderCard('rdInternshipCard', 'Thực tập DN', 'work_history', _data.internship);
+    _renderCard('rdThesisCard', 'Đồ án TN', 'menu_book', _data.thesis);
+    _renderGradDetail();
+    _renderInternshipDetail();
+    _renderThesisDetail();
+  } catch (e) {
+    document.getElementById('rdLoading').classList.add('hidden');
+    showToast('Lỗi: ' + e.message, 'error');
+  }
+}
+
+function _renderHero() {
+  document.getElementById('rdEarnedCredits').textContent = (_data.earned_credits || 0).toFixed(1);
+  document.getElementById('rdEarnedDetail').textContent = `/ ${_data.graduation_threshold} TC · GPA ${_data.gpa4 || '—'}`;
+  // Summary bullet
+  const counts = {
+    ready: 0, almost: 0, not_ready: 0,
+  };
+  for (const k of ['graduation', 'internship', 'thesis']) counts[_data[k].status] = (counts[_data[k].status] || 0) + 1;
+  let summary = '';
+  if (counts.ready === 3) summary = 'Bạn đã đạt cả 3 cột mốc — sẵn sàng tốt nghiệp';
+  else if (counts.ready > 0) summary = `Đã đạt ${counts.ready}/3 mốc, cần hoàn thành nốt ${3 - counts.ready} mốc còn lại`;
+  else if (counts.almost > 0) summary = 'Bạn đang trên đà tốt — sắp đạt các mốc';
+  else summary = 'Còn nhiều chặng đường — kế hoạch học cần đẩy mạnh';
+  document.getElementById('rdSummary').textContent = summary;
+}
+
+function _renderCard(elId, title, icon, info) {
+  const meta = STATUS_META[info.status] || STATUS_META.not_ready;
+  const card = document.getElementById(elId);
+  card.className = `bg-[#ffffff] rounded-2xl border-2 ${meta.borderCls} p-5 shadow-sm`;
+  // Circular progress: percent
+  const pct = Math.min(100, Math.max(0, info.percent || 0));
+  const circ = 2 * Math.PI * 45;  // r=45
+  const dash = circ * (pct / 100);
+  card.innerHTML = `
+    <div class="flex items-start justify-between mb-3">
+      <div>
+        <p class="text-[10px] uppercase tracking-wider text-[#777682] font-bold">${escHtml(title)}</p>
+        <p class="text-base font-bold text-[#0b1c30] mt-0.5 flex items-center gap-1.5">
+          <span class="material-symbols-outlined msym text-${meta.color}-500 text-lg">${icon}</span>
+          ${meta.label}
+        </p>
+      </div>
+      <span class="material-symbols-outlined msym text-${meta.color}-500 text-2xl" style="font-variation-settings:'FILL' 1">${meta.icon}</span>
+    </div>
+    <div class="relative inline-flex items-center justify-center mb-3">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <circle class="ring-bg" cx="50" cy="50" r="45"/>
+        <circle class="ring-fg" cx="50" cy="50" r="45"
+                stroke="${meta.color === 'emerald' ? '#10b981' : meta.color === 'amber' ? '#f59e0b' : '#f43f5e'}"
+                stroke-dasharray="${dash} ${circ}" />
+      </svg>
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <p class="text-xl font-extrabold text-[#0b1c30]">${pct}%</p>
+        <p class="text-[9px] text-[#777682] uppercase">đạt</p>
+      </div>
+    </div>
+    <div class="text-xs text-[#474651]">
+      <p>${info.met ? info.met.length : 0} điều kiện đạt · ${info.blockers ? info.blockers.length : 0} cần hoàn thành</p>
+    </div>`;
+}
+
+function _renderChecklistItems(elId, items, isMet) {
+  const el = document.getElementById(elId);
+  if (!items || !items.length) { el.innerHTML = ''; return; }
+  el.innerHTML = items.map(it => {
+    const cls = isMet
+      ? 'bg-[#dcfce7] border-[#86efac] text-emerald-800'
+      : 'bg-amber-50 border-amber-200 text-amber-800';
+    const iconColor = isMet ? 'text-[#006c49]' : 'text-amber-600';
+    return `<div class="flex items-start gap-2 px-3 py-2 ${cls} border rounded-lg text-sm">
+      <span class="material-symbols-outlined msym ${iconColor} text-base flex-shrink-0">${escHtml(it.icon || (isMet ? 'check_circle' : 'pending'))}</span>
+      <span class="flex-1">${escHtml(it.label)}</span>
+    </div>`;
+  }).join('');
+}
+
+// Render suggested-courses section: list môn cụ thể SV nên học để đạt mốc
+function _renderSuggestedCourses(elId, courses, accentColor, headerLabel) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!courses || !courses.length) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+  // Dedup by course_code (suggestions can overlap across categories)
+  const seen = new Set();
+  const unique = [];
+  for (const c of courses) {
+    if (c.course_code && !seen.has(c.course_code)) {
+      seen.add(c.course_code);
+      unique.push(c);
+    }
+  }
+  const items = unique.slice(0, 6).map(co => `
+    <a href="course-detail.html?code=${encodeURIComponent(co.course_code)}"
+      class="block bg-white hover:bg-${accentColor}-50 border border-[#c8c5d3] rounded-lg px-3 py-2 transition-colors flex items-center gap-2 text-xs">
+      <span class="font-mono font-bold text-${accentColor}-700 flex-shrink-0">${escHtml(co.course_code)}</span>
+      <span class="flex-1 text-[#0b1c30] truncate">${escHtml(co.course_name)}</span>
+      ${co.role ? `<span class="text-[10px] bg-${accentColor}-50 text-${accentColor}-700 border border-${accentColor}-200 rounded-full px-1.5 py-0.5 flex-shrink-0">${escHtml(co.role)}</span>` : ''}
+      <span class="text-[10px] text-[#777682] flex-shrink-0">${(co.credits || 0).toFixed(1)} TC</span>
+      ${co.typical_semester ? `<span class="text-[10px] text-[#777682] flex-shrink-0">HK${co.typical_semester}</span>` : ''}
+      <span class="material-symbols-outlined msym text-[#c8c5d3] text-base flex-shrink-0">chevron_right</span>
+    </a>`).join('');
+  el.innerHTML = `
+    <div class="bg-${accentColor}-50/40 border border-${accentColor}-200 rounded-xl p-3">
+      <p class="text-[11px] font-bold uppercase tracking-wider text-${accentColor}-700 mb-2 flex items-center gap-1">
+        <span class="material-symbols-outlined msym text-[14px]">arrow_circle_right</span>
+        ${escHtml(headerLabel)}
+      </p>
+      <div class="space-y-1.5">${items}</div>
+      <a href="roadmap.html" class="mt-2 inline-flex items-center gap-1 text-[11px] text-${accentColor}-700 hover:underline font-semibold">
+        <span class="material-symbols-outlined msym text-[14px]">route</span>Xếp các môn này vào lộ trình →
+      </a>
+    </div>`;
+  el.classList.remove('hidden');
+}
+
+function _renderGradDetail() {
+  const g = _data.graduation;
+  document.getElementById('rdGradRemainingTc').textContent = g.remaining_credits.toFixed(1);
+  document.getElementById('rdGradThreshold').textContent = _data.graduation_threshold;
+  document.getElementById('rdAvgPerTerm').textContent = g.avg_credits_per_term != null ? g.avg_credits_per_term.toFixed(1) : '—';
+  document.getElementById('rdTermsStudied').textContent = g.terms_studied;
+  document.getElementById('rdProjectedTerm').textContent = g.projected_term_label || '—';
+  document.getElementById('rdEstTermsRemaining').textContent =
+    g.estimated_terms_remaining != null ? `~${g.estimated_terms_remaining.toFixed(1)} kỳ nữa` : 'cần thêm dữ liệu';
+  _renderChecklistItems('rdGradMet', g.met, true);
+  _renderChecklistItems('rdGradBlockers', g.blockers, false);
+  if (g.status !== 'ready') {
+    _renderSuggestedCourses('rdGradSuggested', g.suggested_courses, 'indigo', 'Môn nên học để đạt mốc tốt nghiệp');
+  }
+}
+
+function _renderInternshipDetail() {
+  const i = _data.internship;
+  let label = i.course_name
+    ? `Môn thực tập của bạn: <strong>${escHtml(i.course_code)}</strong> — ${escHtml(i.course_name)}`
+    : '<em>Chuyên ngành chưa định nghĩa môn thực tập</em>';
+  if (i.is_done) label += ' <span class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">✓ Đã pass</span>';
+  document.getElementById('rdInternshipCourseLabel').innerHTML = label;
+  _renderChecklistItems('rdInternshipMet', i.met, true);
+  _renderChecklistItems('rdInternshipBlockers', i.blockers, false);
+  if (!i.is_done) {
+    _renderSuggestedCourses('rdInternshipSuggested', i.suggested_courses, 'emerald', 'Cần học các môn này trước khi đi TT');
+  }
+}
+
+function _renderThesisDetail() {
+  const t = _data.thesis;
+  let label = t.course_name
+    ? `Môn đồ án của bạn: <strong>${escHtml(t.course_code)}</strong> — ${escHtml(t.course_name)}`
+    : '<em>Chuyên ngành chưa định nghĩa môn đồ án</em>';
+  if (t.is_done) label += ' <span class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">✓ Đã pass</span>';
+  document.getElementById('rdThesisCourseLabel').innerHTML = label;
+  _renderChecklistItems('rdThesisMet', t.met, true);
+  _renderChecklistItems('rdThesisBlockers', t.blockers, false);
+  if (!t.is_done) {
+    _renderSuggestedCourses('rdThesisSuggested', t.suggested_courses, 'violet', 'Cần đạt các môn này để làm ĐATN');
+  }
+}
+</script>
+</body>
+</html>
+
+

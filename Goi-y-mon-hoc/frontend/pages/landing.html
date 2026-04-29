@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Hệ thống gợi ý môn học cho sinh viên CNTT</title>
+  <meta name="description" content="Web app gợi ý môn học và theo dõi tiến độ học tập cho sinh viên ngành CNTT — sử dụng ML và LLM để cá nhân hóa lộ trình."/>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+
+      theme: { extend: { colors: {
+        "primary":                "#1a146b",
+        "primary-hover":          "#312e81",
+        "primary-light":          "#eef2ff",
+        "primary-fixed":          "#e2dfff",
+        "primary-fixed-dim":      "#c3c0ff",
+        "on-primary":             "#ffffff",
+        "on-primary-fixed":       "#100563",
+        "secondary":              "#006c49",
+        "secondary-container":    "#6cf8bb",
+        "on-secondary-container": "#00714d",
+        "tertiary":               "#0a0086",
+        "tertiary-container":     "#1e19b2",
+        "surface":                "#f8f9ff",
+        "surface-container":      "#e5eeff",
+        "surface-container-low":  "#eff4ff",
+        "surface-container-lowest": "#ffffff",
+        "surface-container-high": "#dce9ff",
+        "on-surface":             "#0b1c30",
+        "on-surface-variant":     "#474651",
+        "outline":                "#777682",
+        "outline-variant":        "#c8c5d3",
+        "error":                  "#ba1a1a",
+        "error-container":        "#ffdad6",
+      }}}
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    .msym-fill { font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    .hero-grad { background: linear-gradient(135deg,#0f0c4a 0%,#1a146b 50%,#312e81 100%); }
+    .dot-pattern { background-image: radial-gradient(#312e81 1px, transparent 1px); background-size: 24px 24px; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp .6s ease both; }
+    .fade-up-delay-1 { animation: fadeUp .6s ease .1s both; }
+    .fade-up-delay-2 { animation: fadeUp .6s ease .2s both; }
+    .fade-up-delay-3 { animation: fadeUp .6s ease .3s both; }
+    html { scroll-behavior: smooth; }
+    ::-webkit-scrollbar { width:8px; height:8px; }
+    ::-webkit-scrollbar-thumb { background:#c8c5d3; border-radius:4px; }
+    ::-webkit-scrollbar-thumb:hover { background:#777682; }
+  </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col antialiased">
+
+<!-- ── TOP NAV ─────────────────────────────────────────────────────────────── -->
+<nav class="fixed top-0 w-full z-50 bg-white/85 backdrop-blur-md border-b border-outline-variant/60">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+    <a href="#" class="flex items-center gap-2.5 text-primary">
+      <div class="w-9 h-9 rounded-xl pri-grad flex items-center justify-center shadow-sm">
+        <span class="material-symbols-outlined msym-fill text-white text-xl">school</span>
+      </div>
+      <div class="leading-tight">
+        <p class="text-base font-extrabold tracking-tight">EduGuide</p>
+        <p class="text-[10px] text-on-surface-variant -mt-0.5 hidden sm:block">Tech-Academic Portal</p>
+      </div>
+    </a>
+    <div class="hidden md:flex items-center gap-7 text-sm font-medium text-on-surface-variant">
+      <a href="#features" class="hover:text-primary transition-colors">Tính năng</a>
+      <a href="#roles" class="hover:text-primary transition-colors">Vai trò</a>
+      <a href="#architecture" class="hover:text-primary transition-colors">Kiến trúc</a>
+    </div>
+    <div class="flex items-center gap-2">
+      <a id="navLoginBtn" href="index.html"
+        class="hidden sm:inline-flex text-sm font-semibold text-primary hover:bg-primary-light px-3 py-2 rounded-lg transition-colors">
+        Đăng nhập
+      </a>
+      <a id="navCtaBtn" href="index.html"
+        class="inline-flex items-center gap-1.5 pri-grad text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm hover:opacity-95 transition-opacity">
+        <span>Bắt đầu</span>
+        <span class="material-symbols-outlined msym text-base">arrow_forward</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<main class="flex-grow pt-16">
+
+  <!-- ── HERO ──────────────────────────────────────────────────────────────── -->
+  <section class="relative overflow-hidden border-b border-outline-variant/40">
+    <div class="absolute inset-0 dot-pattern opacity-[0.04] pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:py-24 relative grid lg:grid-cols-2 gap-12 items-center">
+
+      <!-- Left text -->
+      <div class="fade-up">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-light border border-primary/15 text-primary mb-5">
+          <span class="material-symbols-outlined msym text-sm">smart_toy</span>
+          <span class="text-xs font-semibold">Hệ thống AI hỗ trợ học vụ ngành CNTT</span>
+        </div>
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-on-surface mb-5">
+          Gợi ý môn học và theo dõi
+          <span class="text-primary">tiến độ học tập</span>
+          cho sinh viên CNTT
+        </h1>
+        <p class="text-base lg:text-lg text-on-surface-variant max-w-xl mb-7">
+          Tối ưu hành trình học tập với gợi ý môn thông minh từ AI, lộ trình cá nhân hóa
+          theo chuyên ngành, và theo dõi điều kiện tốt nghiệp tự động.
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <a id="heroPrimaryBtn" href="index.html"
+            class="inline-flex items-center gap-2 pri-grad text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:opacity-95 transition-opacity">
+            <span>Đăng nhập để bắt đầu</span>
+            <span class="material-symbols-outlined msym text-lg">arrow_forward</span>
+          </a>
+          <a href="#features"
+            class="inline-flex items-center gap-2 bg-white border border-outline-variant text-on-surface font-semibold px-6 py-3 rounded-xl hover:bg-surface-container-low transition-colors">
+            Tìm hiểu thêm
+            <span class="material-symbols-outlined msym text-lg">expand_more</span>
+          </a>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="grid grid-cols-3 gap-4 mt-10 max-w-md">
+          <div>
+            <p class="text-2xl font-extrabold text-primary">6</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">chuyên ngành CNTT</p>
+          </div>
+          <div>
+            <p class="text-2xl font-extrabold text-primary">200+</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">môn học CTĐT</p>
+          </div>
+          <div>
+            <p class="text-2xl font-extrabold text-primary">3</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">vai trò tích hợp</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right hero card mock -->
+      <div class="hidden lg:block fade-up-delay-1">
+        <div class="relative w-full max-w-[480px] ml-auto aspect-[5/6]">
+          <!-- Glow blob -->
+          <div class="absolute inset-0 bg-gradient-to-tr from-primary-fixed via-surface-container-high to-primary-fixed-dim/30 rounded-full blur-3xl opacity-50"></div>
+          <!-- Card -->
+          <div class="absolute inset-6 bg-white/85 backdrop-blur-xl border border-outline-variant rounded-2xl shadow-xl p-5 flex flex-col gap-4 -rotate-2 hover:rotate-0 transition-transform duration-500">
+            <!-- Profile bar -->
+            <div class="flex items-center justify-between border-b border-outline-variant/60 pb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full pri-grad text-white flex items-center justify-center shadow-sm">
+                  <span class="material-symbols-outlined msym-fill text-xl">person</span>
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-on-surface">Nguyễn Văn A</p>
+                  <p class="text-[11px] text-on-surface-variant">K21 · CN Mạng máy tính</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-2xl font-extrabold text-primary leading-none">3.45</p>
+                <p class="text-[10px] text-on-surface-variant uppercase tracking-wider mt-0.5">GPA hệ 4</p>
+              </div>
+            </div>
+
+            <!-- Mock prereq path -->
+            <div class="relative space-y-3">
+              <div class="absolute left-4 top-3 bottom-3 w-px bg-outline-variant/70"></div>
+
+              <div class="flex items-center gap-3 relative">
+                <div class="w-8 h-8 rounded-full bg-secondary flex items-center justify-center border-2 border-white shadow-sm flex-shrink-0">
+                  <span class="material-symbols-outlined msym-fill text-white text-sm">check</span>
+                </div>
+                <div class="flex-1 bg-white border border-outline-variant rounded-lg px-3 py-2 shadow-sm flex items-center justify-between">
+                  <span class="text-xs font-medium text-on-surface">Cấu trúc dữ liệu</span>
+                  <span class="text-[10px] font-bold bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded">B+</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 relative">
+                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm flex-shrink-0">
+                  <span class="material-symbols-outlined msym text-white text-sm">arrow_forward</span>
+                </div>
+                <div class="flex-1 bg-white border-l-4 border-l-primary border-y border-r border-outline-variant rounded-lg px-3 py-2 shadow-md flex items-center justify-between">
+                  <span class="text-xs font-bold text-on-surface">Trí tuệ nhân tạo</span>
+                  <span class="text-[10px] font-bold bg-primary-light text-primary px-2 py-0.5 rounded">Đang học</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 relative">
+                <div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center flex-shrink-0">
+                  <span class="material-symbols-outlined msym text-on-surface-variant text-sm">lock</span>
+                </div>
+                <div class="flex-1 border border-dashed border-outline-variant bg-surface-container-low rounded-lg px-3 py-2 flex items-center justify-between opacity-75">
+                  <span class="text-xs text-on-surface-variant">Học máy nâng cao</span>
+                  <span class="material-symbols-outlined msym text-on-surface-variant text-sm">smart_toy</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recommendation chip -->
+            <div class="bg-primary-light border border-primary/20 rounded-lg p-3 flex items-start gap-2">
+              <span class="material-symbols-outlined msym-fill text-primary text-base flex-shrink-0 mt-0.5">auto_awesome</span>
+              <div>
+                <p class="text-[11px] font-bold text-primary">AI gợi ý kỳ tới</p>
+                <p class="text-[10px] text-on-surface-variant leading-snug mt-0.5">Lập trình Web · Match 92% · Phù hợp với JavaScript bạn đã có</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ──────────────────────────────────────────────────────────── -->
+  <section id="features" class="py-20 lg:py-24 bg-surface">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-2xl mx-auto mb-14 fade-up">
+        <p class="text-xs font-bold uppercase tracking-wider text-primary mb-2">Tính năng</p>
+        <h2 class="text-3xl lg:text-4xl font-extrabold text-on-surface mb-4">Giải pháp học thuật toàn diện</h2>
+        <p class="text-base text-on-surface-variant">
+          Các công cụ được thiết kế chuyên biệt cho sinh viên CNTT — từ chọn môn, lập lộ trình
+          đến định hướng nghề nghiệp.
+        </p>
+      </div>
+
+      <!-- Bento grid: 6 features in mixed layout -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 fade-up-delay-1">
+
+        <!-- 1. Lộ trình cá nhân (col-span-2 on md+) -->
+        <article class="md:col-span-2 bg-white rounded-2xl p-6 lg:p-8 border border-outline-variant shadow-sm hover:shadow-md transition-shadow flex flex-col">
+          <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center mb-5">
+            <span class="material-symbols-outlined msym-fill text-primary text-2xl">route</span>
+          </div>
+          <h3 class="text-xl font-bold text-on-surface mb-2">Lộ trình học tập cá nhân hóa</h3>
+          <p class="text-sm text-on-surface-variant mb-5">
+            Mô phỏng đầy đủ 9 học kỳ theo chuyên ngành, đánh dấu môn đã qua / đang học / chưa học,
+            tự động đề xuất môn tự chọn vào các slot trống.
+          </p>
+          <div class="mt-auto flex flex-wrap gap-2">
+            <span class="text-[11px] font-semibold bg-primary-light text-primary px-2.5 py-1 rounded-full">9 học kỳ</span>
+            <span class="text-[11px] font-semibold bg-primary-light text-primary px-2.5 py-1 rounded-full">3 nhóm tự chọn</span>
+            <span class="text-[11px] font-semibold bg-primary-light text-primary px-2.5 py-1 rounded-full">Tiên quyết tự động</span>
+          </div>
+        </article>
+
+        <!-- 2. Gợi ý ML+LLM (highlighted card) -->
+        <article class="pri-grad text-white rounded-2xl p-6 lg:p-8 shadow-md hover:shadow-lg transition-shadow flex flex-col">
+          <div class="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center mb-5">
+            <span class="material-symbols-outlined msym-fill text-white text-2xl">smart_toy</span>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Gợi ý môn ML + LLM</h3>
+          <p class="text-sm text-white/85 mb-5">
+            Mô hình GradientBoosting kết hợp LLM giải thích lý do gợi ý theo skill và lịch sử điểm.
+          </p>
+          <div class="mt-auto inline-flex items-center gap-1 text-xs font-semibold bg-white/15 px-3 py-1.5 rounded-full self-start">
+            <span class="material-symbols-outlined msym text-sm">bolt</span>
+            <span>Match score 0–100%</span>
+          </div>
+        </article>
+
+        <!-- 3. Bảng điểm tự động -->
+        <article class="bg-white rounded-2xl p-6 lg:p-8 border border-outline-variant shadow-sm hover:shadow-md transition-shadow flex flex-col">
+          <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center mb-5">
+            <span class="material-symbols-outlined msym-fill text-primary text-2xl">grade</span>
+          </div>
+          <h3 class="text-xl font-bold text-on-surface mb-2">Bảng điểm tự động</h3>
+          <p class="text-sm text-on-surface-variant mb-5">
+            Upload Excel/CSV → tự parse, tính GPA hệ 4 và 10, biểu đồ tiến độ theo kỳ.
+          </p>
+          <p class="mt-auto text-xs text-outline">
+            <span class="font-bold text-primary">Học lại:</span> tự lấy điểm cao nhất theo quy chế Bộ GD
+          </p>
+        </article>
+
+        <!-- 4. AI Assistant -->
+        <article class="bg-white rounded-2xl p-6 lg:p-8 border border-outline-variant shadow-sm hover:shadow-md transition-shadow flex flex-col">
+          <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center mb-5">
+            <span class="material-symbols-outlined msym-fill text-primary text-2xl">psychology</span>
+          </div>
+          <h3 class="text-xl font-bold text-on-surface mb-2">AI Assistant 24/7</h3>
+          <p class="text-sm text-on-surface-variant mb-5">
+            Hỏi đáp học vụ, định hướng nghề bằng ngôn ngữ tự nhiên — chain Gemini → Groq → Claude.
+          </p>
+          <div class="mt-auto flex items-center gap-2 text-xs text-on-surface-variant">
+            <span class="w-2 h-2 rounded-full bg-secondary"></span>
+            <span>Online</span>
+          </div>
+        </article>
+
+        <!-- 5. Cố vấn online -->
+        <article class="bg-white rounded-2xl p-6 lg:p-8 border border-outline-variant shadow-sm hover:shadow-md transition-shadow flex flex-col">
+          <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center mb-5">
+            <span class="material-symbols-outlined msym-fill text-primary text-2xl">groups</span>
+          </div>
+          <h3 class="text-xl font-bold text-on-surface mb-2">Cố vấn online</h3>
+          <p class="text-sm text-on-surface-variant mb-5">
+            Chat trực tiếp với giảng viên cố vấn, ghi chú gắn vào từng môn.
+          </p>
+          <p class="mt-auto text-xs text-outline">Cảnh báo sớm SV có nguy cơ rớt hạng</p>
+        </article>
+
+        <!-- 6. Mô phỏng what-if (col-span-3 wide card) -->
+        <article class="md:col-span-3 bg-white rounded-2xl p-6 lg:p-8 border border-outline-variant shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center gap-6">
+          <div class="md:flex-shrink-0">
+            <div class="w-14 h-14 rounded-xl bg-primary-light flex items-center justify-center mb-3 md:mb-0">
+              <span class="material-symbols-outlined msym-fill text-primary text-3xl">query_stats</span>
+            </div>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-xl font-bold text-on-surface mb-1.5">Mô phỏng what-if &amp; sẵn sàng tốt nghiệp</h3>
+            <p class="text-sm text-on-surface-variant">
+              Đặt mục tiêu (TN sớm / GPA cao / xin học bổng), nhập điểm dự kiến từng môn —
+              hệ thống tính GPA dự kiến, TC tích lũy, kỳ TN ước lượng và mức độ rủi ro.
+            </p>
+          </div>
+          <div class="md:flex-shrink-0 grid grid-cols-3 gap-3 text-center">
+            <div class="bg-surface-container-low rounded-lg px-3 py-2.5">
+              <p class="text-xs text-on-surface-variant">TN</p>
+              <p class="text-sm font-bold text-on-surface">≥ 153 TC</p>
+            </div>
+            <div class="bg-surface-container-low rounded-lg px-3 py-2.5">
+              <p class="text-xs text-on-surface-variant">Thực tập</p>
+              <p class="text-sm font-bold text-on-surface">≥ 90 TC</p>
+            </div>
+            <div class="bg-surface-container-low rounded-lg px-3 py-2.5">
+              <p class="text-xs text-on-surface-variant">ĐATN</p>
+              <p class="text-sm font-bold text-on-surface">≥ 130 TC</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ROLES ─────────────────────────────────────────────────────────────── -->
+  <section id="roles" class="py-20 lg:py-24 bg-white border-y border-outline-variant/40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-2xl mx-auto mb-14 fade-up">
+        <p class="text-xs font-bold uppercase tracking-wider text-primary mb-2">Vai trò</p>
+        <h2 class="text-3xl lg:text-4xl font-extrabold text-on-surface mb-4">3 vai trò, 1 hệ thống</h2>
+        <p class="text-base text-on-surface-variant">Tối ưu quy trình cho mọi đối tượng trong quá trình đào tạo.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 fade-up-delay-1">
+        <!-- Sinh viên -->
+        <div class="rounded-2xl border border-outline-variant overflow-hidden bg-surface flex flex-col hover:shadow-lg transition-shadow">
+          <div class="h-1.5 bg-primary"></div>
+          <div class="p-7 flex-grow flex flex-col">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center">
+                <span class="material-symbols-outlined msym-fill text-primary text-2xl">school</span>
+              </div>
+              <h3 class="text-xl font-bold text-on-surface">Sinh viên</h3>
+            </div>
+            <ul class="space-y-3 mb-6 flex-grow">
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Bảng điểm tự động + biểu đồ GPA theo kỳ</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Lộ trình 9 HK với gợi ý môn tự chọn</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">So sánh 6 chuyên ngành + quiz Holland</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Mô phỏng GPA dự kiến và sẵn sàng TN</span>
+              </li>
+            </ul>
+            <div class="pt-4 border-t border-outline-variant flex items-center gap-1.5 text-primary text-sm font-semibold">
+              <span class="material-symbols-outlined msym text-base">smart_toy</span>
+              <span>AI Assistant + chat cố vấn</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cố vấn -->
+        <div class="rounded-2xl border border-outline-variant overflow-hidden bg-surface flex flex-col hover:shadow-lg transition-shadow">
+          <div class="h-1.5 bg-tertiary"></div>
+          <div class="p-7 flex-grow flex flex-col">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center">
+                <span class="material-symbols-outlined msym-fill text-primary text-2xl">co_present</span>
+              </div>
+              <h3 class="text-xl font-bold text-on-surface">Cố vấn học tập</h3>
+            </div>
+            <ul class="space-y-3 mb-6 flex-grow">
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Dashboard SV phụ trách + cảnh báo sớm</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Xem bảng điểm và lộ trình của từng SV</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Ghi chú gắn vào môn cụ thể</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Chat trực tiếp với SV phụ trách</span>
+              </li>
+            </ul>
+            <div class="pt-4 border-t border-outline-variant flex items-center gap-1.5 text-primary text-sm font-semibold">
+              <span class="material-symbols-outlined msym text-base">trending_up</span>
+              <span>Phân lớp high-risk / needs-attention / on-track</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quản trị viên -->
+        <div class="rounded-2xl border border-outline-variant overflow-hidden bg-surface flex flex-col hover:shadow-lg transition-shadow">
+          <div class="h-1.5 bg-outline"></div>
+          <div class="p-7 flex-grow flex flex-col">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center">
+                <span class="material-symbols-outlined msym-fill text-primary text-2xl">admin_panel_settings</span>
+              </div>
+              <h3 class="text-xl font-bold text-on-surface">Quản trị viên</h3>
+            </div>
+            <ul class="space-y-3 mb-6 flex-grow">
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Quản lý SV, GV, môn học, tiên quyết</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Import bảng điểm hàng loạt + rollback</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Broadcast 8 loại thông báo có target</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined msym-fill text-secondary text-lg flex-shrink-0 mt-0.5">check_circle</span>
+                <span class="text-sm text-on-surface-variant">Audit log + cấu hình ngưỡng học vụ</span>
+              </li>
+            </ul>
+            <div class="pt-4 border-t border-outline-variant flex items-center gap-1.5 text-primary text-sm font-semibold">
+              <span class="material-symbols-outlined msym text-base">analytics</span>
+              <span>Dashboard 8 stats + biểu đồ phân bố</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ARCHITECTURE ──────────────────────────────────────────────────────── -->
+  <section id="architecture" class="py-20 lg:py-24 bg-surface">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-14 fade-up">
+        <p class="text-xs font-bold uppercase tracking-wider text-primary mb-2">Kiến trúc</p>
+        <h2 class="text-3xl lg:text-4xl font-extrabold text-on-surface mb-4">Hệ thống hiện đại, mở rộng được</h2>
+        <p class="text-base text-on-surface-variant max-w-2xl mx-auto">
+          Stack công nghệ mạnh mẽ — xử lý dữ liệu học vụ quy mô lớn, AI inference và LLM chain.
+        </p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-outline-variant shadow-sm p-6 lg:p-10 fade-up-delay-1">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 items-stretch relative">
+          <!-- Connection line desktop only -->
+          <div class="hidden md:block absolute left-0 right-0 top-[88px] h-px border-t-2 border-dashed border-outline-variant/70 -z-0"></div>
+
+          <!-- Block 1: Frontend -->
+          <div class="relative z-10 bg-surface-container-low rounded-xl border border-outline-variant p-6 text-center hover:shadow-md transition-shadow">
+            <div class="w-16 h-16 rounded-xl bg-white border border-outline-variant flex items-center justify-center mx-auto mb-4">
+              <span class="material-symbols-outlined msym-fill text-primary text-3xl">web</span>
+            </div>
+            <h4 class="text-base font-bold text-on-surface mb-1">Frontend</h4>
+            <p class="text-xs text-on-surface-variant mb-3">HTML/CSS/JS thuần + Tailwind</p>
+            <code class="text-[11px] font-mono bg-surface-container px-2 py-1 rounded text-primary">Vanilla · Tailwind</code>
+          </div>
+
+          <!-- Block 2: Backend (highlighted) -->
+          <div class="relative z-10 pri-grad text-white rounded-xl p-6 text-center shadow-lg md:scale-105">
+            <div class="w-16 h-16 rounded-xl bg-white/15 flex items-center justify-center mx-auto mb-4">
+              <span class="material-symbols-outlined msym-fill text-white text-3xl">developer_board</span>
+            </div>
+            <h4 class="text-base font-bold mb-1">Backend &amp; API</h4>
+            <p class="text-xs text-white/85 mb-3">FastAPI + SQLAlchemy + Pydantic</p>
+            <code class="text-[11px] font-mono bg-white/15 px-2 py-1 rounded">FastAPI · Python 3.11</code>
+          </div>
+
+          <!-- Block 3: Database + AI -->
+          <div class="relative z-10 bg-surface-container-low rounded-xl border border-outline-variant p-6 text-center hover:shadow-md transition-shadow">
+            <div class="w-16 h-16 rounded-xl bg-white border border-outline-variant flex items-center justify-center mx-auto mb-4">
+              <span class="material-symbols-outlined msym-fill text-primary text-3xl">memory</span>
+            </div>
+            <h4 class="text-base font-bold text-on-surface mb-1">Lưu trữ &amp; AI</h4>
+            <p class="text-xs text-on-surface-variant mb-3">PostgreSQL + ML model + LLM chain</p>
+            <code class="text-[11px] font-mono bg-surface-container px-2 py-1 rounded text-primary">PostgreSQL · scikit-learn</code>
+          </div>
+        </div>
+
+        <!-- LLM chain row -->
+        <div class="mt-8 pt-6 border-t border-outline-variant">
+          <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant text-center mb-4">LLM chain — fallback tự động</p>
+          <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm">
+            <span class="inline-flex items-center gap-1.5 bg-primary-light text-primary font-semibold px-3 py-1.5 rounded-lg">
+              <span class="material-symbols-outlined msym text-base">auto_awesome</span>Gemini 2.0 Flash
+            </span>
+            <span class="material-symbols-outlined msym text-outline">arrow_forward</span>
+            <span class="inline-flex items-center gap-1.5 bg-primary-light text-primary font-semibold px-3 py-1.5 rounded-lg">
+              <span class="material-symbols-outlined msym text-base">flash_on</span>Groq Llama 3.3
+            </span>
+            <span class="material-symbols-outlined msym text-outline">arrow_forward</span>
+            <span class="inline-flex items-center gap-1.5 bg-primary-light text-primary font-semibold px-3 py-1.5 rounded-lg">
+              <span class="material-symbols-outlined msym text-base">psychology</span>Claude Haiku
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA STRIP ─────────────────────────────────────────────────────────── -->
+  <section class="hero-grad text-white py-14 lg:py-16">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+      <div>
+        <h2 class="text-2xl lg:text-3xl font-extrabold mb-2">Sẵn sàng bắt đầu?</h2>
+        <p class="text-sm text-primary-fixed-dim max-w-xl">
+          Đăng nhập bằng tài khoản trường đã được cấp. Lần đầu vào hệ thống sẽ được hướng dẫn thiết lập email + mật khẩu mới.
+        </p>
+      </div>
+      <a id="ctaPrimaryBtn" href="index.html"
+        class="inline-flex items-center gap-2 bg-white text-primary font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-primary-light transition-colors">
+        Đăng nhập ngay
+        <span class="material-symbols-outlined msym text-lg">arrow_forward</span>
+      </a>
+    </div>
+  </section>
+</main>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer class="bg-on-surface text-white/85 py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+        <span class="material-symbols-outlined msym-fill text-white text-xl">school</span>
+      </div>
+      <div>
+        <p class="text-base font-extrabold">EduGuide</p>
+        <p class="text-[11px] text-white/55">Hệ thống gợi ý môn học cho sinh viên CNTT</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs uppercase tracking-wider font-semibold">
+      <a href="#features" class="text-white/60 hover:text-white transition-colors">Tính năng</a>
+      <a href="#roles" class="text-white/60 hover:text-white transition-colors">Vai trò</a>
+      <a href="#architecture" class="text-white/60 hover:text-white transition-colors">Kiến trúc</a>
+      <a href="index.html" class="text-white/60 hover:text-white transition-colors">Đăng nhập</a>
+    </div>
+    <div class="text-xs text-white/50">
+      © <span id="footerYear">2026</span> EduGuide · Đồ án tốt nghiệp
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Footer year ─────────────────────────────────────────────────────────
+  document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+  // ── Auto-redirect logged-in users to their dashboard ────────────────────
+  // Behavior: nếu đã login + setup xong → đổi CTA buttons sang "Vào trang chủ"
+  // (KHÔNG redirect tự động để demo cho hội đồng vẫn xem được landing)
+  (async function detectSession() {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://127.0.0.1:8000' : window.location.origin;
+    try {
+      const r = await fetch(API_BASE + '/auth/me', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (!r.ok) return;
+      const u = await r.json();
+      if (u && u.is_first_login === false) {
+        const target = u.role === 'admin' ? 'admin.html'
+                     : u.role === 'advisor' ? 'advisor.html'
+                     : 'home.html';
+        const label = `Vào ${u.role === 'admin' ? 'Quản trị' : u.role === 'advisor' ? 'Cố vấn' : 'Trang chủ'}`;
+        ['navCtaBtn', 'heroPrimaryBtn', 'ctaPrimaryBtn'].forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.setAttribute('href', target);
+          // Replace label text node — keep icon
+          const icon = el.querySelector('.material-symbols-outlined');
+          el.innerHTML = '';
+          const span = document.createElement('span');
+          span.textContent = label;
+          el.appendChild(span);
+          if (icon) el.appendChild(icon);
+        });
+        const navLogin = document.getElementById('navLoginBtn');
+        if (navLogin) navLogin.classList.add('hidden');
+      }
+    } catch { /* offline → ignore, hiển thị landing như guest */ }
+  })();
+</script>
+
+</body>
+</html>

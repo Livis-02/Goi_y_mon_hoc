@@ -1,0 +1,1896 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Cổng Cố vấn Học tập · CNTT</title>
+  <style>
+    /* Critical baseline — matches Tailwind bg-slate-50 / text-slate-800 */
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+  </style>
+  
+  <!-- Smooth page transitions (Chrome 111+, Safari 18+) -->
+  <style>
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) {
+      animation-duration: 0.15s;
+      animation-timing-function: ease-out;
+    }
+    /* Keep sidebar + header stable across transitions (no fade on persistent UI) */
+    #sidebarMount, #sidebarDrawer, #adminSidebar, #adminSidebarMount, header {
+      view-transition-name: none;
+    }
+  </style>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    .adv-nav-btn        { color: #94a3b8; }
+    .adv-nav-btn:hover  { background: #1e293b; color: #e2e8f0; }
+    .adv-nav-btn.active { background: linear-gradient(135deg,#1a146b,#312e81); color: #fff; font-weight: 600; }
+    /* legacy names kept so code not touched yet still works */
+    .nav-active   { background: linear-gradient(135deg,#1a146b,#312e81); color: #fff; font-weight:600; }
+    .nav-inactive { color:#94a3b8; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+    .status-high_risk       { background:#fef2f2; color:#b91c1c; border-color:#fca5a5; }
+    .status-needs_attention { background:#fffbeb; color:#92400e; border-color:#fcd34d; }
+    .status-normal          { background:#f0fdf4; color:#166534; border-color:#86efac; }
+    .chip-high_risk         { background:#fee2e2; color:#b91c1c; }
+    .chip-needs_attention   { background:#fef9c3; color:#92400e; }
+    .chip-normal            { background:#dcfce7; color:#166534; }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{ colors:{
+        primary:'#1a146b','primary-fixed':'#e0e7ff','primary-container':'#312e81',
+        'on-primary':'#ffffff','on-surface':'#191c1d','on-surface-variant':'#414754',
+        'outline-variant':'#c1c6d6',surface:'#f8f9fa','surface-container':'#edeeef',
+        'surface-container-low':'#f3f4f5','surface-container-lowest':'#ffffff',
+        outline:'#727785',error:'#ba1a1a',
+      }}}
+    }
+  </script>
+
+  <script src="_curriculum_chart.js"></script>
+  <script defer src="floating-chat.js"></script>
+  <style>
+    /* disable browser autofill yellow highlight */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus,
+    select:-webkit-autofill,
+    select:-webkit-autofill:hover,
+    select:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+      -webkit-text-fill-color: inherit !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+  </style>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+</head>
+<body class="bg-[#f8f9ff] text-[#191c1d] antialiased">
+
+<!-- ── TOAST ──────────────────────────────────────────────────────────────── -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ── SIDEBAR (light, stitch design) ──────────────────────── -->
+<aside id="sidebarDrawer" class="fixed left-0 top-0 h-screen w-60 flex flex-col py-5 px-3 bg-white border-r border-[#c8c5d3] z-50 shadow-sm transition-transform duration-300 -translate-x-full lg:translate-x-0">
+  <div class="flex items-center gap-3 px-3 mb-7">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow" style="background:linear-gradient(135deg,#1a146b,#312e81)">
+      <span class="material-symbols-outlined msym text-lg" style="font-variation-settings:'FILL' 1">school</span>
+    </div>
+    <div>
+      <h1 class="text-sm font-extrabold text-[#1a146b] leading-none tracking-tight">EduGuide Advisor</h1>
+      <span class="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide" style="background:#eef2ff;color:#1a146b">Cố vấn</span>
+    </div>
+  </div>
+
+  <div class="mx-2 mb-5 p-3 rounded-xl" style="background:#eef2ff">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background:linear-gradient(135deg,#1a146b,#312e81)" id="avatarCircle">?</div>
+      <div class="overflow-hidden flex-1 min-w-0">
+        <p class="text-sm font-semibold text-[#1a146b] truncate" id="sidebarUserName">Đang tải...</p>
+        <p class="text-[10px] text-[#312e81] font-bold uppercase tracking-wide">Cố vấn học tập</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="flex-1 space-y-0.5 overflow-y-auto" id="sideNav">
+    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-2">Quản lý</p>
+    <button onclick="showSection('overview')" data-section="overview"
+      class="adv-nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">dashboard_customize</span>Tổng quan
+    </button>
+    <button onclick="showSection('students')" data-section="students"
+      class="adv-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">groups</span>Danh sách Sinh viên
+    </button>
+    <button onclick="showSection('notes')" data-section="notes"
+      class="adv-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">edit_note</span>Ghi chú Tư vấn
+    </button>
+    <button onclick="showSection('messaging')" data-section="messaging"
+      class="adv-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">forum</span>Tin nhắn
+      <span id="advMsgBadge" class="hidden ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+    </button>
+    <button id="navAssignBtn" onclick="showSection('assign')" data-section="assign"
+      class="hidden adv-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">manage_accounts</span>Phân công SV
+    </button>
+    <button onclick="showSection('ctdt')" data-section="ctdt"
+      class="adv-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">schema</span>Sơ đồ CTĐT
+    </button>
+  </nav>
+
+  <div class="border-t border-[#c8c5d3] pt-3 mt-3">
+    <button onclick="doLogout()"
+      class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all">
+      <span class="material-symbols-outlined msym text-xl">logout</span>Đăng xuất
+    </button>
+  </div>
+</aside>
+
+<!-- ── SIDEBAR OVERLAY (mobile) ─────────────────────────────────────────── -->
+<div id="sidebarOverlay" onclick="closeSidebar()"
+  class="hidden fixed inset-0 bg-black/40 z-40 lg:hidden"></div>
+
+<!-- ── HEADER ────────────────────────────────────────────────────────────── -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-on-surface-variant">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-on-surface" id="pageTitle">Tổng quan</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <button onclick="refreshAll()" aria-label="Làm mới" class="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">
+      <span class="material-symbols-outlined msym text-base">refresh</span><span class="hidden sm:inline">Làm mới</span>
+    </button>
+    <!-- Bell notification -->
+    <div class="relative">
+      <button id="bellBtn" onclick="toggleNotifDropdown()" aria-label="Thông báo"
+        class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors relative">
+        <span class="material-symbols-outlined msym text-xl">notifications</span>
+        <span id="notifBubble" class="hidden absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-error text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">0</span>
+      </button>
+      <div id="notifDropdown" class="hidden absolute right-0 top-10 w-80 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50 flex flex-col max-h-[420px]">
+        <div class="px-4 py-3 border-b border-outline-variant flex items-center justify-between flex-shrink-0">
+          <span class="text-sm font-bold text-on-surface">Thông báo</span>
+          <button onclick="markAllNotifsRead()" class="text-[11px] text-primary hover:underline">Đánh dấu tất cả đã đọc</button>
+        </div>
+        <div id="notifDropdownList" class="overflow-y-auto flex-1 divide-y divide-outline-variant">
+          <p class="px-4 py-6 text-xs text-outline text-center">Đang tải…</p>
+        </div>
+        <a href="notifications.html" class="px-4 py-2.5 border-t border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low text-center transition-colors flex items-center justify-center gap-1">
+          Xem tất cả thông báo
+          <span class="material-symbols-outlined msym text-sm">arrow_forward</span>
+        </a>
+      </div>
+    </div>
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Cố vấn học tập</p>
+        </div>
+        <div class="py-1">
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Urgent notification modal -->
+<div id="urgentModal" class="hidden fixed inset-0 bg-black/60 z-[9000] flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="px-6 py-4 bg-red-50 border-b border-red-100 rounded-t-2xl">
+      <p class="text-sm font-extrabold text-red-700 flex items-center gap-2">
+        <span class="material-symbols-outlined msym text-xl">priority_high</span>
+        Thông báo khẩn cấp
+      </p>
+    </div>
+    <div id="urgentModalList" class="px-6 py-4 space-y-4 max-h-72 overflow-y-auto"></div>
+    <div class="px-6 pb-5 flex justify-end gap-2">
+      <button onclick="_dismissUrgent(false)"
+        class="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">Xem sau</button>
+      <button onclick="_dismissUrgent(true)"
+        class="px-4 py-2 text-sm font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Đã đọc</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ───────────────────────────────────────────────────────────────── -->
+<main class="lg:ml-60 pt-[60px] min-h-screen">
+  <div class="p-4 lg:p-6 max-w-6xl mx-auto space-y-6">
+
+    <!-- ═══ OVERVIEW SECTION ═══════════════════════════════════════════════ -->
+    <section id="sec-overview" class="space-y-6">
+      <!-- Alert: high-risk students (TOP — actionable) -->
+      <div id="alertHighRisk" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="material-symbols-outlined msym text-rose-600" style="font-variation-settings:'FILL' 1">warning</span>
+          <p class="font-semibold text-rose-700 text-sm">SV cần can thiệp ngay</p>
+          <span id="alertHighRiskCount" class="ml-auto text-xs bg-rose-600 text-white font-bold px-2 py-0.5 rounded-full">0</span>
+        </div>
+        <ul id="alertHighRiskList" class="space-y-2"></ul>
+      </div>
+
+      <!-- Stats cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="statsCards">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 text-center">
+          <p class="text-3xl font-extrabold text-indigo-700" id="statTotal">—</p>
+          <p class="text-xs text-slate-500 mt-1">Tổng Sinh viên</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-red-100 text-center">
+          <p class="text-3xl font-extrabold text-red-600" id="statHighRisk">—</p>
+          <p class="text-xs text-slate-500 mt-1">Nguy cơ cao</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-yellow-100 text-center">
+          <p class="text-3xl font-extrabold text-yellow-600" id="statNeedsAttention">—</p>
+          <p class="text-xs text-slate-500 mt-1">Cần chú ý</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-green-100 text-center">
+          <p class="text-3xl font-extrabold text-green-600" id="statNormal">—</p>
+          <p class="text-xs text-slate-500 mt-1">Bình thường</p>
+        </div>
+      </div>
+
+      <!-- GPA / completion row -->
+      <div id="statsGpaRow" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">GPA trung bình nhóm (hệ 4)</p>
+          <p class="text-2xl font-extrabold text-indigo-700" id="statAvgGpa">—</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Tiến độ tích lũy TB</p>
+          <p class="text-2xl font-extrabold text-indigo-700" id="statAvgCompletion">—</p>
+        </div>
+      </div>
+
+      <!-- Empty state: chưa được phân công SV -->
+      <div id="noAssignmentBanner" class="hidden bg-white border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center">
+        <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined msym text-slate-400 text-4xl" style="font-variation-settings:'FILL' 1">group_off</span>
+        </div>
+        <h3 class="text-base font-bold text-slate-600 mb-2">Chưa có sinh viên được phân công</h3>
+        <p class="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
+          Bạn chưa được phân công phụ trách sinh viên nào.<br/>
+          Vui lòng liên hệ <strong class="text-slate-500">quản trị viên</strong> để được phân công nhóm sinh viên.
+        </p>
+        <div class="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl text-xs text-slate-500">
+          <span class="material-symbols-outlined msym text-base">info</span>
+          Admin có thể phân công tại trang <strong>admin.html → Tab Cố vấn</strong>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══ STUDENTS SECTION ════════════════════════════════════════════════ -->
+    <section id="sec-students" class="hidden space-y-4">
+      <!-- Filter bar -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-wrap gap-3 items-center">
+        <input autocomplete="off" id="searchInput" type="text" placeholder="Tìm theo tên / MSSV…"
+          class="flex-1 min-w-[180px] text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          oninput="filterStudents()"/>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="setFilter('all')" data-filter="all"
+            class="filter-btn text-xs font-semibold px-3 py-1.5 rounded-full border border-indigo-200 text-indigo-700 bg-indigo-50">Tất cả</button>
+          <button onclick="setFilter('high_risk')" data-filter="high_risk"
+            class="filter-btn text-xs font-semibold px-3 py-1.5 rounded-full border border-red-200 text-red-700 bg-white">Nguy cơ cao</button>
+          <button onclick="setFilter('needs_attention')" data-filter="needs_attention"
+            class="filter-btn text-xs font-semibold px-3 py-1.5 rounded-full border border-yellow-200 text-yellow-700 bg-white">Cần chú ý</button>
+          <button onclick="setFilter('normal')" data-filter="normal"
+            class="filter-btn text-xs font-semibold px-3 py-1.5 rounded-full border border-green-200 text-green-700 bg-white">Bình thường</button>
+        </div>
+      </div>
+
+      <!-- Student list -->
+      <div id="studentList" class="space-y-3">
+        <div class="text-center text-slate-400 py-10">
+          <span class="material-symbols-outlined msym text-4xl spin">refresh</span>
+          <p class="text-sm mt-2">Đang tải danh sách…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ NOTES SECTION ════════════════════════════════════════════════════ -->
+    <section id="sec-notes" class="hidden space-y-4">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+        <h3 class="font-semibold text-sm mb-3">Tạo ghi chú tư vấn mới</h3>
+        <select autocomplete="off" id="noteStudentSel" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          <option value="">— Chọn sinh viên —</option>
+        </select>
+        <textarea autocomplete="off" id="noteContent" rows="3" placeholder="Nội dung ghi chú…"
+          class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"></textarea>
+        <div class="flex justify-end mt-2">
+          <button onclick="createNote()"
+            class="pri-grad text-white text-xs font-bold px-4 py-2 rounded-lg shadow hover:opacity-90 active:scale-95 transition-all">
+            Lưu ghi chú
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <select autocomplete="off" id="noteFilterStudent" class="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          onchange="loadNotesForStudent()">
+          <option value="">— Lọc ghi chú theo sinh viên —</option>
+        </select>
+      </div>
+      <p class="text-sm text-slate-400 italic">Chọn sinh viên để xem ghi chú tư vấn</p>
+
+      <div id="notesList" class="space-y-3"></div>
+    </section>
+
+    <!-- ═══ MESSAGING SECTION ════════════════════════════════════════════════ -->
+    <section id="sec-messaging" class="hidden" style="height:calc(100vh - 120px);min-height:520px">
+      <div class="flex h-full bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <!-- Inbox -->
+        <div class="w-64 flex-shrink-0 border-r border-slate-100 flex flex-col">
+          <div class="p-3 border-b border-slate-100 flex items-center gap-2">
+            <div class="relative flex-1">
+              <span class="material-symbols-outlined msym text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" style="font-size:15px">search</span>
+              <input autocomplete="off" id="advMsgSearch" type="text" placeholder="Tìm kiếm…"
+                class="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                oninput="advMsgFilterInbox(this.value)"/>
+            </div>
+            <button onclick="advMsgOpenSearch()" title="Nhắn tin mới"
+              class="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors flex-shrink-0">
+              <span class="material-symbols-outlined msym" style="font-size:17px">edit_note</span>
+            </button>
+          </div>
+          <div id="advMsgInboxList" class="flex-1 overflow-y-auto"></div>
+        </div>
+        <!-- Chat pane -->
+        <div class="flex-1 flex flex-col min-w-0">
+          <div id="advMsgEmpty" class="flex-1 flex flex-col items-center justify-center text-slate-400 gap-2">
+            <span class="material-symbols-outlined msym text-4xl" style="font-variation-settings:'FILL' 0">forum</span>
+            <p class="text-sm">Chọn một cuộc trò chuyện</p>
+          </div>
+          <div id="advMsgChatPane" class="hidden flex-col h-full">
+            <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
+              <div id="advMsgAvatar" class="w-9 h-9 rounded-full flex items-center justify-center bg-indigo-100 text-indigo-700 text-sm font-bold flex-shrink-0">?</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-slate-800 truncate" id="advMsgName">—</p>
+                <p class="text-xs text-slate-400" id="advMsgSub"></p>
+              </div>
+            </div>
+            <div id="advMsgMessages" class="flex-1 overflow-y-auto px-4 py-3 space-y-2"></div>
+            <div class="p-3 border-t border-slate-100 flex-shrink-0">
+              <div class="flex gap-2">
+                <textarea autocomplete="off" id="advMsgInput" rows="2" placeholder="Nhập tin nhắn…"
+                  class="flex-1 resize-none px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                  onkeydown="advMsgHandleKey(event)"></textarea>
+                <button onclick="advMsgSend()"
+                  class="px-4 py-2 pri-grad text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all self-end">
+                  <span class="material-symbols-outlined msym" style="font-size:17px">send</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ ASSIGN SECTION (trưởng BM only) ══════════════════════════════════ -->
+    <section id="sec-assign" class="hidden space-y-4">
+      <!-- Controls -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-wrap gap-3 items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined msym text-indigo-600 text-xl" style="font-variation-settings:'FILL' 1">manage_accounts</span>
+          <span class="font-semibold text-sm">Phân công cố vấn cho sinh viên trong bộ môn</span>
+        </div>
+        <button onclick="loadAssignSection()"
+          class="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all">
+          <span class="material-symbols-outlined msym text-base">refresh</span>Làm mới
+        </button>
+      </div>
+
+      <!-- Advisors legend -->
+      <div id="deptAdvisorChips" class="flex flex-wrap gap-2 px-1"></div>
+
+      <!-- Student table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wide">
+                <th class="px-4 py-3 text-left">Sinh viên</th>
+                <th class="px-4 py-3 text-left">TC tích lũy</th>
+                <th class="px-4 py-3 text-left">GPA (hệ 4)</th>
+                <th class="px-4 py-3 text-left">Cố vấn hiện tại</th>
+                <th class="px-4 py-3 text-left">Phân công cho</th>
+              </tr>
+            </thead>
+            <tbody id="assignTableBody">
+              <tr><td colspan="5" class="text-center text-slate-400 py-10">
+                <span class="material-symbols-outlined msym text-3xl spin">refresh</span>
+                <p class="text-xs mt-1">Đang tải…</p>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CTĐT SECTION ═════════════════════════════════════════════════════ -->
+    <section id="sec-ctdt" class="hidden space-y-4">
+      <!-- Spec selector -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-wrap items-center gap-3">
+        <span class="material-symbols-outlined msym text-indigo-600 text-xl" style="font-variation-settings:'FILL' 1">schema</span>
+        <span class="font-semibold text-sm">Sơ đồ chương trình đào tạo</span>
+        <select id="ctdtAdvSpec" onchange="loadCtdtSection()"
+          class="ml-auto text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300 min-w-[220px]">
+          <option value="">— Chọn chuyên ngành —</option>
+          <option value="7480201_07">Khoa học máy tính (KHMT)</option>
+          <option value="7480201_06">Mạng máy tính &amp; Truyền thông (MMT)</option>
+          <option value="7480201_05">Công nghệ phần mềm (CNPM)</option>
+          <option value="7480201_09">Hệ thống thông tin (HTTT)</option>
+          <option value="7480201_04">Tin học kinh tế (THKT)</option>
+          <option value="7480201_08">CNTT ứng dụng trong doanh nghiệp (CNTTDH)</option>
+        </select>
+      </div>
+      <!-- Legend -->
+      <div id="ctdtAdvLegend" class="hidden flex flex-wrap items-center gap-3 px-1 text-xs text-slate-500">
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#eff6ff;border-left:4px solid #2563eb"></span>Bắt buộc</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#ecfdf5;border-left:4px solid #059669"></span>Tự chọn A</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#fffbeb;border-left:4px solid #d97706"></span>Tự chọn B</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#f5f3ff;border-left:4px solid #312e81"></span>Tự chọn C</span>
+        <span class="text-slate-400 ml-2">Click vào môn để xem quan hệ tiên quyết</span>
+      </div>
+      <!-- Init prompt -->
+      <div id="ctdtAdvInit" class="bg-white rounded-xl border border-slate-200 py-16 text-center text-slate-400">
+        <span class="material-symbols-outlined msym text-4xl mb-2" style="font-variation-settings:'FILL' 1">schema</span>
+        <p class="text-sm">Chọn chuyên ngành để xem sơ đồ CTĐT</p>
+      </div>
+      <!-- Chart container -->
+      <div id="ctdtAdvWrap" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto" data-hscroll="1">
+        <div id="ctdtAdvContainer" class="relative inline-flex gap-4 p-5" style="min-height:420px"></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- ═══ STUDENT DETAIL MODAL ════════════════════════════════════════════════ -->
+<div id="modalStudent" class="hidden fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <h3 class="font-bold text-base" id="modalStudentTitle">Hồ sơ Sinh viên</h3>
+      <button onclick="closeStudentModal()" class="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+        <span class="material-symbols-outlined msym text-xl text-slate-500">close</span>
+      </button>
+    </div>
+    <!-- Tab bar -->
+    <div class="flex border-b border-slate-100">
+      <button id="smTab-progress" onclick="switchStudentModalTab('progress')"
+        class="flex-1 py-2.5 text-xs font-semibold text-indigo-700 border-b-2 border-indigo-600 transition-colors">Tiến độ &amp; Gợi ý</button>
+      <button id="smTab-roadmap" onclick="switchStudentModalTab('roadmap')"
+        class="flex-1 py-2.5 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors">Lộ trình học tập</button>
+      <button id="smTab-career" onclick="switchStudentModalTab('career')"
+        class="flex-1 py-2.5 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors">Định hướng</button>
+    </div>
+    <div class="p-6 space-y-4" id="modalStudentBody">
+      <div class="text-center text-slate-400 py-8">
+        <span class="material-symbols-outlined msym text-4xl spin">refresh</span>
+        <p class="text-sm mt-2">Đang tải…</p>
+      </div>
+    </div>
+    <!-- Notes within modal (only visible in progress tab) -->
+    <div id="smNotesSection" class="px-6 pb-4">
+      <div class="border-t border-slate-100 pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="font-semibold text-sm">Ghi chú tư vấn</p>
+          <button onclick="toggleQuickNote()" class="text-xs text-indigo-600 hover:underline">+ Thêm ghi chú</button>
+        </div>
+        <div id="quickNoteForm" class="hidden mb-3">
+          <textarea autocomplete="off" id="quickNoteContent" rows="2" placeholder="Nội dung ghi chú…"
+            class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none mb-2"></textarea>
+          <div class="flex gap-2 justify-end">
+            <button onclick="toggleQuickNote()" class="text-xs text-slate-500 hover:underline">Hủy</button>
+            <button onclick="createNoteFromModal()"
+              class="pri-grad text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow hover:opacity-90 active:scale-95 transition-all">
+              Lưu
+            </button>
+          </div>
+        </div>
+        <div id="modalNotesList" class="space-y-2 max-h-52 overflow-y-auto"></div>
+      </div>
+    </div>
+    <!-- Roadmap tab content -->
+    <div id="smRoadmapSection" class="hidden px-6 pb-6">
+      <div class="flex items-center justify-end mb-3">
+        <button id="smChatFromRoadmapBtn" onclick="_chatFromRoadmap()"
+          class="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm">
+          <span class="material-symbols-outlined msym text-base">forum</span>Trao đổi về lộ trình này
+        </button>
+      </div>
+      <div id="smRoadmapBody" class="text-center text-slate-400 py-8">
+        <span class="material-symbols-outlined msym text-3xl spin">refresh</span>
+        <p class="text-sm mt-2">Đang tải lộ trình…</p>
+      </div>
+    </div>
+    <!-- Career tab content -->
+    <div id="smCareerSection" class="hidden px-6 pb-6">
+      <div id="smCareerBody" class="text-center text-slate-400 py-8">
+        <span class="material-symbols-outlined msym text-3xl spin">refresh</span>
+        <p class="text-sm mt-2">Đang tải định hướng…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EDIT NOTE MODAL ══════════════════════════════════════════════════════ -->
+<div id="modalEditNote" class="hidden fixed inset-0 z-[9100] flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <h3 class="font-bold text-base">Sửa ghi chú</h3>
+      <button onclick="closeEditNote()" class="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+        <span class="material-symbols-outlined msym text-xl text-slate-500">close</span>
+      </button>
+    </div>
+    <div class="p-6">
+      <textarea autocomplete="off" id="editNoteContent" rows="4" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none mb-4"></textarea>
+      <div class="flex gap-3 justify-end">
+        <button onclick="closeEditNote()" class="text-sm text-slate-500 hover:underline">Hủy</button>
+        <button onclick="saveEditNote()"
+          class="pri-grad text-white text-sm font-bold px-4 py-2 rounded-lg shadow hover:opacity-90 active:scale-95 transition-all">
+          Lưu thay đổi
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const API = '';
+let token = localStorage.getItem('access_token') || '';
+let currentSection = 'overview';
+let allStudents = [];
+let filterStatus = 'all';
+let activeStudentId = null;
+let editingNoteId = null;
+
+// Surface silent JS errors that would otherwise leave the page with empty "—" placeholders
+window.addEventListener('error', (ev) => {
+  console.error('[window.error]', ev.message, ev.filename, ev.lineno, ev.error);
+  try { toast('Lỗi JS: ' + (ev.message || 'unknown'), 'error'); } catch (_) {}
+});
+window.addEventListener('unhandledrejection', (ev) => {
+  console.error('[unhandledrejection]', ev.reason);
+  try { toast('Lỗi không bắt: ' + ((ev.reason && ev.reason.message) || ev.reason || 'unknown'), 'error'); } catch (_) {}
+});
+
+// ── AUTH GUARD ────────────────────────────────────────────────────────────────
+(async function() {
+  if (!token) { location.replace('index.html'); return; }
+  let me;
+  try {
+    const res = await fetch((window.VITE_API_BASE || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://127.0.0.1:8000' : location.origin)) + '/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      if (res.status === 401) localStorage.removeItem('access_token');
+      location.replace('index.html'); return;
+    }
+    me = await res.json();
+  } catch (_) { return; }
+  if (me.role !== 'advisor' && me.role !== 'admin') {
+    location.replace('home.html'); return;
+  }
+  const name = me.full_name || me.username || 'Cố vấn';
+  document.getElementById('sidebarUserName').textContent = name;
+  document.getElementById('avatarCircle').textContent = name[0].toUpperCase();
+  updateTopbarUser(me);
+  initPage(me);
+})();
+
+// ── API HELPER ────────────────────────────────────────────────────────────────
+const API_BASE_URL = (window.VITE_API_BASE
+  || (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+      ? 'http://127.0.0.1:8000'
+      : location.origin));
+
+async function api(path, opts = {}) {
+  // Absolute URL tránh lỗi khi page được mở qua file:// hoặc origin khác
+  const url = path.startsWith('http') ? path : API_BASE_URL + path;
+  const res = await fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...(opts.headers||{}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (res.status === 401) { doLogout(); return null; }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  const colors = { info:'bg-blue-600', success:'bg-green-600', error:'bg-red-600', warn:'bg-yellow-500' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto text-white text-sm px-4 py-3 rounded-xl shadow-lg ${colors[type]||colors.info} flex items-center gap-2 animate-bounce`;
+  el.innerHTML = `<span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+const TITLES = { overview: 'Tổng quan', students: 'Danh sách Sinh viên', notes: 'Ghi chú Tư vấn', messaging: 'Tin nhắn', assign: 'Phân công Sinh viên', ctdt: 'Sơ đồ CTĐT' };
+
+function showSection(name) {
+  currentSection = name;
+  document.querySelectorAll('[data-section]').forEach(b => {
+    const active = b.dataset.section === name;
+    b.classList.toggle('active', active);
+    b.classList.remove('nav-active', 'nav-inactive', 'hover:bg-slate-50');
+  });
+  document.querySelectorAll('[id^="sec-"]').forEach(s => s.classList.add('hidden'));
+  const sec = document.getElementById('sec-' + name);
+  if (sec) sec.classList.remove('hidden');
+  document.getElementById('pageTitle').textContent = TITLES[name] || name;
+  closeSidebar();
+  if (name === 'overview') loadStats();
+  if (name === 'students') loadStudents();
+  if (name === 'notes') loadNotesSection();
+  if (name === 'messaging') advMsgInit();
+  if (name === 'assign') loadAssignSection();
+  if (name === 'ctdt') loadCtdtSection();
+}
+
+// ── SIDEBAR (mobile) ──────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const d = document.getElementById('sidebarDrawer');
+  const o = document.getElementById('sidebarOverlay');
+  d.classList.toggle('-translate-x-full');
+  o.classList.toggle('hidden');
+}
+function closeSidebar() {
+  document.getElementById('sidebarDrawer').classList.add('-translate-x-full');
+  document.getElementById('sidebarOverlay').classList.add('hidden');
+}
+
+// ── LOGOUT ────────────────────────────────────────────────────────────────────
+function doLogout() {
+  localStorage.removeItem('access_token');
+  location.href = 'index.html';
+}
+
+// ── REFRESH ───────────────────────────────────────────────────────────────────
+function refreshAll() {
+  if (currentSection === 'overview') loadStats();
+  if (currentSection === 'students') loadStudents();
+  if (currentSection === 'notes') loadNotesSection();
+  if (currentSection === 'assign') loadAssignSection();
+  if (currentSection === 'ctdt') loadCtdtSection();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OVERVIEW
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadStats() {
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  try {
+    const stats = await api('/advisor/stats');
+    if (!stats) return;
+
+    const isEmpty = (stats.total_students || 0) === 0;
+    document.getElementById('noAssignmentBanner')?.classList.toggle('hidden', !isEmpty);
+    document.getElementById('statsCards')?.classList.toggle('hidden', isEmpty);
+    document.getElementById('statsGpaRow')?.classList.toggle('hidden', isEmpty);
+
+    // Always fill numeric fields with 0 when missing (not "—")
+    setText('statTotal', stats.total_students ?? 0);
+    setText('statHighRisk', stats.high_risk_count ?? 0);
+    setText('statNeedsAttention', stats.needs_attention_count ?? 0);
+    setText('statNormal', stats.normal_count ?? 0);
+    setText('statAvgGpa', stats.avg_gpa4 != null ? Number(stats.avg_gpa4).toFixed(2) : '—');
+    setText('statAvgCompletion', stats.avg_completion_percent != null ? Number(stats.avg_completion_percent).toFixed(1) + '%' : '—');
+
+    if (isEmpty) return;
+
+    const alertBox = document.getElementById('alertHighRisk');
+    if (stats.high_risk_count > 0 && alertBox) {
+      alertBox.classList.remove('hidden');
+      await loadStudentsIfNeeded();
+      const list = document.getElementById('alertHighRiskList');
+      const countBadge = document.getElementById('alertHighRiskCount');
+      const highRiskList = allStudents.filter(s => s.status === 'high_risk');
+      if (countBadge) countBadge.textContent = highRiskList.length;
+      if (list) {
+        list.innerHTML = highRiskList.slice(0, 5).map(s => `
+          <li class="bg-white border border-rose-200 rounded-lg p-3 flex items-start justify-between gap-3 flex-wrap">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-slate-800">${escHtml(s.full_name || s.username)}</p>
+              <p class="text-[11px] text-rose-700 mt-0.5">${escHtml(s.status_reason || '—')}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">MSSV: ${escHtml(s.username)} · TC: ${s.earned_credits ?? '—'} · GPA: ${s.avg_score4 != null ? s.avg_score4.toFixed(2) : '—'}</p>
+            </div>
+            <div class="flex gap-1.5 flex-shrink-0">
+              <button onclick="openStudentModal(${s.id})"
+                class="px-2.5 py-1.5 bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 text-[11px] font-bold rounded-md inline-flex items-center gap-0.5">
+                <span class="material-symbols-outlined msym text-[14px]">person</span>Xem hồ sơ
+              </button>
+              <a href="messaging.html?with=${s.id}&prefill=${encodeURIComponent('Em ơi, thầy/cô thấy tình hình học tập của em đang gặp khó khăn. Mình trao đổi một chút nhé:\n- ')}"
+                class="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold rounded-md inline-flex items-center gap-0.5">
+                <span class="material-symbols-outlined msym text-[14px]">chat</span>Nhắn ngay
+              </a>
+            </div>
+          </li>`).join('');
+        if (highRiskList.length > 5) {
+          list.innerHTML += `<li class="text-center text-xs text-rose-600 mt-1">
+            <button onclick="showSection('students');filterStudents('high_risk')" class="hover:underline font-semibold">Xem tất cả ${highRiskList.length} SV →</button>
+          </li>`;
+        }
+      }
+    } else {
+      alertBox?.classList.add('hidden');
+    }
+  } catch (e) {
+    console.error('[loadStats]', e);
+    toast('Không tải được thống kê: ' + (e.message || 'unknown'), 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STUDENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadStudentsIfNeeded() {
+  if (allStudents.length === 0) await loadStudents(false);
+}
+
+async function loadStudents(render = true) {
+  if (render) {
+    document.getElementById('studentList').innerHTML = `
+      <div class="text-center text-slate-400 py-10">
+        <span class="material-symbols-outlined msym text-4xl spin">refresh</span>
+        <p class="text-sm mt-2">Đang tải…</p>
+      </div>`;
+  }
+  try {
+    allStudents = await api('/advisor/students') || [];
+    populateStudentSelects();
+    if (render) renderStudents();
+  } catch(e) {
+    if (render) document.getElementById('studentList').innerHTML = `<p class="text-center text-red-500 py-6">${escHtml(e.message)}</p>`;
+  }
+}
+
+function populateStudentSelects() {
+  const opts = allStudents.map(s => `<option value="${s.id}">${escHtml(s.full_name || s.username)} (${escHtml(s.username)})</option>`).join('');
+  document.getElementById('noteStudentSel').innerHTML = '<option value="">— Chọn sinh viên —</option>' + opts;
+  document.getElementById('noteFilterStudent').innerHTML = '<option value="">— Lọc ghi chú theo sinh viên —</option>' + opts;
+}
+
+function setFilter(f) {
+  filterStatus = f;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('bg-indigo-50', b.dataset.filter === f);
+    b.classList.toggle('bg-white', b.dataset.filter !== f);
+    b.classList.toggle('font-bold', b.dataset.filter === f);
+  });
+  renderStudents();
+}
+
+function filterStudents() { renderStudents(); }
+
+function renderStudents() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const filtered = allStudents.filter(s => {
+    if (filterStatus !== 'all' && s.status !== filterStatus) return false;
+    if (q && !((s.full_name||'').toLowerCase().includes(q)) && !((s.username||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+
+  const container = document.getElementById('studentList');
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="text-center text-slate-400 py-10 bg-white rounded-2xl border border-slate-100">
+      <span class="material-symbols-outlined msym text-4xl">person_off</span>
+      <p class="text-sm mt-2">Không có sinh viên phù hợp</p>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(s => {
+    const st = s.status || 'normal';
+    const labels = { high_risk: 'Nguy cơ cao', needs_attention: 'Cần chú ý', normal: 'Bình thường' };
+    const icons  = { high_risk: 'warning', needs_attention: 'priority_high', normal: 'check_circle' };
+    const credits = s.earned_credits != null ? s.earned_credits + ' TC' : '—';
+    const gpa = (s.avg_score4 != null && s.avg_score4 > 0) ? s.avg_score4.toFixed(2) : '—';
+    const gpaTitle = gpa === '—' ? ' title="Chưa có dữ liệu điểm"' : '';
+    return `
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer"
+         onclick="openStudentModal(${s.id})">
+      <div class="w-10 h-10 pri-grad rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+        ${escHtml((s.full_name || s.username || '?')[0]).toUpperCase()}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <p class="font-semibold text-sm truncate">${escHtml(s.full_name || s.username)}</p>
+          <span class="chip-${st} text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5">
+            <span class="material-symbols-outlined msym text-xs" style="font-variation-settings:'FILL' 1">${icons[st]}</span>
+            ${labels[st]}
+          </span>
+        </div>
+        <p class="text-xs text-slate-400 mt-0.5">MSSV: ${escHtml(s.username)} · ${escHtml(s.specialization || 'Chưa chọn CN')}</p>
+        ${s.status_reason ? `<p class="text-xs text-slate-500 mt-0.5 italic">${escHtml(s.status_reason)}</p>` : ''}
+        ${(s.flags && s.flags.length) ? `<div class="flex flex-wrap gap-1 mt-1">${s.flags.map(f => {
+          const sevCls = f.severity === 'urgent'
+            ? 'bg-rose-50 text-rose-700 border-rose-200'
+            : (f.severity === 'warning' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-700 border-slate-200');
+          const ico = f.code === 'extended_duration' ? 'schedule' : (f.code === 'low_pace' ? 'speed' : 'flag');
+          return `<span class="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${sevCls}" title="${escHtml(f.code)}">
+            <span class="material-symbols-outlined msym text-[12px]">${ico}</span>${escHtml(f.label)}
+          </span>`;
+        }).join('')}</div>` : ''}
+      </div>
+      <div class="text-right flex-shrink-0 hidden sm:block">
+        <p class="text-sm font-bold text-indigo-700">${credits}</p>
+        <p class="text-xs text-slate-400"${gpaTitle}>GPA ${gpa}</p>
+      </div>
+      <span class="material-symbols-outlined msym text-slate-300 flex-shrink-0">chevron_right</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STUDENT MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function switchStudentModalTab(tab) {
+  const tabs = ['progress', 'roadmap', 'career'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`smTab-${t}`);
+    if (!btn) return;
+    const active = t === tab;
+    btn.className = `flex-1 py-2.5 text-xs font-semibold border-b-2 transition-colors ${active ? 'text-indigo-700 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`;
+  });
+  document.getElementById('modalStudentBody').classList.toggle('hidden', tab !== 'progress');
+  document.getElementById('smNotesSection').classList.toggle('hidden', tab !== 'progress');
+  document.getElementById('smRoadmapSection').classList.toggle('hidden', tab !== 'roadmap');
+  document.getElementById('smCareerSection').classList.toggle('hidden', tab !== 'career');
+  if (tab === 'roadmap' && activeStudentId) loadStudentRoadmap(activeStudentId);
+  if (tab === 'career' && activeStudentId) loadStudentCareer(activeStudentId);
+}
+
+async function loadStudentCareer(sid) {
+  const body = document.getElementById('smCareerBody');
+  if (!body) return;
+  body.innerHTML = `<div class="text-center text-slate-400 py-8"><span class="material-symbols-outlined msym text-3xl spin">refresh</span><p class="text-sm mt-2">Đang tải...</p></div>`;
+  try {
+    const data = await api(`/advisor/students/${sid}/career`);
+    if (!data || !data.chosen) {
+      body.innerHTML = `<div class="text-center text-slate-400 py-8">
+        <span class="material-symbols-outlined msym text-3xl">rocket_launch</span>
+        <p class="text-sm mt-2">Sinh viên chưa chọn định hướng nào.</p>
+        <p class="text-xs text-slate-400 mt-1">Bạn có thể khuyên SV xem tab "Định hướng" trong trang chính.</p>
+      </div>`;
+      return;
+    }
+    const p = data.primary || {};
+    const prog = p.progress || { completed:0, total:0, percent:0 };
+    const skills = p.skills || [];
+    const byType = {};
+    for (const s of skills) (byType[s.skill_type] = byType[s.skill_type] || []).push(s);
+    const typeLabels = { language:'Ngôn ngữ', framework:'Framework', tool:'Công cụ', certification:'Chứng chỉ', course:'Khóa học', skill:'Kỹ năng', soft:'Kỹ năng mềm' };
+    const statusIcons = { planned:'radio_button_unchecked', in_progress:'hourglass_top', completed:'check_circle' };
+    const statusColors = { planned:'text-slate-300', in_progress:'text-amber-500', completed:'text-emerald-500' };
+
+    const skillSections = Object.entries(byType).map(([type, items]) => {
+      return `<div class="mb-3">
+        <p class="text-[11px] font-bold text-slate-500 uppercase mb-1">${escHtml(typeLabels[type]||type)}</p>
+        <div class="space-y-1.5 text-xs">
+          ${items.map(s => `<div class="flex items-center gap-2">
+            <span class="material-symbols-outlined msym text-base ${statusColors[s.user_status||'planned']}" style="font-variation-settings:'FILL' ${s.user_status==='completed'?1:0}">${statusIcons[s.user_status||'planned']}</span>
+            <span class="${s.user_status==='completed'?'line-through text-slate-400':'text-slate-700'}">${escHtml(s.skill_name)}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    body.innerHTML = `
+      <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-4 text-white mb-4">
+        <p class="text-[10px] uppercase tracking-wider text-indigo-100">Định hướng chính</p>
+        <h3 class="text-lg font-bold mt-1">${escHtml(p.name||'')}</h3>
+        <p class="text-xs text-indigo-100 mt-1">${escHtml(p.short_description||'')}</p>
+        <div class="mt-3 flex items-center gap-3">
+          <div class="flex-1">
+            <div class="flex items-center justify-between text-[10px] mb-1">
+              <span>Tiến độ: ${prog.completed} / ${prog.total}</span>
+              <span class="font-bold">${prog.percent}%</span>
+            </div>
+            <div class="h-1.5 bg-white/20 rounded-full overflow-hidden">
+              <div class="h-full bg-white rounded-full" style="width:${prog.percent}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      ${data.secondary ? `<div class="text-xs text-slate-500 mb-3">Hướng phụ: <span class="font-semibold text-slate-700">${escHtml(data.secondary.name)}</span></div>` : ''}
+      ${skillSections}
+    `;
+  } catch(e) {
+    body.innerHTML = `<p class="text-sm text-red-500 py-4">${escHtml(e.message||'Lỗi')}</p>`;
+  }
+}
+
+let _lastRoadmapData = null;
+
+async function loadStudentRoadmap(sid) {
+  const body = document.getElementById('smRoadmapBody');
+  if (!body) return;
+  body.innerHTML = `<div class="text-center text-slate-400 py-8"><span class="material-symbols-outlined msym text-3xl spin">refresh</span><p class="text-sm mt-2">Đang tải lộ trình…</p></div>`;
+  try {
+    const data = await api(`/advisor/students/${sid}/roadmap`);
+    _lastRoadmapData = data;
+    const rm = data?.roadmap || {};
+    const completed = rm.completed_semesters || [];
+    const planned   = rm.semesters || [];
+    if (!completed.length && !planned.length) {
+      body.innerHTML = '<p class="text-sm text-slate-400 italic py-4">Chưa có dữ liệu lộ trình — sinh viên cần tải lên bảng điểm trước.</p>';
+      return;
+    }
+    const _truncName = (s, n = 22) => {
+      s = s || '';
+      return s.length > n ? s.slice(0, n - 1) + '…' : s;
+    };
+    const renderRow = (sem, isPast) => {
+      const label = sem.semester_label || `Học kỳ ${sem.semester_number}`;
+      const courses = (sem.courses || []).map(c => {
+        const isElective = c.category === 'elective_slot' || (c.course_code || '').startsWith('__ELECTIVE');
+        const cls = isPast
+          ? (c.passed === false ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+          : (isElective ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200');
+        const fullName = c.course_name || c.course_code || '';
+        const shortName = _truncName(fullName, 22);
+        const codeBadge = isElective ? '' : `<span class="text-[9px] font-mono opacity-60">${escHtml(c.course_code)}</span>`;
+        const tooltip = escHtml(`${c.course_code}${c.course_name ? ' · ' + c.course_name : ''}${c.credits ? ' · ' + c.credits + 'TC' : ''}`);
+        if (isElective) {
+          return `<span title="${tooltip}" class="inline-flex items-center text-[11px] px-2 py-0.5 rounded-md border ${cls}">${escHtml(shortName)}</span>`;
+        }
+        const hasNote = _notesForCourse(c.course_code).length > 0;
+        const noteIcon = hasNote ? '💬' : '<span class="material-symbols-outlined" style="font-size:10px;vertical-align:middle">add_comment</span>';
+        return `<span title="${tooltip}" class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border ${cls}">
+          <span class="font-medium">${escHtml(shortName)}</span>
+          ${codeBadge}
+          <button onclick="event.stopPropagation();openCourseNote(${sid},${JSON.stringify(c.course_code)},${JSON.stringify(c.course_name||c.course_code)})"
+            class="opacity-50 hover:opacity-100 ml-0.5 leading-none">${noteIcon}</button>
+        </span>`;
+      }).join(' ');
+      return `<div class="flex items-start gap-3 pb-2 border-b border-slate-50 last:border-0">
+        <div class="w-28 flex-shrink-0 text-[11px] font-bold ${isPast ? 'text-slate-400' : 'text-indigo-600'} pt-0.5">${escHtml(label)}</div>
+        <div class="flex-1 flex flex-wrap gap-1.5">${courses || '<span class="text-slate-300 text-xs italic">Không có môn</span>'}</div>
+        <div class="text-[11px] text-slate-400 flex-shrink-0 pt-0.5">${sem.total_credits ?? ''}TC</div>
+      </div>`;
+    };
+    const parts = [];
+    if (completed.length) parts.push(`<p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Đã hoàn thành</p><div class="space-y-2 mb-4">${completed.map(s => renderRow(s, true)).join('')}</div>`);
+
+    // Custom roadmap do SV tự chỉnh
+    const custom = data?.custom_roadmap || {};
+    if (custom.saved && (custom.semesters || []).length) {
+      const updated = custom.updated_at
+        ? new Date(custom.updated_at).toLocaleString('vi-VN')
+        : '—';
+      const customRows = (custom.semesters || []).map(sem => {
+        const chips = (sem.courses || []).map(c => {
+          const fullName = c.course_name || c.course_code || '';
+          const shortName = _truncName(fullName, 22);
+          const tooltip = escHtml(`${c.course_code}${c.course_name ? ' · ' + c.course_name : ''}${c.credits ? ' · ' + c.credits + 'TC' : ''}`);
+          const hasNote = _notesForCourse(c.course_code).length > 0;
+          const noteIcon = hasNote ? '💬' : '<span class="material-symbols-outlined" style="font-size:10px;vertical-align:middle">add_comment</span>';
+          return `<span title="${tooltip}" class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border bg-purple-50 text-purple-700 border-purple-200">
+            <span class="font-medium">${escHtml(shortName)}</span>
+            <span class="text-[9px] font-mono opacity-60">${escHtml(c.course_code)}</span>
+            <button onclick="event.stopPropagation();openCourseNote(${sid},${JSON.stringify(c.course_code)},${JSON.stringify(c.course_name||c.course_code)})"
+              class="opacity-50 hover:opacity-100 ml-0.5 leading-none">${noteIcon}</button>
+          </span>`;
+        }).join(' ');
+        return `<div class="flex items-start gap-3 pb-2 border-b border-purple-50 last:border-0">
+          <div class="w-28 flex-shrink-0 text-[11px] font-bold text-purple-600 pt-0.5">${escHtml(sem.semester_label || '')}</div>
+          <div class="flex-1 flex flex-wrap gap-1.5">${chips || '<span class="text-slate-300 text-xs italic">Không có môn</span>'}</div>
+        </div>`;
+      }).join('');
+      parts.push(`<div class="mt-4 mb-4 bg-purple-50/40 border border-purple-100 rounded-xl p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="material-symbols-outlined msym text-base text-purple-600">edit_note</span>
+          <p class="text-[11px] font-bold text-purple-700 uppercase tracking-wider">Lộ trình SV tự cập nhật</p>
+          <span class="text-[10px] text-slate-400">· cập nhật ${updated}</span>
+        </div>
+        <div class="space-y-2">${customRows}</div>
+      </div>`);
+    }
+
+    if (planned.length) parts.push(`<p class="text-[11px] font-bold text-indigo-500 uppercase tracking-wider mb-2">Kế hoạch tự động (engine)</p><div class="space-y-2">${planned.map(s => renderRow(s, false)).join('')}</div>`);
+    body.innerHTML = parts.join('');
+  } catch(e) {
+    body.innerHTML = `<p class="text-sm text-red-500 py-4">${escHtml(e.message)}</p>`;
+  }
+}
+
+function _chatFromRoadmap() {
+  if (!activeStudentId) {
+    if (typeof showToast === 'function') showToast('Chưa có sinh viên đang xem', 'warning');
+    return;
+  }
+  // Build prefill message from roadmap context
+  const data = _lastRoadmapData || {};
+  const rm = data.roadmap || {};
+  const custom = data.custom_roadmap || {};
+  const planned = (rm.semesters || []).length;
+  const customCount = (custom.semesters || []).length;
+  const updatedAt = custom.updated_at ? new Date(custom.updated_at).toLocaleDateString('vi-VN') : '';
+  const ctx = customCount > 0
+    ? `lộ trình em tự sắp xếp (${customCount} kỳ${updatedAt ? ', cập nhật ' + updatedAt : ''})`
+    : `kế hoạch học (${planned} kỳ còn lại theo lộ trình mặc định)`;
+  const prefill = `Thầy/Cô đã xem ${ctx}. Mình trao đổi một chút về kế hoạch nhé:\n- `;
+  const url = `messaging.html?with=${activeStudentId}&prefill=${encodeURIComponent(prefill)}`;
+  window.location.href = url;
+}
+
+async function openStudentModal(sid) {
+  activeStudentId = sid;
+  const s = allStudents.find(x => x.id === sid);
+  document.getElementById('modalStudentTitle').textContent = s ? (s.full_name || s.username) : 'Hồ sơ Sinh viên';
+  document.getElementById('modalStudentBody').innerHTML = `<div class="text-center text-slate-400 py-8">
+    <span class="material-symbols-outlined msym text-4xl spin">refresh</span><p class="text-sm mt-2">Đang tải…</p></div>`;
+  document.getElementById('modalNotesList').innerHTML = '';
+  document.getElementById('smRoadmapBody').innerHTML = '';
+  document.getElementById('modalStudent').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  // Always start on progress tab
+  switchStudentModalTab('progress');
+
+  try {
+    const [prog, notes, rec] = await Promise.all([
+      api(`/advisor/students/${sid}`),
+      api(`/advisor/notes/${sid}`),
+      api(`/advisor/students/${sid}/recommendations`),
+    ]);
+    renderStudentModal(prog, rec);
+    renderModalNotes(notes || []);
+  } catch(e) {
+    document.getElementById('modalStudentBody').innerHTML = `<p class="text-red-500 text-sm">${escHtml(e.message)}</p>`;
+  }
+}
+
+function renderStudentModal(prog, rec) {
+  if (!prog) { document.getElementById('modalStudentBody').innerHTML = '<p class="text-slate-400 text-sm">Không có dữ liệu.</p>'; return; }
+  const pct = prog.completion_percent != null ? prog.completion_percent.toFixed(1) : 0;
+  const gpa4 = (prog.avg_score4 != null && prog.avg_score4 > 0) ? prog.avg_score4.toFixed(2) : '—';
+  const gpa10 = (prog.avg_score10 != null && prog.avg_score10 > 0) ? prog.avg_score10.toFixed(2) : '—';
+  const earned = prog.earned_credits ?? 0;
+  const threshold = prog.graduation_threshold ?? 153;
+  const terms = prog.terms_studied ?? 0;
+  const estRem = prog.estimated_terms_remaining ?? '—';
+
+  let topRecs = [];
+  if (rec && rec.recommendations) topRecs = rec.recommendations.slice(0, 4);
+
+  document.getElementById('modalStudentBody').innerHTML = `
+    <!-- Progress bar -->
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-xs text-slate-500 uppercase tracking-wide">Tiến độ tích lũy</span>
+        <span class="text-sm font-bold text-indigo-700">${pct}%</span>
+      </div>
+      <div class="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div class="h-full pri-grad rounded-full transition-all duration-700" style="width:${pct}%"></div>
+      </div>
+      <p class="text-xs text-slate-400 mt-1">${earned} / ${threshold} TC đã tích lũy</p>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+      <div class="bg-slate-50 rounded-xl p-3">
+        <p class="text-lg font-extrabold text-indigo-700"${gpa4 === '—' ? ' title="Chưa có dữ liệu điểm"' : ''}>${gpa4}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">GPA (hệ 4)</p>
+      </div>
+      <div class="bg-slate-50 rounded-xl p-3">
+        <p class="text-lg font-extrabold text-indigo-700"${gpa10 === '—' ? ' title="Chưa có dữ liệu điểm"' : ''}>${gpa10}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">Điểm TB (10)</p>
+      </div>
+      <div class="bg-slate-50 rounded-xl p-3">
+        <p class="text-lg font-extrabold text-indigo-700">${terms}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">Học kỳ đã qua</p>
+      </div>
+      <div class="bg-slate-50 rounded-xl p-3">
+        <p class="text-lg font-extrabold text-indigo-700">${estRem}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">HK còn lại (ước)</p>
+      </div>
+    </div>
+
+    ${prog.graduation_ready ? `
+    <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
+      <span class="material-symbols-outlined msym text-lg" style="font-variation-settings:'FILL' 1">verified</span>
+      Đủ điều kiện tốt nghiệp
+    </div>` : ''}
+    ${prog.internship_eligible ? `
+    <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-sm text-indigo-700">
+      <span class="material-symbols-outlined msym text-lg" style="font-variation-settings:'FILL' 1">work</span>
+      Đủ điều kiện thực tập
+    </div>` : ''}
+
+    ${topRecs.length ? `
+    <div>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Gợi ý môn học kỳ tới</p>
+      <div class="space-y-2">
+        ${topRecs.map(r => `
+        <div class="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+          <div class="w-7 h-7 pri-grad rounded-lg flex items-center justify-center text-white flex-shrink-0">
+            <span class="material-symbols-outlined msym text-sm" style="font-variation-settings:'FILL' 1">auto_stories</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold truncate">${escHtml(r.course_name || r.course_code)}</p>
+            <p class="text-[11px] text-slate-400">${r.credits} TC · ${escHtml(r.reasons?.[0] || '')}</p>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+}
+
+function renderModalNotes(notes) {
+  _activeStudentNotes = notes || [];
+  const container = document.getElementById('modalNotesList');
+  if (!notes.length) {
+    container.innerHTML = '<p class="text-xs text-slate-400 italic">Chưa có ghi chú nào.</p>';
+    return;
+  }
+  container.innerHTML = notes.map(n => `
+    <div class="bg-slate-50 rounded-xl p-3 text-sm" id="note-${n.id}">
+      <div class="flex items-start justify-between gap-2">
+        <p class="text-slate-700 leading-relaxed flex-1">${escHtml(n.content)}</p>
+        <button onclick="openEditNote(${n.id}, \`${escJs(n.content)}\`)"
+          class="flex-shrink-0 p-1 rounded hover:bg-slate-200 transition-colors">
+          <span class="material-symbols-outlined msym text-sm text-slate-400">edit</span>
+        </button>
+      </div>
+      <p class="text-[10px] text-slate-400 mt-1.5">${fmtDate(n.created_at)}</p>
+    </div>`).join('');
+}
+
+function closeStudentModal() {
+  document.getElementById('modalStudent').classList.add('hidden');
+  document.body.style.overflow = '';
+  activeStudentId = null;
+  _activeStudentNotes = [];
+}
+
+function toggleQuickNote() {
+  document.getElementById('quickNoteForm').classList.toggle('hidden');
+  document.getElementById('quickNoteContent').value = '';
+}
+
+async function createNoteFromModal() {
+  const content = document.getElementById('quickNoteContent').value.trim();
+  if (!content) { toast('Nội dung không được trống', 'warn'); return; }
+  try {
+    await api('/advisor/notes', { method: 'POST', body: { student_id: activeStudentId, content } });
+    toast('Đã lưu ghi chú', 'success');
+    toggleQuickNote();
+    const notes = await api(`/advisor/notes/${activeStudentId}`);
+    renderModalNotes(notes || []);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NOTES SECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadNotesSection() {
+  await loadStudentsIfNeeded();
+}
+
+async function loadNotesForStudent() {
+  const sid = document.getElementById('noteFilterStudent').value;
+  const container = document.getElementById('notesList');
+  if (!sid) { container.innerHTML = ''; return; }
+  container.innerHTML = `<div class="text-center text-slate-400 py-6">
+    <span class="material-symbols-outlined msym text-3xl spin">refresh</span></div>`;
+  try {
+    const notes = await api(`/advisor/notes/${sid}`) || [];
+    if (!notes.length) {
+      container.innerHTML = '<p class="text-sm text-slate-400 text-center py-6 bg-white rounded-2xl border border-slate-100">Chưa có ghi chú nào cho sinh viên này.</p>';
+      return;
+    }
+    container.innerHTML = notes.map(n => `
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4" id="note-list-${n.id}">
+        <div class="flex items-start justify-between gap-3">
+          <p class="text-sm text-slate-700 leading-relaxed flex-1">${escHtml(n.content)}</p>
+          <button onclick="openEditNote(${n.id}, \`${escJs(n.content)}\`)"
+            class="flex-shrink-0 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+            <span class="material-symbols-outlined msym text-base text-slate-400">edit</span>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">${fmtDate(n.created_at)}</p>
+      </div>`).join('');
+  } catch(e) { container.innerHTML = `<p class="text-red-500 text-sm text-center py-4">${escHtml(e.message)}</p>`; }
+}
+
+async function createNote() {
+  const sid = parseInt(document.getElementById('noteStudentSel').value);
+  const content = document.getElementById('noteContent').value.trim();
+  if (!sid) { toast('Vui lòng chọn sinh viên', 'warn'); return; }
+  if (!content) { toast('Nội dung không được trống', 'warn'); return; }
+  try {
+    await api('/advisor/notes', { method: 'POST', body: { student_id: sid, content } });
+    document.getElementById('noteContent').value = '';
+    toast('Đã lưu ghi chú', 'success');
+    // Refresh filter if same student
+    if (document.getElementById('noteFilterStudent').value == sid) loadNotesForStudent();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EDIT NOTE MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function openEditNote(noteId, content) {
+  editingNoteId = noteId;
+  document.getElementById('editNoteContent').value = content;
+  document.getElementById('modalEditNote').classList.remove('hidden');
+}
+
+function closeEditNote() {
+  document.getElementById('modalEditNote').classList.add('hidden');
+  editingNoteId = null;
+}
+
+async function saveEditNote() {
+  const content = document.getElementById('editNoteContent').value.trim();
+  if (!content) { toast('Nội dung không được trống', 'warn'); return; }
+  try {
+    await api(`/advisor/notes/${editingNoteId}`, { method: 'PUT', body: { content } });
+    toast('Đã cập nhật ghi chú', 'success');
+    closeEditNote();
+    // Refresh notes in modal or notes section
+    if (activeStudentId) {
+      const notes = await api(`/advisor/notes/${activeStudentId}`);
+      renderModalNotes(notes || []);
+    }
+    const sid = document.getElementById('noteFilterStudent').value;
+    if (sid) loadNotesForStudent();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════════════
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escJs(str) {
+  return String(str||'').replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$');
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' })
+    + ' ' + d.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function initPage(me) {
+  advMsgMyId = me.id ?? null;
+  if (me.is_head_of_department) {
+    document.getElementById('navAssignBtn').classList.remove('hidden');
+  }
+  loadStats();
+  loadStudents(false);
+  loadNotifications();
+  setInterval(() => { if (document.visibilityState === 'visible') loadNotifications(); }, 60000);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ASSIGN SECTION (trưởng bộ môn)
+// ═══════════════════════════════════════════════════════════════════════════════
+let deptAdvisors = [];
+let deptStudents = [];
+
+async function loadAssignSection() {
+  const tbody = document.getElementById('assignTableBody');
+  const chipsEl = document.getElementById('deptAdvisorChips');
+  tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-400 py-10">
+    <span class="material-symbols-outlined msym text-3xl spin">refresh</span>
+    <p class="text-xs mt-1">Đang tải…</p>
+  </td></tr>`;
+  chipsEl.innerHTML = '';
+  try {
+    [deptStudents, deptAdvisors] = await Promise.all([
+      api('/advisor/my-department-students'),
+      api('/advisor/my-department-advisors'),
+    ]);
+    renderAssignSection();
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-6 text-sm">${escHtml(e.message)}</td></tr>`;
+  }
+}
+
+function renderAssignSection() {
+  const chipsEl = document.getElementById('deptAdvisorChips');
+  const tbody = document.getElementById('assignTableBody');
+
+  // Advisor chips (legend)
+  chipsEl.innerHTML = deptAdvisors.map(a => {
+    const badge = a.is_head_of_department
+      ? '<span class="ml-1 text-[9px] bg-amber-100 text-amber-700 px-1 rounded">Trưởng BM</span>' : '';
+    return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+      <span class="material-symbols-outlined msym text-sm">person</span>
+      ${escHtml(a.full_name || a.username)}${badge}
+      <span class="text-blue-400">(${a.student_count} SV)</span>
+    </span>`;
+  }).join('');
+  if (!deptAdvisors.length) chipsEl.innerHTML = '<p class="text-xs text-slate-400 italic">Bộ môn chưa có cố vấn nào.</p>';
+
+  if (!deptStudents.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-400 py-10 text-sm">Bộ môn chưa có sinh viên nào.</td></tr>`;
+    return;
+  }
+
+  const advOpts = deptAdvisors.map(a =>
+    `<option value="${a.id}">${escHtml(a.full_name || a.username)}${a.is_head_of_department ? ' ★' : ''}</option>`
+  ).join('');
+
+  tbody.innerHTML = deptStudents.map(sv => {
+    const credits = sv.earned_credits != null ? sv.earned_credits.toFixed(1) : '—';
+    const gpa = sv.avg_score4 != null ? sv.avg_score4.toFixed(2) : '—';
+    const curAdv = sv.current_advisor_name ? escHtml(sv.current_advisor_name) : '<span class="text-slate-400 italic">Chưa có</span>';
+    const sel = `<select autocomplete="off" onchange="reassignAdvisor(${sv.id}, this.value, this)"
+        class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white w-full max-w-[180px]">
+      <option value="">— Chọn —</option>${advOpts}
+    </select>`;
+    return `<tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors" id="assignRow_${sv.id}">
+      <td class="px-4 py-3">
+        <p class="font-medium text-slate-800">${escHtml(sv.full_name || sv.username)}</p>
+        <p class="text-xs text-slate-400">${escHtml(sv.username)}</p>
+      </td>
+      <td class="px-4 py-3 text-slate-600">${credits}</td>
+      <td class="px-4 py-3 text-slate-600">${gpa}</td>
+      <td class="px-4 py-3" id="curAdv_${sv.id}">${curAdv}</td>
+      <td class="px-4 py-3">${sel}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function reassignAdvisor(studentId, newAdvisorId, selectEl) {
+  if (!newAdvisorId) return;
+  selectEl.disabled = true;
+  try {
+    await api(`/advisor/students/${studentId}/reassign-advisor`, {
+      method: 'POST',
+      body: { new_advisor_id: parseInt(newAdvisorId) },
+    });
+    const adv = deptAdvisors.find(a => a.id === parseInt(newAdvisorId));
+    const advName = adv ? (adv.full_name || adv.username) : '—';
+    document.getElementById(`curAdv_${studentId}`).textContent = advName;
+    // Update local student data
+    const sv = deptStudents.find(s => s.id === studentId);
+    if (sv) { sv.current_advisor_id = parseInt(newAdvisorId); sv.current_advisor_name = advName; }
+    // Refresh advisor chips (student_count changed)
+    deptAdvisors = await api('/advisor/my-department-advisors') || deptAdvisors;
+    renderAdvChips();
+    toast(`Đã phân công cho cố vấn ${advName}`, 'success');
+  } catch(e) {
+    toast('Lỗi: ' + e.message, 'error');
+  } finally {
+    selectEl.value = '';
+    selectEl.disabled = false;
+  }
+}
+
+function renderAdvChips() {
+  const chipsEl = document.getElementById('deptAdvisorChips');
+  chipsEl.innerHTML = deptAdvisors.map(a => {
+    const badge = a.is_head_of_department
+      ? '<span class="ml-1 text-[9px] bg-amber-100 text-amber-700 px-1 rounded">Trưởng BM</span>' : '';
+    return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+      <span class="material-symbols-outlined msym text-sm">person</span>
+      ${escHtml(a.full_name || a.username)}${badge}
+      <span class="text-blue-400">(${a.student_count} SV)</span>
+    </span>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MESSAGING (advMsg*)
+// ═══════════════════════════════════════════════════════════════════════════════
+let advMsgActiveUid = null;
+let advMsgActiveName = '';
+let advMsgPollTimer = null;
+let advMsgMyId = null;
+
+async function advMsgInit() {
+  if (!advMsgMyId) {
+    try { const me = await api('/auth/me'); advMsgMyId = me?.id ?? null; } catch(_) {}
+  }
+  advMsgLoadInbox();
+  document.getElementById('advMsgInput').removeEventListener('keydown', advMsgHandleKey);
+  document.getElementById('advMsgInput').addEventListener('keydown', advMsgHandleKey);
+}
+
+async function advMsgLoadInbox() {
+  const box = document.getElementById('advMsgInboxList');
+  box.innerHTML = '<p class="text-xs text-slate-400 px-3 py-4 text-center">Đang tải...</p>';
+  try {
+    const data = await api('/messages/direct/conversations');
+    const convMap = {};
+    (data.conversations || []).forEach(c => { convMap[c.user.id] = c; });
+
+    // Pre-populate with assigned students and admin (even if no messages yet)
+    const [studentsData, connectionsData] = await Promise.allSettled([
+      api('/advisor/students'),
+      api('/connections').catch(() => ({ connections: [] }))
+    ]);
+    const preUsers = [];
+    if (studentsData.status === 'fulfilled') {
+      const sList = Array.isArray(studentsData.value) ? studentsData.value : (studentsData.value.students || []);
+      sList.forEach(s => {
+        if (!convMap[s.id]) preUsers.push({ id: s.id, username: s.username, full_name: s.full_name, role: 'student' });
+      });
+    }
+    // Find admins from connections
+    if (connectionsData.status === 'fulfilled') {
+      (connectionsData.value.connections || []).forEach(c => {
+        const u = c.user || c;
+        if (u.role === 'admin' && !convMap[u.id]) preUsers.push(u);
+      });
+    }
+
+    const convList = [...Object.values(convMap)];
+    const convIds = new Set(convList.map(c => c.user.id));
+    preUsers.forEach(u => {
+      if (!convIds.has(u.id)) convList.push({ user: u, last_message_at: null, last_message_preview: null, unread_count: 0 });
+    });
+
+    advMsgRenderInbox(convList);
+
+    // Update badge
+    const totalUnread = convList.reduce((s, c) => s + (c.unread_count || 0), 0);
+    const badge = document.getElementById('advMsgBadge');
+    if (badge) {
+      badge.textContent = totalUnread;
+      badge.classList.toggle('hidden', totalUnread === 0);
+    }
+  } catch(e) {
+    box.innerHTML = `<p class="text-xs text-red-400 px-3 py-4 text-center">${escHtml(e.message)}</p>`;
+  }
+}
+
+function advMsgRenderInbox(list) {
+  const box = document.getElementById('advMsgInboxList');
+  if (!list.length) {
+    box.innerHTML = '<p class="text-xs text-slate-400 px-3 py-6 text-center">Chưa có hội thoại</p>';
+    return;
+  }
+  box.innerHTML = list.map(c => {
+    const u = c.user;
+    const initials = (u.full_name || u.username || '?').charAt(0).toUpperCase();
+    const roleColor = u.role === 'admin' ? 'bg-purple-600' : u.role === 'advisor' ? 'bg-blue-600' : 'bg-emerald-600';
+    const preview = c.last_message_preview ? escHtml(c.last_message_preview.substring(0, 40)) + (c.last_message_preview.length > 40 ? '…' : '') : '<span class="italic text-slate-500">Chưa có tin nhắn</span>';
+    const unread = c.unread_count > 0 ? `<span class="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center flex-shrink-0">${c.unread_count}</span>` : '';
+    const active = advMsgActiveUid === u.id ? 'bg-blue-900/40 border-l-2 border-blue-500' : 'hover:bg-slate-700/50';
+    const roleBadge = u.role === 'admin' ? '<span class="text-[9px] bg-purple-700 text-purple-200 px-1 rounded">Admin</span>' : u.role === 'advisor' ? '<span class="text-[9px] bg-blue-700 text-blue-200 px-1 rounded">Cố vấn</span>' : '';
+    return `<div class="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-all ${active}" onclick="advMsgOpenConv(${u.id}, '${escJs(u.full_name || u.username)}')">
+      <div class="w-8 h-8 rounded-full ${roleColor} flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${initials}</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5">
+          <p class="text-sm font-semibold text-white truncate">${escHtml(u.full_name || u.username)}</p>
+          ${roleBadge}
+        </div>
+        <p class="text-xs text-slate-400 truncate">${preview}</p>
+      </div>
+      ${unread}
+    </div>`;
+  }).join('');
+}
+
+async function advMsgOpenConv(uid, name) {
+  advMsgActiveUid = uid;
+  advMsgActiveName = name;
+  document.getElementById('advMsgName').textContent = name;
+  const pane = document.getElementById('advMsgChatPane');
+  pane.classList.remove('hidden');
+  pane.classList.add('flex');
+  document.getElementById('advMsgEmpty').classList.add('hidden');
+  // Re-render inbox to update active highlight
+  await advMsgLoadInbox();
+  await advMsgLoadMessages();
+  clearInterval(advMsgPollTimer);
+  advMsgPollTimer = setInterval(advMsgPoll, 4000);
+  document.getElementById('advMsgInput').focus();
+}
+
+async function advMsgLoadMessages() {
+  if (!advMsgActiveUid) return;
+  const box = document.getElementById('advMsgMessages');
+  try {
+    const data = await api(`/messages/direct/${advMsgActiveUid}`);
+    advMsgRenderMessages(data.messages || []);
+    // Mark as read
+    await api(`/messages/direct/read-all/${advMsgActiveUid}`, { method: 'PATCH' }).catch(() => {});
+    // Update inbox badge
+    advMsgLoadInbox();
+  } catch(e) {
+    box.innerHTML = `<p class="text-xs text-red-400 text-center py-4">${escHtml(e.message)}</p>`;
+  }
+}
+
+function advMsgRenderMessages(messages) {
+  const box = document.getElementById('advMsgMessages');
+  const myId = advMsgMyId;
+  if (!messages.length) {
+    box.innerHTML = '<p class="text-xs text-slate-400 text-center py-8">Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện!</p>';
+    return;
+  }
+  box.innerHTML = messages.map(m => {
+    const isMine = m.sender_id === myId;
+    const time = fmtDate(m.created_at);
+    const bubble = isMine
+      ? `<div class="flex justify-end mb-2"><div class="max-w-xs lg:max-w-md"><div class="bg-blue-600 text-white rounded-2xl rounded-br-sm px-3 py-2 text-sm">${escHtml(m.content)}</div><p class="text-[10px] text-slate-500 text-right mt-0.5">${time}</p></div></div>`
+      : `<div class="flex justify-start mb-2"><div class="max-w-xs lg:max-w-md"><div class="bg-slate-700 text-slate-100 rounded-2xl rounded-bl-sm px-3 py-2 text-sm">${escHtml(m.content)}</div><p class="text-[10px] text-slate-500 mt-0.5">${time}</p></div></div>`;
+    return bubble;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function advMsgSend() {
+  const input = document.getElementById('advMsgInput');
+  const content = input.value.trim();
+  if (!content || !advMsgActiveUid) return;
+  input.value = '';
+  try {
+    await api(`/messages/direct/${advMsgActiveUid}`, { method: 'POST', body: { content } });
+    await advMsgLoadMessages();
+  } catch(e) { toast(e.message, 'error'); input.value = content; }
+}
+
+function advMsgHandleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); advMsgSend(); }
+}
+
+function advMsgFilterInbox(q) {
+  const items = document.querySelectorAll('#advMsgInboxList > div');
+  q = q.toLowerCase();
+  items.forEach(el => {
+    const name = el.querySelector('p')?.textContent?.toLowerCase() || '';
+    el.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
+}
+
+async function advMsgPoll() {
+  if (!advMsgActiveUid) return;
+  try {
+    const data = await api(`/messages/direct/${advMsgActiveUid}`);
+    const box = document.getElementById('advMsgMessages');
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    advMsgRenderMessages(data.messages || []);
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  } catch(_) {}
+}
+
+async function advMsgOpenSearch() {
+  const q = prompt('Tìm người dùng (username):');
+  if (!q) return;
+  await advMsgDoSearch(q.trim());
+}
+
+async function advMsgDoSearch(q) {
+  try {
+    const data = await api(`/users/search?q=${encodeURIComponent(q)}`);
+    const users = data.users || [];
+    if (!users.length) { toast('Không tìm thấy người dùng', 'warn'); return; }
+    if (users.length === 1) { advMsgOpenConv(users[0].id, users[0].full_name || users[0].username); return; }
+    const names = users.map((u, i) => `${i+1}. ${u.full_name || u.username} (${u.role})`).join('\n');
+    const idx = parseInt(prompt(`Chọn người dùng:\n${names}`)) - 1;
+    if (idx >= 0 && idx < users.length) advMsgOpenConv(users[idx].id, users[idx].full_name || users[idx].username);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Notifications bell ────────────────────────────────────────────────────────
+let _notifData = [];
+let _urgentPendingIds = [];
+
+async function loadNotifications() {
+  try {
+    const data = await api('/notifications/me');
+    if (!data) return;
+    _notifData = Array.isArray(data) ? data : [];
+    const unread = _notifData.filter(n => !n.is_read).length;
+    const bubble = document.getElementById('notifBubble');
+    if (bubble) {
+      if (unread > 0) { bubble.textContent = unread > 99 ? '99+' : String(unread); bubble.classList.remove('hidden'); }
+      else { bubble.classList.add('hidden'); }
+    }
+    _urgentPendingIds = _notifData.filter(n => n.severity === 'urgent' && !n.is_read).map(n => n.id);
+    if (_urgentPendingIds.length > 0) _showUrgentModal(_urgentPendingIds);
+  } catch(_) {}
+}
+
+function toggleNotifDropdown() {
+  const dd = document.getElementById('notifDropdown');
+  if (!dd) return;
+  const isHidden = dd.classList.contains('hidden');
+  dd.classList.toggle('hidden');
+  if (isHidden) _renderNotifDropdown();
+}
+
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('notifDropdown');
+  const btn = document.getElementById('bellBtn');
+  if (dd && !dd.classList.contains('hidden') && !dd.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+    dd.classList.add('hidden');
+  }
+});
+
+function _severityIcon(s) {
+  return s === 'urgent' ? '🔴' : s === 'warning' ? '🟡' : '🔵';
+}
+
+function _timeAgo(dateStr) {
+  const d = new Date(dateStr);
+  const diff = Math.floor((Date.now() - d) / 1000);
+  if (diff < 60) return 'Vừa xong';
+  if (diff < 3600) return Math.floor(diff / 60) + ' phút trước';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' giờ trước';
+  return Math.floor(diff / 86400) + ' ngày trước';
+}
+
+function _renderNotifDropdown() {
+  const list = document.getElementById('notifDropdownList');
+  if (!list) return;
+  if (!_notifData.length) {
+    list.innerHTML = '<p class="px-4 py-6 text-xs text-slate-400 text-center">Không có thông báo nào.</p>';
+    return;
+  }
+  list.innerHTML = _notifData.map(n => `
+    <button onclick="openNotifItem(${n.id})"
+      class="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors flex items-start gap-3 ${n.is_read ? '' : 'bg-indigo-50/40'}">
+      <span class="text-base flex-shrink-0 mt-0.5">${_severityIcon(n.severity)}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-slate-800 leading-snug truncate">${n.title}</p>
+        <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-2">${n.body}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">${_timeAgo(n.created_at)}</p>
+      </div>
+      ${!n.is_read ? '<span class="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 mt-1.5"></span>' : ''}
+    </button>`).join('');
+}
+
+async function openNotifItem(id) {
+  const n = _notifData.find(x => x.id === id);
+  if (!n) return;
+  document.getElementById('notifDropdown')?.classList.add('hidden');
+  if (!n.is_read) {
+    n.is_read = true;
+    api(`/notifications/${id}/mark-read`, { method: 'POST' }).catch(() => {});
+    const unread = _notifData.filter(x => !x.is_read).length;
+    const bubble = document.getElementById('notifBubble');
+    if (bubble) {
+      if (unread > 0) { bubble.textContent = unread > 99 ? '99+' : String(unread); }
+      else { bubble.classList.add('hidden'); }
+    }
+  }
+  const icon = _severityIcon(n.severity);
+  const date = new Date(n.created_at).toLocaleString('vi-VN');
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/50 z-[8000] flex items-center justify-center p-4';
+  overlay.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+      <span class="text-xl">${icon}</span>
+      <h3 class="font-bold text-slate-800 flex-1">${n.title}</h3>
+    </div>
+    <div class="px-6 py-4">
+      <p class="text-sm text-slate-700 whitespace-pre-wrap">${n.body}</p>
+      <p class="text-xs text-slate-400 mt-3">${date}</p>
+    </div>
+    <div class="px-6 pb-4 flex justify-end">
+      <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-colors">Đóng</button>
+    </div>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function markAllNotifsRead() {
+  document.getElementById('notifDropdown')?.classList.add('hidden');
+  await api('/notifications/mark-all-read', { method: 'POST' }).catch(() => {});
+  _notifData.forEach(n => n.is_read = true);
+  document.getElementById('notifBubble')?.classList.add('hidden');
+}
+
+function _showUrgentModal(ids) {
+  const items = _notifData.filter(n => ids.includes(n.id));
+  if (!items.length) return;
+  const listEl = document.getElementById('urgentModalList');
+  if (!listEl) return;
+  listEl.innerHTML = items.map(n => `
+    <div class="border border-red-100 rounded-xl p-3">
+      <p class="text-sm font-bold text-red-700">🔴 ${n.title}</p>
+      <p class="text-xs text-slate-600 mt-1 whitespace-pre-wrap">${n.body}</p>
+      <p class="text-[10px] text-slate-400 mt-1">${new Date(n.created_at).toLocaleString('vi-VN')}</p>
+    </div>`).join('');
+  document.getElementById('urgentModal')?.classList.remove('hidden');
+}
+
+async function _dismissUrgent(markRead) {
+  document.getElementById('urgentModal')?.classList.add('hidden');
+  if (markRead && _urgentPendingIds.length) {
+    await Promise.all(_urgentPendingIds.map(id =>
+      api(`/notifications/${id}/mark-read`, { method: 'POST' }).catch(() => {})
+    ));
+    _urgentPendingIds.forEach(id => {
+      const n = _notifData.find(x => x.id === id);
+      if (n) n.is_read = true;
+    });
+    _urgentPendingIds = [];
+    const unread = _notifData.filter(n => !n.is_read).length;
+    const bubble = document.getElementById('notifBubble');
+    if (bubble) {
+      if (unread > 0) { bubble.textContent = unread > 99 ? '99+' : String(unread); bubble.classList.remove('hidden'); }
+      else { bubble.classList.add('hidden'); }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CTĐT SECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+let _ctdtAdvChart = null;
+
+async function loadCtdtSection() {
+  const spec = document.getElementById('ctdtAdvSpec')?.value || '';
+  const wrap = document.getElementById('ctdtAdvWrap');
+  const init = document.getElementById('ctdtAdvInit');
+  const legend = document.getElementById('ctdtAdvLegend');
+
+  if (!spec) {
+    wrap?.classList.add('hidden');
+    init?.classList.remove('hidden');
+    legend?.classList.add('hidden');
+    return;
+  }
+
+  init?.classList.add('hidden');
+  legend?.classList.remove('hidden');
+  wrap?.classList.remove('hidden');
+
+  const container = document.getElementById('ctdtAdvContainer');
+  if (!container) return;
+  container.innerHTML = `<div class="flex items-center gap-2 text-slate-400 text-sm p-8">
+    <span class="material-symbols-outlined msym spin">progress_activity</span> Đang tải…
+  </div>`;
+
+  try {
+    const data = await api(`/courses/standard-plan?spec=${encodeURIComponent(spec)}`);
+    if (!data?.semesters?.length) {
+      container.innerHTML = '<p class="text-sm text-slate-400 p-8 italic">Không có dữ liệu.</p>';
+      return;
+    }
+
+    // Flatten courses with semester
+    const courses = [];
+    for (const sem of data.semesters) {
+      for (const c of sem.courses) {
+        courses.push({
+          course_code: c.course_code,
+          course_name: c.course_name,
+          credits: c.credits,
+          count_toward_credits: c.count_toward_credits,
+          typical_semester: sem.semester_number,
+          group: 'compulsory',
+          prereqs: c.prereqs || [],
+        });
+      }
+    }
+
+    container.innerHTML = '';
+    _ctdtAdvChart = initCurriculumChart(container, { canEdit: false });
+    _ctdtAdvChart.render(courses);
+  } catch (e) {
+    container.innerHTML = `<p class="text-sm text-red-400 p-8">${escHtml(e.message)}</p>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PER-COURSE NOTES IN STUDENT ROADMAP
+// ═══════════════════════════════════════════════════════════════════════════════
+let _activeStudentNotes = [];
+
+function _courseNotePrefix(code) { return `[${code}]`; }
+function _notesForCourse(code) {
+  return _activeStudentNotes.filter(n => n.content.startsWith(_courseNotePrefix(code)));
+}
+
+async function openCourseNote(sid, courseCode, courseName) {
+  const existing = _notesForCourse(courseCode);
+
+  // Build a small modal overlay
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const noteListHtml = existing.length
+    ? existing.map(n => `
+        <div class="bg-slate-50 rounded-lg p-2.5 text-xs text-slate-700">
+          <p class="leading-relaxed">${esc(n.content.replace(_courseNotePrefix(courseCode), '').trim())}</p>
+          <p class="text-slate-400 mt-1">${fmtDate(n.created_at)}</p>
+        </div>`).join('')
+    : '<p class="text-xs text-slate-400 italic">Chưa có ghi chú nào cho môn này.</p>';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4';
+  overlay.id = 'courseNoteOverlay';
+  overlay.innerHTML = `
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div>
+          <p class="font-bold text-sm text-slate-800">Ghi chú môn học</p>
+          <p class="text-xs text-slate-400 mt-0.5">${esc(courseCode)} · ${esc(courseName)}</p>
+        </div>
+        <button onclick="document.getElementById('courseNoteOverlay').remove()"
+          class="p-1.5 rounded-lg hover:bg-slate-100"><span class="material-symbols-outlined msym text-xl text-slate-500">close</span></button>
+      </div>
+      <div class="px-5 py-4 space-y-3">
+        ${existing.length ? `<p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Ghi chú hiện có</p>
+        <div class="space-y-2 max-h-40 overflow-y-auto">${noteListHtml}</div>` : noteListHtml}
+        <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mt-3">Thêm ghi chú mới</p>
+        <textarea id="courseNoteInput" rows="3" placeholder="Nhập nội dung ghi chú…"
+          class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"></textarea>
+        <div class="flex justify-end gap-2">
+          <button onclick="document.getElementById('courseNoteOverlay').remove()"
+            class="text-sm text-slate-500 hover:underline px-3 py-2">Hủy</button>
+          <button onclick="_saveCourseNote(${sid}, '${courseCode.replace(/'/g,"\\'")}')"
+            class="pri-grad text-white text-sm font-bold px-4 py-2 rounded-lg shadow hover:opacity-90 active:scale-95 transition-all">Lưu</button>
+        </div>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('courseNoteInput')?.focus(), 50);
+}
+
+async function _saveCourseNote(sid, courseCode) {
+  const input = document.getElementById('courseNoteInput');
+  const text = input?.value.trim();
+  if (!text) { toast('Nội dung không được trống', 'warn'); return; }
+  const content = `${_courseNotePrefix(courseCode)} ${text}`;
+  try {
+    const note = await api('/advisor/notes', { method: 'POST', body: { student_id: sid, content } });
+    _activeStudentNotes.unshift(note);
+    toast('Đã lưu ghi chú', 'success');
+    document.getElementById('courseNoteOverlay')?.remove();
+    // Refresh roadmap to update 💬 indicators
+    loadStudentRoadmap(sid);
+    // Also refresh modal notes list
+    const notes = await api(`/advisor/notes/${sid}`).catch(() => []);
+    if (notes) renderModalNotes(notes);
+  } catch(e) { toast(e.message, 'error'); }
+}
+</script>
+</body>
+</html>
+
+

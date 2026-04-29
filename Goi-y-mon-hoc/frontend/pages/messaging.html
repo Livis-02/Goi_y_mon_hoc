@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Trao đổi</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration:0.15s; animation-timing-function:ease-out; }
+    #sidebarMount, #sidebarDrawer, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script>
+    tailwind.config = {
+
+      theme: {
+        extend: {
+          colors: {
+            "primary-container": "#312e81",
+            "tertiary-container": "#1e19b2",
+            "surface-container": "#e5eeff",
+            "background": "#f8f9ff",
+            "on-background": "#0b1c30",
+            "surface-variant": "#d3e4fe",
+            "error-container": "#ffdad6",
+            "primary-fixed": "#e2dfff",
+            "error": "#ba1a1a",
+            "surface-container-highest": "#d3e4fe",
+            "on-primary-container": "#9c9af4",
+            "outline": "#777682",
+            "on-primary": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-container-high": "#dce9ff",
+            "surface-bright": "#f8f9ff",
+            "surface": "#f8f9ff",
+            "on-secondary-container": "#00714d",
+            "secondary-container": "#6cf8bb",
+            "secondary": "#006c49",
+            "on-secondary": "#ffffff",
+            "on-error": "#ffffff",
+            "primary": "#1a146b",
+            "outline-variant": "#c8c5d3",
+            "on-surface-variant": "#474651",
+            "surface-container-low": "#eff4ff",
+            "on-error-container": "#93000a",
+            "surface-container-lowest": "#ffffff"
+          },
+          borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+          spacing: { lg: "24px", gutter: "24px", "2xl": "48px", sm: "8px", xs: "4px", margin: "32px", xl: "32px", base: "4px", md: "16px" },
+          fontFamily: { "h1":["Inter"],"h2":["Inter"],"body-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"label-sm":["Inter"],"h3":["Inter"],"body-lg":["Inter"] },
+          fontSize: {
+            "h1": ["36px", { lineHeight:"1.2", letterSpacing:"-0.02em", fontWeight:"700" }],
+            "h2": ["30px", { lineHeight:"1.3", letterSpacing:"-0.01em", fontWeight:"600" }],
+            "body-sm": ["14px", { lineHeight:"1.5", fontWeight:"400" }],
+            "body-md": ["16px", { lineHeight:"1.5", fontWeight:"400" }],
+            "label-md": ["14px", { lineHeight:"1.2", fontWeight:"600" }],
+            "label-sm": ["12px", { lineHeight:"1.2", fontWeight:"500" }],
+            "h3": ["24px", { lineHeight:"1.3", fontWeight:"600" }],
+            "body-lg": ["18px", { lineHeight:"1.6", fontWeight:"400" }]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c8c5d3; border-radius:10px; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .2s ease both; }
+    @keyframes bounce { 0%,80%,100% { transform:translateY(0); } 40% { transform:translateY(-6px); } }
+    .dot-bounce { animation:bounce 1.2s infinite; }
+    .dot-bounce:nth-child(2) { animation-delay:.2s; }
+    .dot-bounce:nth-child(3) { animation-delay:.4s; }
+    .conv-item.active { background:#eef2ff; border-left-color: #1a146b !important; }
+    .conv-item.active .conv-name { color:#1a146b; font-weight:600; }
+    input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #f8f9ff inset !important; }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased">
+
+<!-- TOAST -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- SIDEBAR FRAGMENT -->
+<div id="sidebarMount"></div>
+
+<!-- HEADER -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container" aria-label="Menu">
+      <span class="msym material-symbols-outlined text-xl text-on-surface-variant">menu</span>
+    </button>
+    <span class="msym material-symbols-outlined text-lg text-primary" style="font-variation-settings:'FILL' 1">forum</span>
+    <h2 class="font-label-md text-label-md text-on-background">Trao đổi</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MODAL ADD USER -->
+<div id="addUserModal" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4" onclick="if(event.target===this)closeAddUserModal()">
+  <div class="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md fade-in border border-outline-variant">
+    <div class="flex items-center justify-between px-lg pt-lg pb-md border-b border-outline-variant">
+      <h3 class="font-label-md text-label-md text-on-background">Thêm người dùng</h3>
+      <button onclick="closeAddUserModal()" class="text-on-surface-variant hover:text-on-surface">
+        <span class="msym material-symbols-outlined text-xl">close</span>
+      </button>
+    </div>
+    <div class="px-lg py-md space-y-md">
+      <div class="relative">
+        <span class="msym material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+        <input autocomplete="off" id="addUserSearch" type="text" placeholder="VD: 2151180001 · KHMT001 · Nguyễn Văn A"
+               class="w-full pl-8 pr-md py-sm border border-outline-variant rounded-xl font-body-sm text-body-sm bg-surface-container-low focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+               oninput="debounceUserSearch(this.value)"/>
+        <p class="font-label-sm text-label-sm text-on-surface-variant mt-sm flex items-start gap-xs">
+          <span class="msym material-symbols-outlined text-xs mt-0.5">info</span>
+          <span>Nhập <strong>MSSV</strong> (10 số) cho SV, <strong>mã GV</strong> (KHMT001/MMT001…) cho cố vấn, hoặc tên đầy đủ.</span>
+        </p>
+      </div>
+      <div id="addUserResults" class="space-y-sm max-h-52 overflow-y-auto"></div>
+      <div id="pendingSection">
+        <p class="font-label-sm text-label-sm text-on-surface-variant mb-sm">Lời mời đang chờ</p>
+        <div id="pendingList" class="space-y-sm max-h-40 overflow-y-auto"></div>
+      </div>
+    </div>
+    <div class="px-lg pb-lg">
+      <button onclick="closeAddUserModal()" class="w-full py-sm font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container rounded-xl transition-colors">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TẠO NHÓM -->
+<div id="createGroupModal" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4" onclick="if(event.target===this)closeCreateGroupModal()">
+  <div class="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md fade-in border border-outline-variant">
+    <div class="flex items-center justify-between px-lg pt-lg pb-md border-b border-outline-variant">
+      <h3 class="font-label-md text-label-md text-on-background">Tạo nhóm mới</h3>
+      <button onclick="closeCreateGroupModal()" class="text-on-surface-variant hover:text-on-surface">
+        <span class="msym material-symbols-outlined text-xl">close</span>
+      </button>
+    </div>
+    <div class="px-lg py-md space-y-md">
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant mb-sm block">Tên nhóm <span class="text-error">*</span></label>
+        <input autocomplete="off" id="groupNameInput" type="text" placeholder="Nhập tên nhóm..."
+               class="w-full px-md py-sm border border-outline-variant rounded-xl font-body-sm text-body-sm bg-surface-container-low focus:outline-none focus:border-primary transition-all"/>
+      </div>
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant mb-sm block">Thêm thành viên</label>
+        <div class="relative">
+          <span class="msym material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+          <input autocomplete="off" id="groupMemberSearch" type="text" placeholder="Tìm từ danh sách kết nối..."
+                 class="w-full pl-8 pr-md py-sm border border-outline-variant rounded-xl font-body-sm text-body-sm bg-surface-container-low focus:outline-none focus:border-primary transition-all"
+                 oninput="filterGroupMembers(this.value)"/>
+        </div>
+        <div id="selectedMembersChips" class="flex flex-wrap gap-sm mt-sm min-h-[28px]"></div>
+        <div id="groupMemberList" class="mt-sm space-y-xs max-h-40 overflow-y-auto border border-outline-variant rounded-xl p-xs"></div>
+      </div>
+    </div>
+    <div class="px-lg pb-lg flex gap-md">
+      <button onclick="closeCreateGroupModal()" class="flex-1 py-sm font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container border border-outline-variant rounded-xl transition-colors">Hủy</button>
+      <button onclick="submitCreateGroup()" class="flex-1 py-sm font-label-md text-label-md bg-primary hover:bg-primary/90 text-on-primary rounded-xl transition-colors flex items-center justify-center gap-sm">
+        <span class="msym material-symbols-outlined text-base">group_add</span>Tạo nhóm
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="lg:ml-60 pt-[60px] h-screen flex flex-col overflow-hidden">
+
+  <!-- Nav tabs -->
+  <div class="px-4 pt-3 flex-shrink-0">
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-1 flex gap-1">
+      <a href="messaging.html"
+        class="flex-1 py-2 px-3 rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-2 bg-primary text-on-primary shadow-sm">
+        <span class="msym material-symbols-outlined text-base" style="font-variation-settings:'FILL' 1">forum</span>Cố vấn &amp; Bạn bè
+      </a>
+      <a href="ai-chat.html"
+        class="flex-1 py-2 px-3 rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-2 text-on-surface-variant hover:bg-surface-container">
+        <span class="msym material-symbols-outlined text-base">smart_toy</span>Trợ lý AI
+      </a>
+    </div>
+  </div>
+
+  <!-- Workspace -->
+  <div class="flex flex-1 overflow-hidden p-4">
+    <div class="flex flex-1 rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-sm">
+
+      <!-- INBOX (320px) -->
+      <div class="w-[320px] flex-shrink-0 border-r border-outline-variant flex flex-col bg-surface">
+
+        <!-- Header -->
+        <div class="p-md border-b border-outline-variant bg-surface-container-lowest">
+          <div class="flex items-center justify-between mb-md">
+            <h2 class="font-h3 text-h3 text-on-surface">Tin nhắn</h2>
+            <div class="flex gap-xs">
+              <button onclick="openCreateGroupModal()" title="Tạo nhóm"
+                class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors">
+                <span class="msym material-symbols-outlined text-base">group_add</span>
+              </button>
+              <button onclick="openAddUserModal()" title="Thêm người dùng"
+                class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors">
+                <span class="msym material-symbols-outlined text-base">person_add</span>
+              </button>
+            </div>
+          </div>
+          <div class="relative">
+            <span class="msym material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+            <input autocomplete="off" id="inboxSearch" type="text" placeholder="Tìm cuộc trò chuyện..."
+              class="w-full pl-9 pr-md py-sm bg-surface-container border border-outline-variant rounded-full font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              oninput="filterInbox(this.value)"/>
+          </div>
+        </div>
+
+        <!-- Conversation list -->
+        <div class="flex-1 overflow-y-auto" id="inboxList">
+          <div class="flex flex-col items-center justify-center h-32 gap-2 text-on-surface-variant">
+            <span class="msym material-symbols-outlined text-2xl animate-pulse">hourglass_empty</span>
+            <p class="font-body-sm text-body-sm">Đang tải...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONVERSATION AREA -->
+      <div class="flex-1 flex flex-col overflow-hidden" id="conversationArea">
+
+        <!-- Empty state -->
+        <div class="flex-1 flex flex-col items-center justify-center bg-background gap-md" id="emptyConvState">
+          <div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center">
+            <span class="msym material-symbols-outlined text-on-surface-variant text-3xl">forum</span>
+          </div>
+          <p class="font-label-md text-label-md text-on-surface">Chọn cuộc trò chuyện</p>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">hoặc thêm người mới để bắt đầu nhắn tin</p>
+        </div>
+
+        <!-- Active conversation (hidden until selected) -->
+        <div class="flex-1 flex flex-col hidden overflow-hidden" id="activeConvPane">
+
+          <!-- Conv header -->
+          <div class="flex items-center justify-between px-lg py-md border-b border-outline-variant flex-shrink-0 bg-surface-container-lowest shadow-sm">
+            <div class="flex items-center gap-md">
+              <div id="convAvatar" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold"></div>
+              <div>
+                <p class="font-label-md text-label-md text-on-surface" id="convName"></p>
+                <p class="font-label-sm text-label-sm text-on-surface-variant" id="convSub"></p>
+              </div>
+            </div>
+            <div class="flex gap-xs">
+              <button id="muteBtn" onclick="toggleMute()" title="Tắt/Bật thông báo"
+                class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors">
+                <span class="msym material-symbols-outlined text-base" id="muteIcon">notifications</span>
+              </button>
+              <button id="infoBtn" onclick="showGroupInfo()" title="Thông tin nhóm"
+                class="hidden w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors">
+                <span class="msym material-symbols-outlined text-base">info</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <div class="flex-1 overflow-y-auto px-lg py-md flex flex-col gap-md bg-surface/50" id="messagesArea"></div>
+
+          <!-- Input bar -->
+          <div class="px-lg py-md border-t border-outline-variant flex-shrink-0 bg-surface-container-lowest">
+            <div class="flex items-center gap-md bg-surface-container-low p-xs rounded-full border border-outline-variant focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all shadow-sm">
+              <textarea autocomplete="off" id="msgInput" placeholder="Nhập tin nhắn..."
+                rows="1"
+                class="flex-1 resize-none bg-transparent border-none focus:ring-0 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant px-sm py-xs"
+                style="max-height:80px; min-height:36px;"
+                oninput="autoResizeTextarea(this)"
+                onkeydown="handleMsgKey(event)"></textarea>
+              <button onclick="sendMessage()"
+                class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 hover:bg-primary/90 transition-colors shadow-sm">
+                <span class="msym material-symbols-outlined text-base" style="font-variation-settings:'FILL' 1">send</span>
+              </button>
+            </div>
+            <p class="font-label-sm text-label-sm text-on-surface-variant mt-sm">Enter để gửi · Shift+Enter xuống dòng</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- FLOATING CHAT -->
+<div id="floatingChatMount"></div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+const API = '';
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let _me = null;
+let _connections = [];
+let _groups = [];
+let _unreadMap = {};
+let _activeConv = null;
+let _messages = [];
+let _pollTimer = null;
+let _searchTimer = null;
+let _groupSelectedMembers = [];
+let _inboxItems = [];
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const colors = { info:'bg-on-background', success:'bg-secondary', error:'bg-error', warning:'bg-[#f59e0b]' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto ${colors[type]||colors.info} text-on-primary font-body-sm text-body-sm px-md py-sm rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function authH() { return { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' }; }
+async function apiFetch(url, opts = {}) {
+  const r = await fetch(API + url, { headers: authH(), ...opts });
+  if (!r.ok) { const t = await r.json().catch(() => ({})); throw new Error(t.detail || r.status); }
+  return r.json();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  checkAuth();
+  const _fcScript = document.createElement('script');
+  _fcScript.src = 'floating-chat.js';
+  document.body.appendChild(_fcScript);
+  try {
+    _me = await apiFetch('/auth/me');
+    updateTopbarUser(_me);
+    await refreshAll();
+    startPolling();
+    _handleUrlIntent();
+  } catch(e) {
+    showToast('Không thể tải dữ liệu: ' + e.message, 'error');
+  }
+}
+
+function _handleUrlIntent() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const withId = parseInt(params.get('with') || '0', 10);
+    const prefill = params.get('prefill') || '';
+    if (withId > 0) {
+      openDirectConv(withId);
+      if (prefill) {
+        const ta = document.getElementById('msgInput');
+        if (ta) { ta.value = prefill; ta.focus(); }
+      }
+    }
+  } catch {}
+}
+
+async function refreshAll() {
+  await Promise.all([loadConnections(), loadGroups(), loadUnread()]);
+  renderInbox();
+}
+
+async function loadConnections() {
+  const data = await apiFetch('/connections');
+  _connections = data.connections || [];
+}
+async function loadGroups() {
+  const data = await apiFetch('/messages/groups');
+  _groups = data.groups || [];
+}
+async function loadUnread() {
+  const data = await apiFetch('/messages/direct/unread/count');
+  _unreadMap = data.per_sender || {};
+}
+
+// ─── Inbox rendering ──────────────────────────────────────────────────────────
+function _initials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase();
+}
+function _timeAgo(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return 'vừa xong';
+  if (diff < 3600) return Math.floor(diff / 60) + ' phút';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' giờ';
+  return d.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit' });
+}
+
+function renderInbox(filter = '') {
+  const q = filter.toLowerCase();
+  const el = document.getElementById('inboxList');
+  let html = '';
+
+  const advisors = _connections.filter(c => c.other_user.role === 'advisor');
+  const advisorHtml = advisors.map(c => _renderDirectItem(c, q)).join('');
+  if (advisors.length > 0) {
+    html += `<p class="font-label-sm text-label-sm text-on-surface-variant px-md py-sm">Cố vấn học tập</p>${advisorHtml}`;
+  }
+
+  const peers = _connections.filter(c => c.other_user.role !== 'advisor');
+  let combined = [];
+  _groups.forEach(g => {
+    const name = (g.name || 'Nhóm').toLowerCase();
+    if (q && !name.includes(q)) return;
+    combined.push({ type: 'group', data: g, ts: g.last_message_at || g.created_at || '' });
+  });
+  peers.forEach(c => {
+    const uname = (c.other_user.username || '').toLowerCase();
+    const fname = (c.other_user.full_name || '').toLowerCase();
+    if (q && !uname.includes(q) && !fname.includes(q)) return;
+    combined.push({ type: 'direct', data: c, ts: '' });
+  });
+  combined.sort((a, b) => (b.ts > a.ts ? 1 : -1));
+  const combinedHtml = combined.map(item =>
+    item.type === 'group' ? _renderGroupItem(item.data, q) : _renderDirectItem(item.data, q)
+  ).join('');
+  if (combined.length > 0 || _groups.length > 0) {
+    html += `<p class="font-label-sm text-label-sm text-on-surface-variant px-md py-sm mt-xs">Nhóm &amp; Cá nhân</p>${combinedHtml}`;
+  }
+
+  if (!html) {
+    html = `<div class="flex flex-col items-center justify-center h-full min-h-[280px] gap-md text-on-surface-variant px-lg py-xl text-center">
+      <span class="msym material-symbols-outlined text-4xl text-outline">forum</span>
+      <p class="font-label-md text-label-md text-on-surface">${q ? 'Không tìm thấy' : 'Chưa có cuộc trò chuyện nào'}</p>
+      ${!q ? `<p class="font-body-sm text-body-sm text-on-surface-variant max-w-[240px]">Thêm cố vấn, bạn cùng lớp hoặc nhóm học bằng <strong>MSSV / mã GV</strong> để bắt đầu trao đổi.</p>
+        <button onclick="openAddUserModal()"
+          class="mt-sm inline-flex items-center gap-sm px-md py-sm bg-primary hover:bg-primary/90 text-on-primary font-label-md text-label-md rounded-lg shadow transition-colors">
+          <span class="msym material-symbols-outlined text-base">person_add</span>Thêm bằng mã SV / GV
+        </button>
+        <button onclick="openCreateGroupModal()"
+          class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline mt-xs">+ Tạo nhóm học chung</button>` : ''}
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function _renderDirectItem(conn, q = '') {
+  const u = conn.other_user;
+  const isActive = _activeConv && _activeConv.type === 'direct' && _activeConv.id === u.id;
+  const unread = _unreadMap[u.id] || 0;
+  const isAdvisor = u.role === 'advisor';
+  const avatarBg = isAdvisor ? 'bg-primary-container/20' : 'bg-surface-variant';
+  const avatarText = isAdvisor ? 'text-primary' : 'text-on-surface-variant';
+  return `<button onclick="openDirectConv(${u.id})"
+    class="conv-item w-full flex items-center gap-md px-md py-md border-b border-outline-variant/20 border-l-4 border-l-transparent hover:bg-surface-container transition-colors text-left ${isActive ? 'active' : ''}">
+    <div class="relative flex-shrink-0">
+      <div class="w-11 h-11 ${avatarBg} rounded-full flex items-center justify-center">
+        <span class="font-label-md text-label-md ${avatarText}">${_initials(u.full_name || u.username)}</span>
+      </div>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between mb-xs">
+        <p class="conv-name font-label-md text-label-md text-on-surface truncate pr-2">${u.full_name || u.username}</p>
+        ${unread > 0 ? `<span class="w-5 h-5 bg-error text-on-error font-label-sm text-[10px] rounded-full flex items-center justify-center flex-shrink-0">${unread}</span>` : ''}
+      </div>
+      <p class="font-label-sm text-label-sm text-on-surface-variant truncate">${u.username}${isAdvisor ? ' · Cố vấn' : ''}</p>
+    </div>
+  </button>`;
+}
+
+function _renderGroupItem(g, q = '') {
+  const isActive = _activeConv && _activeConv.type === 'group' && _activeConv.id === g.id;
+  const memberCount = g.member_count || (g.members ? g.members.length : 0);
+  return `<button onclick="openGroupConv(${g.id})"
+    class="conv-item w-full flex items-center gap-md px-md py-md border-b border-outline-variant/20 border-l-4 border-l-transparent hover:bg-surface-container transition-colors text-left ${isActive ? 'active' : ''}">
+    <div class="w-11 h-11 bg-surface-container-high rounded-full flex items-center justify-center flex-shrink-0">
+      <span class="msym material-symbols-outlined text-on-surface-variant text-lg">group</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between mb-xs">
+        <p class="conv-name font-label-md text-label-md text-on-surface truncate">${g.name || 'Nhóm'}</p>
+        ${g.last_message_at ? `<p class="font-label-sm text-label-sm text-outline flex-shrink-0 ml-sm">${_timeAgo(g.last_message_at)}</p>` : ''}
+      </div>
+      <p class="font-label-sm text-label-sm text-on-surface-variant truncate">${memberCount ? memberCount + ' thành viên' : ''}</p>
+    </div>
+  </button>`;
+}
+
+function filterInbox(q) { renderInbox(q); }
+
+// ─── Open conversation ─────────────────────────────────────────────────────────
+async function openDirectConv(userId) {
+  _activeConv = { type: 'direct', id: userId, muted: false };
+  showActivePane();
+  const conn = _connections.find(c => c.other_user.id === userId);
+  const u = conn ? conn.other_user : { id: userId, username: '...', full_name: '' };
+  const isAdvisor = u.role === 'advisor';
+  const avatarBg = isAdvisor ? 'bg-primary-container/20' : 'bg-surface-variant';
+  const avatarTextColor = isAdvisor ? 'text-primary' : 'text-on-surface-variant';
+  document.getElementById('convAvatar').className = `w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-label-md text-label-md ${avatarBg} ${avatarTextColor}`;
+  document.getElementById('convAvatar').textContent = _initials(u.full_name || u.username);
+  document.getElementById('convName').textContent = u.full_name || u.username;
+  document.getElementById('convSub').textContent = isAdvisor ? 'Cố vấn học tập · Đang hoạt động' : '@' + u.username;
+  document.getElementById('infoBtn').classList.add('hidden');
+  renderInbox(document.getElementById('inboxSearch').value);
+  await loadDirectMessages(userId);
+}
+
+async function openGroupConv(groupId) {
+  const g = _groups.find(x => x.id === groupId);
+  _activeConv = { type: 'group', id: groupId, muted: g ? (g.is_muted || false) : false };
+  showActivePane();
+  document.getElementById('convAvatar').className = 'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-surface-container-high';
+  document.getElementById('convAvatar').innerHTML = '<span class="msym material-symbols-outlined text-on-surface-variant text-lg">group</span>';
+  document.getElementById('convName').textContent = g ? g.name : 'Nhóm';
+  const memberCount = g ? (g.member_count || (g.members ? g.members.length : 0)) : 0;
+  document.getElementById('convSub').textContent = memberCount ? memberCount + ' thành viên' : '';
+  document.getElementById('infoBtn').classList.remove('hidden');
+  updateMuteIcon();
+  renderInbox(document.getElementById('inboxSearch').value);
+  await loadGroupMessages(groupId);
+}
+
+function showActivePane() {
+  document.getElementById('emptyConvState').classList.add('hidden');
+  document.getElementById('activeConvPane').classList.remove('hidden');
+}
+
+async function loadDirectMessages(userId) {
+  document.getElementById('messagesArea').innerHTML = _loadingSpinner();
+  try {
+    const data = await apiFetch(`/messages/direct/${userId}?limit=50`);
+    _messages = data.messages || [];
+    delete _unreadMap[userId];
+    renderMessages();
+    scrollToBottom();
+  } catch(e) {
+    document.getElementById('messagesArea').innerHTML = `<p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">${e.message}</p>`;
+  }
+}
+
+async function loadGroupMessages(groupId) {
+  document.getElementById('messagesArea').innerHTML = _loadingSpinner();
+  try {
+    const data = await apiFetch(`/messages/groups/${groupId}/messages?limit=50`);
+    _messages = data.messages || [];
+    renderMessages();
+    scrollToBottom();
+  } catch(e) {
+    document.getElementById('messagesArea').innerHTML = `<p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">${e.message}</p>`;
+  }
+}
+
+function _loadingSpinner() {
+  return `<div class="flex items-center justify-center py-xl text-on-surface-variant">
+    <span class="msym material-symbols-outlined text-2xl animate-pulse">hourglass_empty</span>
+  </div>`;
+}
+
+// ─── Messages rendering ───────────────────────────────────────────────────────
+function renderMessages() {
+  const area = document.getElementById('messagesArea');
+  if (!_messages.length) {
+    area.innerHTML = `<div class="flex flex-col items-center justify-center py-xl gap-sm text-on-surface-variant">
+      <span class="msym material-symbols-outlined text-3xl">chat_bubble_outline</span>
+      <p class="font-body-sm text-body-sm">Chưa có tin nhắn nào</p>
+    </div>`;
+    return;
+  }
+  const isGroup = _activeConv && _activeConv.type === 'group';
+  let html = '';
+  let lastDate = '';
+  _messages.forEach(msg => {
+    const isMine = msg.sender_id === _me.id;
+    const d = new Date(msg.created_at);
+    const dateStr = d.toLocaleDateString('vi-VN', { weekday:'long', day:'2-digit', month:'2-digit' });
+    if (dateStr !== lastDate) {
+      html += `<div class="flex justify-center my-sm">
+        <span class="bg-surface-container px-md py-xs rounded-full font-label-sm text-label-sm text-on-surface-variant border border-outline-variant/20">${dateStr}</span>
+      </div>`;
+      lastDate = dateStr;
+    }
+    const timeStr = d.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
+    if (isMine) {
+      html += `<div class="self-end max-w-[75%] flex flex-col items-end fade-in">
+        <div class="bg-primary text-on-primary rounded-2xl rounded-tr-sm px-md py-sm font-body-md shadow-sm">
+          <p class="whitespace-pre-wrap">${escHtml(msg.content)}</p>
+        </div>
+        <div class="flex items-center gap-xs mt-xs">
+          <span class="font-label-sm text-label-sm text-outline">${timeStr}</span>
+          <span class="msym material-symbols-outlined text-sm text-primary" style="font-variation-settings:'FILL' 1">done_all</span>
+        </div>
+      </div>`;
+    } else {
+      const senderName = msg.sender_name || msg.sender_username || '?';
+      const initials = _initials(senderName);
+      html += `<div class="self-start max-w-[75%] flex gap-md fade-in">
+        <div class="w-8 h-8 bg-surface-container-high rounded-full flex-shrink-0 mt-xs flex items-center justify-center">
+          <span class="font-label-sm text-label-sm text-on-surface-variant">${initials}</span>
+        </div>
+        <div class="flex flex-col items-start">
+          ${isGroup ? `<p class="font-label-sm text-label-sm text-on-surface-variant mb-xs ml-xs">${escHtml(senderName)}</p>` : ''}
+          <div class="bg-surface-container-high text-on-surface rounded-2xl rounded-tl-sm px-md py-sm font-body-md shadow-sm border border-outline-variant/20">
+            <p class="whitespace-pre-wrap">${escHtml(msg.content)}</p>
+          </div>
+          <span class="font-label-sm text-label-sm text-outline mt-xs ml-xs">${timeStr}</span>
+        </div>
+      </div>`;
+    }
+  });
+  area.innerHTML = html;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function scrollToBottom() {
+  const area = document.getElementById('messagesArea');
+  requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+}
+
+// ─── Send message ─────────────────────────────────────────────────────────────
+async function sendMessage() {
+  if (!_activeConv) return;
+  const input = document.getElementById('msgInput');
+  const content = input.value.trim();
+  if (!content) return;
+  input.value = '';
+  input.style.height = '';
+  const now = new Date().toISOString();
+  const optimistic = { id: 'opt_' + Date.now(), sender_id: _me.id, content, created_at: now };
+  _messages.push(optimistic);
+  renderMessages();
+  scrollToBottom();
+  try {
+    let sent;
+    if (_activeConv.type === 'direct') {
+      sent = await apiFetch(`/messages/direct/${_activeConv.id}`, { method:'POST', body: JSON.stringify({ content }) });
+    } else {
+      sent = await apiFetch(`/messages/groups/${_activeConv.id}/messages`, { method:'POST', body: JSON.stringify({ content }) });
+    }
+    const idx = _messages.findIndex(m => m.id === optimistic.id);
+    if (idx >= 0) _messages[idx] = sent;
+    renderMessages();
+    scrollToBottom();
+  } catch(e) {
+    _messages = _messages.filter(m => m.id !== optimistic.id);
+    renderMessages();
+    showToast('Gửi thất bại: ' + e.message, 'error');
+  }
+}
+
+function handleMsgKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 80) + 'px';
+}
+
+// ─── Mute ─────────────────────────────────────────────────────────────────────
+async function toggleMute() {
+  if (!_activeConv) return;
+  if (_activeConv.type === 'group') {
+    try {
+      await apiFetch(`/messages/groups/${_activeConv.id}/mute`, { method:'PATCH' });
+      _activeConv.muted = !_activeConv.muted;
+      const g = _groups.find(x => x.id === _activeConv.id);
+      if (g) g.is_muted = _activeConv.muted;
+      updateMuteIcon();
+      showToast(_activeConv.muted ? 'Đã tắt thông báo nhóm' : 'Đã bật thông báo nhóm', 'info');
+    } catch(e) { showToast(e.message, 'error'); }
+  } else {
+    _activeConv.muted = !_activeConv.muted;
+    updateMuteIcon();
+    showToast(_activeConv.muted ? 'Đã tắt thông báo' : 'Đã bật thông báo', 'info');
+  }
+}
+function updateMuteIcon() {
+  document.getElementById('muteIcon').textContent = (_activeConv && _activeConv.muted) ? 'notifications_off' : 'notifications';
+}
+function showGroupInfo() {
+  if (!_activeConv || _activeConv.type !== 'group') return;
+  const g = _groups.find(x => x.id === _activeConv.id);
+  if (!g) return;
+  showToast(`Nhóm: ${g.name} · ${g.member_count || 0} thành viên`, 'info');
+}
+
+// ─── Polling ──────────────────────────────────────────────────────────────────
+function startPolling() {
+  _pollTimer = setInterval(doPoll, 3000);
+}
+async function doPoll() {
+  try {
+    const data = await apiFetch('/messages/direct/unread/count');
+    const newMap = data.per_sender || {};
+    const total = data.total || 0;
+    let needRefreshMessages = false;
+    if (_activeConv && _activeConv.type === 'direct') {
+      const prevUnread = _unreadMap[_activeConv.id] || 0;
+      const currUnread = newMap[_activeConv.id] || 0;
+      if (currUnread > prevUnread) needRefreshMessages = true;
+    }
+    _unreadMap = newMap;
+    const pendingData = await apiFetch('/connections/pending');
+    const receivedCount = pendingData.received_count || 0;
+    updateNavBadge(total + receivedCount);
+    if (needRefreshMessages && _activeConv) {
+      await loadDirectMessages(_activeConv.id);
+    } else {
+      renderInbox(document.getElementById('inboxSearch').value);
+    }
+    if (_activeConv && _activeConv.type === 'group') {
+      const prevLen = _messages.length;
+      try {
+        const gdata = await apiFetch(`/messages/groups/${_activeConv.id}/messages?limit=50`);
+        const newMsgs = gdata.messages || [];
+        if (newMsgs.length !== prevLen) {
+          _messages = newMsgs;
+          renderMessages();
+          scrollToBottom();
+        }
+      } catch(e) {}
+    }
+  } catch(e) {}
+}
+
+function updateNavBadge(count) {
+  const link = document.querySelector('[data-page="messaging.html"]');
+  if (!link) return;
+  let badge = link.querySelector('.nav-badge');
+  if (count > 0) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'nav-badge w-5 h-5 bg-error text-on-error font-label-sm text-xs rounded-full flex items-center justify-center ml-auto';
+      link.appendChild(badge);
+    }
+    badge.textContent = count > 9 ? '9+' : count;
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+// ─── Modal Add User ───────────────────────────────────────────────────────────
+function openAddUserModal() {
+  document.getElementById('addUserModal').classList.remove('hidden');
+  document.getElementById('addUserSearch').value = '';
+  document.getElementById('addUserResults').innerHTML = '';
+  loadPendingConnections();
+}
+function closeAddUserModal() { document.getElementById('addUserModal').classList.add('hidden'); }
+
+async function loadPendingConnections() {
+  const pendingList = document.getElementById('pendingList');
+  pendingList.innerHTML = '<p class="font-label-sm text-label-sm text-on-surface-variant py-xs">Đang tải...</p>';
+  try {
+    const data = await apiFetch('/connections/pending');
+    const pending = data.pending || [];
+    if (!pending.length) {
+      pendingList.innerHTML = '<p class="font-label-sm text-label-sm text-on-surface-variant py-xs">Không có lời mời nào</p>';
+      document.getElementById('pendingSection').classList.add('hidden');
+      return;
+    }
+    document.getElementById('pendingSection').classList.remove('hidden');
+    pendingList.innerHTML = pending.map(c => {
+      const u = c.other_user;
+      const isSent = c.direction === 'sent';
+      return `<div class="flex items-center gap-md py-sm border-b border-outline-variant/20 last:border-0">
+        <div class="w-8 h-8 bg-primary-container/20 rounded-full flex items-center justify-center flex-shrink-0">
+          <span class="font-label-sm text-label-sm text-primary">${_initials(u.full_name || u.username)}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-label-md text-label-md text-on-surface truncate">${u.full_name || u.username}</p>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">@${u.username} · ${isSent ? 'Đã gửi lời mời' : 'Muốn kết nối'}</p>
+        </div>
+        ${!isSent ? `<div class="flex gap-xs flex-shrink-0">
+          <button onclick="acceptConn(${c.id})" class="px-sm py-xs font-label-sm text-label-sm bg-primary hover:bg-primary/90 text-on-primary rounded-lg transition-colors">Chấp nhận</button>
+          <button onclick="rejectConn(${c.id})" class="px-sm py-xs font-label-sm text-label-sm bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg transition-colors">Từ chối</button>
+        </div>` : `<span class="font-label-sm text-label-sm text-on-surface-variant">Chờ</span>`}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    pendingList.innerHTML = '<p class="font-label-sm text-label-sm text-error py-xs">' + e.message + '</p>';
+  }
+}
+
+async function acceptConn(connId) {
+  try {
+    await apiFetch(`/connections/${connId}/accept`, { method:'PATCH' });
+    showToast('Đã chấp nhận lời mời kết nối', 'success');
+    await loadConnections();
+    renderInbox();
+    loadPendingConnections();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+async function rejectConn(connId) {
+  try {
+    await apiFetch(`/connections/${connId}/reject`, { method:'PATCH' });
+    showToast('Đã từ chối lời mời', 'info');
+    loadPendingConnections();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function debounceUserSearch(q) {
+  clearTimeout(_searchTimer);
+  if (q.length < 2) { document.getElementById('addUserResults').innerHTML = ''; return; }
+  _searchTimer = setTimeout(() => doUserSearch(q), 500);
+}
+
+async function doUserSearch(q) {
+  const el = document.getElementById('addUserResults');
+  el.innerHTML = '<p class="font-label-sm text-label-sm text-on-surface-variant py-xs">Đang tìm...</p>';
+  try {
+    const data = await apiFetch(`/users/search?q=${encodeURIComponent(q)}`);
+    const users = data.users || [];
+    if (!users.length) {
+      el.innerHTML = '<p class="font-label-sm text-label-sm text-on-surface-variant py-xs text-center">Không tìm thấy</p>';
+      return;
+    }
+    const connectedIds = new Set(_connections.map(c => c.other_user.id));
+    el.innerHTML = users.map(u => {
+      const isConnected = connectedIds.has(u.id);
+      const roleLabel = u.role === 'advisor' ? 'Cố vấn' : u.role === 'admin' ? 'Admin' : 'Sinh viên';
+      return `<div class="flex items-center gap-md p-sm rounded-xl hover:bg-surface-container transition-colors">
+        <div class="w-9 h-9 bg-primary-container/20 rounded-full flex items-center justify-center flex-shrink-0">
+          <span class="font-label-md text-label-md text-primary">${_initials(u.full_name || u.username)}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-label-md text-label-md text-on-surface truncate">${u.full_name || u.username}</p>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">@${u.username} · ${roleLabel}${u.specialization ? ' · ' + u.specialization : ''}</p>
+        </div>
+        ${isConnected
+          ? '<span class="font-label-sm text-label-sm text-secondary bg-secondary/10 px-sm py-xs rounded-lg flex-shrink-0">Đã kết nối</span>'
+          : `<button onclick="sendConnRequest(${u.id},this)" class="font-label-sm text-label-sm bg-primary hover:bg-primary/90 text-on-primary px-md py-xs rounded-lg transition-colors flex-shrink-0">Gửi lời mời →</button>`
+        }
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<p class="font-label-sm text-label-sm text-error py-xs">' + e.message + '</p>';
+  }
+}
+
+async function sendConnRequest(userId, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    await apiFetch(`/connections/request/${userId}`, { method:'POST' });
+    btn.textContent = 'Đã gửi';
+    btn.className = 'font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-md py-xs rounded-lg flex-shrink-0';
+    showToast('Đã gửi lời mời kết nối', 'success');
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Gửi lời mời →';
+    showToast(e.message, 'error');
+  }
+}
+
+// ─── Modal Tạo Nhóm ───────────────────────────────────────────────────────────
+function openCreateGroupModal() {
+  document.getElementById('createGroupModal').classList.remove('hidden');
+  document.getElementById('groupNameInput').value = '';
+  document.getElementById('groupMemberSearch').value = '';
+  _groupSelectedMembers = [];
+  renderGroupMemberList('');
+  renderSelectedChips();
+}
+function closeCreateGroupModal() { document.getElementById('createGroupModal').classList.add('hidden'); }
+function filterGroupMembers(q) { renderGroupMemberList(q.toLowerCase()); }
+
+function renderGroupMemberList(q = '') {
+  const el = document.getElementById('groupMemberList');
+  const selectedIds = new Set(_groupSelectedMembers.map(m => m.id));
+  const items = _connections.filter(c => {
+    const u = c.other_user;
+    if (selectedIds.has(u.id)) return false;
+    if (!q) return true;
+    return (u.username||'').toLowerCase().includes(q) || (u.full_name||'').toLowerCase().includes(q);
+  });
+  if (!items.length) {
+    el.innerHTML = '<p class="font-label-sm text-label-sm text-on-surface-variant text-center py-md">Không có kết nối</p>';
+    return;
+  }
+  el.innerHTML = items.map(c => {
+    const u = c.other_user;
+    return `<button onclick="selectGroupMember(${u.id})"
+      class="w-full flex items-center gap-sm px-sm py-xs rounded-lg hover:bg-surface-container transition-colors text-left">
+      <div class="w-7 h-7 bg-surface-container-high rounded-full flex items-center justify-center flex-shrink-0">
+        <span class="font-label-sm text-label-sm text-on-surface-variant">${_initials(u.full_name||u.username)}</span>
+      </div>
+      <p class="font-body-sm text-body-sm text-on-surface truncate">${u.full_name || u.username}</p>
+    </button>`;
+  }).join('');
+}
+
+function selectGroupMember(userId) {
+  const conn = _connections.find(c => c.other_user.id === userId);
+  if (!conn) return;
+  const u = conn.other_user;
+  if (!_groupSelectedMembers.find(m => m.id === u.id)) {
+    _groupSelectedMembers.push(u);
+  }
+  renderSelectedChips();
+  renderGroupMemberList(document.getElementById('groupMemberSearch').value.toLowerCase());
+}
+
+function removeGroupMember(userId) {
+  _groupSelectedMembers = _groupSelectedMembers.filter(m => m.id !== userId);
+  renderSelectedChips();
+  renderGroupMemberList(document.getElementById('groupMemberSearch').value.toLowerCase());
+}
+
+function renderSelectedChips() {
+  const el = document.getElementById('selectedMembersChips');
+  if (!_groupSelectedMembers.length) { el.innerHTML = ''; return; }
+  el.innerHTML = _groupSelectedMembers.map(m =>
+    `<span class="flex items-center gap-xs bg-primary-container/20 text-primary font-label-sm text-label-sm px-sm py-xs rounded-full">
+      ${m.full_name || m.username}
+      <button onclick="removeGroupMember(${m.id})" class="text-primary/60 hover:text-primary transition-colors leading-none">×</button>
+    </span>`
+  ).join('');
+}
+
+async function submitCreateGroup() {
+  const name = document.getElementById('groupNameInput').value.trim();
+  if (!name) { showToast('Vui lòng nhập tên nhóm', 'warning'); return; }
+  if (!_groupSelectedMembers.length) { showToast('Vui lòng chọn ít nhất 1 thành viên', 'warning'); return; }
+  try {
+    const g = await apiFetch('/messages/groups', {
+      method: 'POST',
+      body: JSON.stringify({ name, member_ids: _groupSelectedMembers.map(m => m.id) }),
+    });
+    showToast('Tạo nhóm thành công!', 'success');
+    closeCreateGroupModal();
+    await loadGroups();
+    renderInbox();
+    openGroupConv(g.id || g.group_id);
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('beforeunload', () => { if (_pollTimer) clearInterval(_pollTimer); });
+</script>
+</body>
+</html>

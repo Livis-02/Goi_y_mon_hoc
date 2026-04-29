@@ -1,0 +1,94 @@
+<!-- sidebar-admin.html — Admin sidebar fragment
+     Usage: fetch this file → inject into #adminSidebarMount, then call initAdminSidebarUser(user)
+     Depends on: switchAdminTab() defined in admin.html
+-->
+
+<aside id="adminSidebar" class="fixed left-0 top-0 h-screen w-60 flex flex-col py-5 px-3 bg-white border-r border-[#c8c5d3] z-50 shadow-sm transition-transform duration-300 -translate-x-full lg:translate-x-0">
+
+  <!-- Logo -->
+  <div class="flex items-center gap-3 px-3 mb-7">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow"
+         style="background:linear-gradient(135deg,#1a146b,#312e81)">
+      <span class="material-symbols-outlined text-lg" style="font-variation-settings:'FILL' 1">admin_panel_settings</span>
+    </div>
+    <div>
+      <h1 class="text-sm font-extrabold text-[#1a146b] leading-none tracking-tight">EduGuide Admin</h1>
+      <span class="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide" style="background:#eef2ff;color:#1a146b">Quản trị</span>
+    </div>
+  </div>
+
+  <!-- User info -->
+  <div class="mx-2 mb-5 p-3 rounded-xl" style="background:#eef2ff">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+           style="background:linear-gradient(135deg,#1a146b,#312e81)" id="adminSidebarAvatar">A</div>
+      <div class="overflow-hidden flex-1 min-w-0">
+        <p class="text-sm font-semibold text-[#1a146b] truncate" id="adminSidebarName">Admin</p>
+        <p class="text-[10px] text-[#312e81] font-bold uppercase tracking-wide">Quản trị viên</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 space-y-0.5 overflow-y-auto" id="adminSideNav">
+    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-2">Quản trị</p>
+
+    <button type="button" onclick="switchAdminTab('dashboard')" id="adminTabBtn-dashboard"
+      class="admin-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined text-xl">dashboard</span>Tổng quan
+    </button>
+
+    <button type="button" onclick="switchAdminTab('users')" id="adminTabBtn-users"
+      class="admin-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined text-xl">group</span>Sinh viên
+    </button>
+
+    <button type="button" onclick="switchAdminTab('advisors')" id="adminTabBtn-advisors"
+      class="admin-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined text-xl">support_agent</span>Cố vấn học tập
+    </button>
+
+    <button type="button" onclick="switchAdminTab('courses')" id="adminTabBtn-courses"
+      class="admin-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined text-xl">auto_stories</span>Môn học
+    </button>
+
+    <button type="button" onclick="switchAdminTab('notifications')" id="adminTabBtn-notifications"
+      class="admin-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined text-xl">campaign</span>Thông báo
+    </button>
+
+    <button type="button" onclick="switchAdminTab('logs')" id="adminTabBtn-logs"
+      class="admin-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined text-xl">history</span>Nhật ký
+    </button>
+
+
+    <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest px-4 mt-4 mb-2">Liên kết</p>
+
+    <a href="https://daotaodaihoc.humg.edu.vn/#/home" target="_blank" rel="noopener"
+      class="admin-nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-all">
+      <span class="material-symbols-outlined text-xl">school</span>Cổng sinh viên
+      <span class="material-symbols-outlined text-xs ml-auto opacity-50">open_in_new</span>
+    </a>
+  </nav>
+
+  <!-- Bottom: logout -->
+  <div class="border-t border-[#c8c5d3] pt-3 mt-3">
+    <button type="button" id="adminSidebarLogoutBtn"
+      class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all">
+      <span class="material-symbols-outlined text-xl">logout</span>Đăng xuất
+    </button>
+  </div>
+</aside>
+
+<!-- Sidebar overlay (mobile) -->
+<div id="adminSidebarOverlay" class="hidden fixed inset-0 bg-black/60 z-40 lg:hidden"></div>
+
+<style>
+  .admin-nav-btn { color: #64748b; }
+  .admin-nav-btn:hover { background: #eef2ff; color: #1a146b; }
+  .admin-nav-btn.active { background: #eef2ff; color: #1a146b; font-weight: 600; border-right: 3px solid #1a146b; }
+</style>
+
+<!-- JS is handled by admin.html after injection (innerHTML does not execute scripts) -->

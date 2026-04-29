@@ -1,0 +1,427 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Hướng nghề</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.15s; animation-timing-function: ease-out; }
+    #sidebarMount, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+
+    .hub-card { transition: transform .15s ease, box-shadow .15s ease; }
+    .hub-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -10px rgba(79,70,229,.25); }
+  </style>
+  <script>
+    tailwind.config = { darkMode:'class', theme:{ extend:{ colors:{
+      primary:'#1a146b','on-surface':'#0f172a',outline:'#94a3b8',
+    }}}}
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+<div id="sidebarMount"></div>
+
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d] truncate">Hướng nghề</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-6xl mx-auto space-y-5">
+
+    <!-- Hero -->
+    <div class="bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl text-white p-6 shadow-md">
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined msym text-3xl text-white" style="font-variation-settings:'FILL' 1">rocket_launch</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] uppercase tracking-wider text-violet-100 font-bold">Career Hub · AI-powered</p>
+          <h1 class="text-xl lg:text-2xl font-bold mt-1">Tìm hướng nghề & xây kế hoạch kỹ năng</h1>
+          <p class="text-sm text-violet-100 mt-1">Cá nhân hóa bằng AI từ Quiz Holland (RIASEC) + bảng điểm + skill quan tâm + ML model.</p>
+        </div>
+        <div id="hubMyChoice" class="hidden bg-white/15 rounded-xl px-3 py-2 text-right flex-shrink-0">
+          <p class="text-[10px] uppercase tracking-wider text-violet-100 font-bold">Hướng chính của bạn</p>
+          <p class="text-sm font-bold" id="hubChoiceName">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommended next action (state-aware) -->
+    <div id="hubNextAction" class="hidden bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-2xl p-4 flex items-center gap-3 shadow-md">
+      <span class="material-symbols-outlined msym text-2xl flex-shrink-0" style="font-variation-settings:'FILL' 1">tips_and_updates</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-[10px] uppercase tracking-wider text-white/70 font-bold">Đề xuất tiếp theo</p>
+        <p class="text-sm font-bold" id="hubNextActionTitle">—</p>
+        <p class="text-xs text-white/85 mt-0.5" id="hubNextActionDesc">—</p>
+      </div>
+      <a id="hubNextActionLink" href="#" class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-2 rounded-lg flex-shrink-0 transition-colors">Đi tới →</a>
+    </div>
+
+    <!-- Bento layout: Target Profile (col-2) + Quiz (col-1) | Top Skills (col-2) + Tools (col-1) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <!-- ── Target Profile (col-span-2) ── -->
+      <article class="md:col-span-2 hub-card relative overflow-hidden bg-[#ffffff] rounded-2xl border border-[#c8c5d3] p-5 shadow-sm">
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-violet-50/50 opacity-60 pointer-events-none"></div>
+        <div class="relative">
+
+          <div id="tpLoaded" class="hidden">
+            <div class="flex items-start justify-between gap-3 mb-4">
+              <div class="flex-1 min-w-0">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-bold uppercase tracking-wider rounded-full mb-2">
+                  <span class="material-symbols-outlined msym text-[14px]" style="font-variation-settings:'FILL' 1">target</span>Hướng nghề chính
+                </span>
+                <h2 id="tpName" class="text-xl font-extrabold text-[#0b1c30] leading-tight mb-1">—</h2>
+                <p id="tpDesc" class="text-sm text-[#474651] line-clamp-2">—</p>
+              </div>
+              <div class="flex-shrink-0 text-center">
+                <div class="relative w-16 h-16">
+                  <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5eeff" stroke-width="3"/>
+                    <circle id="tpProgressArc" cx="18" cy="18" r="15.9" fill="none" stroke="#1a146b" stroke-width="3"
+                      stroke-dasharray="0 100" stroke-linecap="round"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <span id="tpProgressPct" class="text-base font-extrabold text-[#1a146b] leading-none">0%</span>
+                  </div>
+                </div>
+                <p class="text-[10px] uppercase tracking-wider text-[#777682] mt-1 font-bold">Skill phủ</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-3 border-t border-[#c8c5d3]">
+              <div>
+                <p class="text-[10px] uppercase tracking-wider text-[#777682] font-bold">Tổng skill</p>
+                <p id="tpTotalSkills" class="text-base font-bold text-[#0b1c30]">—</p>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-wider text-[#777682] font-bold">Đã đạt</p>
+                <p id="tpCompletedSkills" class="text-base font-bold text-emerald-700">—</p>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-wider text-[#777682] font-bold">Đã chọn</p>
+                <p id="tpChosenAt" class="text-base font-bold text-[#0b1c30]">—</p>
+              </div>
+            </div>
+
+            <div class="mt-4 flex gap-2">
+              <a href="skill-tree.html" class="flex-1 px-3 py-2 bg-[#1a146b] hover:bg-[#312e81] text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined msym text-base">account_tree</span>Xem skill chi tiết
+              </a>
+              <a href="career-quiz.html" class="px-3 py-2 bg-white border border-[#c8c5d3] hover:bg-[#eef2ff] text-[#474651] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                <span class="material-symbols-outlined msym text-base">refresh</span>Đổi
+              </a>
+            </div>
+          </div>
+
+          <div id="tpEmpty" class="text-center py-6">
+            <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-violet-100 flex items-center justify-center">
+              <span class="material-symbols-outlined msym text-3xl text-violet-600" style="font-variation-settings:'FILL' 1">explore</span>
+            </div>
+            <p class="text-base font-bold text-[#0b1c30] mb-1">Chưa chốt hướng nghề</p>
+            <p class="text-xs text-[#474651] max-w-sm mx-auto mb-4">Làm quiz Holland 12 câu để hệ thống đề xuất nghề CNTT phù hợp với tính cách + sở thích.</p>
+            <a href="career-quiz.html" class="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+              <span class="material-symbols-outlined msym text-base">quiz</span>Bắt đầu quiz
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <!-- ── Quiz Card (col-span-1) ── -->
+      <a href="career-quiz.html" class="hub-card block bg-gradient-to-br from-violet-500 to-indigo-600 text-white rounded-2xl p-5 shadow-md relative overflow-hidden">
+        <div class="absolute -right-6 -top-6 opacity-10 pointer-events-none">
+          <span class="material-symbols-outlined msym" style="font-size:140px">psychology</span>
+        </div>
+        <div class="relative">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+              <span class="material-symbols-outlined msym text-xl text-white">quiz</span>
+            </div>
+            <p class="text-[10px] uppercase tracking-wider text-violet-100 font-bold">RIASEC</p>
+          </div>
+          <h3 class="text-base font-bold leading-tight mb-1">Quiz Holland</h3>
+          <p class="text-xs text-violet-100 mb-4">12 câu · ~3 phút</p>
+
+          <div class="bg-white/15 rounded-lg p-2.5 backdrop-blur-sm mb-3">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-semibold" id="quizStatusLabel">Chưa làm</span>
+              <span id="quizStatusPct" class="text-[10px] text-violet-100">0/12</span>
+            </div>
+            <div class="h-1 bg-white/20 rounded-full overflow-hidden mt-1.5">
+              <div id="quizStatusBar" class="h-full bg-white rounded-full transition-all" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="text-xs font-bold flex items-center gap-1">
+            <span id="quizCtaLabel">Bắt đầu</span>
+            <span class="material-symbols-outlined msym text-base">arrow_forward</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- ── Top Skills (col-span-2) ── -->
+      <article class="md:col-span-2 hub-card bg-[#ffffff] rounded-2xl border border-[#c8c5d3] p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-[#312e81] font-bold">Kỹ năng cần thiết</p>
+            <h3 class="text-base font-bold text-[#0b1c30]">Top skills theo hướng nghề</h3>
+          </div>
+          <a href="skill-tree.html" class="text-xs font-semibold text-[#1a146b] hover:underline flex items-center gap-1">Xem hết<span class="material-symbols-outlined msym text-sm">arrow_forward</span></a>
+        </div>
+        <div id="tpSkillsList" class="space-y-2">
+          <p class="text-xs text-[#777682] italic py-3">Chốt hướng nghề ở thẻ bên trên để xem danh sách skill yêu cầu.</p>
+        </div>
+      </article>
+
+      <!-- ── Tools card (col-span-1) ── -->
+      <article class="hub-card bg-[#ffffff] rounded-2xl border border-[#c8c5d3] p-5 shadow-sm">
+        <p class="text-[10px] uppercase tracking-wider text-amber-600 font-bold mb-1">Công cụ</p>
+        <h3 class="text-base font-bold text-[#0b1c30] mb-3">Tiện ích khác</h3>
+        <div class="space-y-2">
+          <a href="skill-tree.html" class="flex items-center gap-2 px-3 py-2.5 bg-[#eff4ff] hover:bg-[#eef2ff] rounded-lg transition-colors group">
+            <span class="material-symbols-outlined msym text-[#1a146b] text-base">account_tree</span>
+            <span class="flex-1 text-xs font-semibold text-[#0b1c30]">Lộ trình kỹ năng</span>
+            <span class="material-symbols-outlined msym text-[#c8c5d3] group-hover:text-[#1a146b] text-base transition-colors">arrow_forward</span>
+          </a>
+          <a href="compare-plans.html" class="flex items-center gap-2 px-3 py-2.5 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors group">
+            <span class="material-symbols-outlined msym text-amber-600 text-base">compare_arrows</span>
+            <span class="flex-1 text-xs font-semibold text-[#0b1c30]">So sánh phương án</span>
+            <span class="material-symbols-outlined msym text-[#c8c5d3] group-hover:text-amber-600 text-base transition-colors">arrow_forward</span>
+          </a>
+          <a href="career-quiz.html" class="flex items-center gap-2 px-3 py-2.5 bg-violet-50 hover:bg-violet-100 rounded-lg transition-colors group">
+            <span class="material-symbols-outlined msym text-violet-600 text-base">explore</span>
+            <span class="flex-1 text-xs font-semibold text-[#0b1c30]">Khám phá nghề khác</span>
+            <span class="material-symbols-outlined msym text-[#c8c5d3] group-hover:text-violet-600 text-base transition-colors">arrow_forward</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- Hidden status spans (legacy IDs that init logic still updates) -->
+      <span id="hubQuizStatus" class="hidden"></span>
+      <span id="hubSkillStatus" class="hidden"></span>
+      <span id="hubCompareStatus" class="hidden"></span>
+    </div>
+
+  </div>
+</main>
+
+<script src="floating-chat.js"></script>
+<script>
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:8000' : window.location.origin;
+function H() { return { Authorization: `Bearer ${getToken()}`, 'Content-Type':'application/json' }; }
+function escHtml(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+checkAuth();
+
+(async function init() {
+  let userTermsStudied = 0;
+  let userPassedCount = 0;
+  let hasCareer = false;
+  let hasQuiz = false;
+  let hasCareerSkills = false;
+
+  try {
+    const ur = await fetch(`${API_BASE}/auth/me`, { headers: H() });
+    if (ur.ok) {
+      const u = await ur.json();
+      updateTopbarUser(u);
+      const sb = document.getElementById('sidebarUserName');
+      if (sb) sb.textContent = u.full_name || u.username || '';
+    }
+  } catch {}
+
+  // Parallel data fetch — needed to compute state-aware suggestion
+  const [careerRes, quizRes, progRes, skillsRes] = await Promise.all([
+    fetch(`${API_BASE}/careers/me`, { headers: H() }).catch(() => null),
+    fetch(`${API_BASE}/quiz/holland/me`, { headers: H() }).catch(() => null),
+    fetch(`${API_BASE}/progress/me`, { headers: H() }).catch(() => null),
+    fetch(`${API_BASE}/me/career-skills`, { headers: H() }).catch(() => null),
+  ]);
+
+  // Career — populate Target Profile + Top Skills bento card
+  try {
+    if (careerRes?.ok) {
+      const data = await careerRes.json();
+      if (data?.primary?.name) {
+        hasCareer = true;
+        const p = data.primary;
+        const banner = document.getElementById('hubMyChoice');
+        banner.classList.remove('hidden');
+        document.getElementById('hubChoiceName').textContent = p.name;
+
+        // Toggle Target Profile state
+        document.getElementById('tpEmpty').classList.add('hidden');
+        document.getElementById('tpLoaded').classList.remove('hidden');
+
+        // Populate Target Profile fields
+        document.getElementById('tpName').textContent = p.name;
+        document.getElementById('tpDesc').textContent = p.short_description || '—';
+
+        const prog = p.progress || { completed: 0, total: 0, percent: 0 };
+        const pct = Number(prog.percent) || 0;
+        document.getElementById('tpProgressPct').textContent = Math.round(pct) + '%';
+        const arc = document.getElementById('tpProgressArc');
+        if (arc) arc.setAttribute('stroke-dasharray', `${pct} ${100 - pct}`);
+
+        document.getElementById('tpTotalSkills').textContent = prog.total || 0;
+        document.getElementById('tpCompletedSkills').textContent = prog.completed || 0;
+        const chosenAt = data.chosen_at ? new Date(data.chosen_at).toLocaleDateString('vi-VN') : '—';
+        document.getElementById('tpChosenAt').textContent = chosenAt;
+
+        // Render top skills (top 5 by priority)
+        const skillsList = document.getElementById('tpSkillsList');
+        const skills = (p.skills || []).slice(0, 5);
+        if (skillsList && skills.length) {
+          const statusMeta = {
+            completed:   { color: '#10b981', bg: '#d1fae5', text: '#047857', label: 'Đã đạt' },
+            in_progress: { color: '#0ea5e9', bg: '#e0f2fe', text: '#0369a1', label: 'Đang học' },
+            planned:     { color: '#94a3b8', bg: '#f1f5f9', text: '#475569', label: 'Dự kiến' },
+          };
+          skillsList.innerHTML = skills.map(sk => {
+            const st = statusMeta[sk.user_status] || statusMeta.planned;
+            const lvl = sk.level ? ` · ${escHtml(sk.level)}` : '';
+            const hours = sk.estimated_hours ? ` · ~${sk.estimated_hours}h` : '';
+            const typeLabel = sk.skill_type === 'soft' ? 'Soft skill' : 'Hard skill';
+            return `<div class="flex items-center gap-3 px-3 py-2 bg-[#f8f9ff] rounded-lg border border-[#e5eeff]">
+              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${st.color}"></span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-[#0b1c30] truncate">${escHtml(sk.skill_name)}</p>
+                <p class="text-[10px] text-[#777682]">${typeLabel}${lvl}${hours}</p>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style="background:${st.bg};color:${st.text}">${st.label}</span>
+            </div>`;
+          }).join('');
+        } else if (skillsList) {
+          skillsList.innerHTML = `<p class="text-xs text-[#777682] italic py-3">Hướng nghề này chưa có dữ liệu skill.</p>`;
+        }
+      } else {
+        // No career chosen — show empty state
+        document.getElementById('tpLoaded').classList.add('hidden');
+        document.getElementById('tpEmpty').classList.remove('hidden');
+      }
+    }
+  } catch {}
+
+  // Quiz — populate compact card
+  try {
+    if (quizRes?.ok) {
+      const q = await quizRes.json();
+      if (q?.taken || q?.taken_at) {
+        hasQuiz = true;
+        const dt = q.taken_at ? new Date(q.taken_at).toLocaleDateString('vi-VN') : '';
+        const statusLbl = document.getElementById('quizStatusLabel');
+        const statusPct = document.getElementById('quizStatusPct');
+        const bar = document.getElementById('quizStatusBar');
+        const cta = document.getElementById('quizCtaLabel');
+        if (statusLbl) statusLbl.textContent = dt ? `Đã làm ${dt}` : 'Đã hoàn thành';
+        if (statusPct) statusPct.textContent = '12/12';
+        if (bar) bar.style.width = '100%';
+        if (cta) cta.textContent = 'Làm lại';
+      }
+    }
+  } catch {}
+
+  // Progress (terms studied + courses passed)
+  try {
+    if (progRes?.ok) {
+      const p = await progRes.json();
+      userTermsStudied = p.terms_studied || 0;
+      userPassedCount = p.completed_courses || 0;
+      const cmpStatus = document.getElementById('hubCompareStatus');
+      if (cmpStatus) {
+        if (userPassedCount === 0) {
+          cmpStatus.innerHTML = `<span class="material-symbols-outlined msym text-[14px] text-amber-500">info</span><span class="text-amber-700">Chưa có điểm — kết quả mô phỏng có thể chưa chính xác</span>`;
+        }
+      }
+    }
+  } catch {}
+
+  // Career skills
+  try {
+    if (skillsRes?.ok) {
+      const s = await skillsRes.json();
+      hasCareerSkills = (s.career_skills || []).length > 0;
+    }
+  } catch {}
+
+  // Compute "Next action" suggestion based on state
+  const nextAction = (() => {
+    if (!hasQuiz) {
+      return { title: 'Làm Quiz Holland để biết em phù hợp nghề nào', desc: '12 câu · ~3 phút. Đây là bước nền cho cả hub.', href: 'career-quiz.html' };
+    }
+    if (!hasCareer) {
+      return { title: 'Chốt 1 hướng nghề chính', desc: 'Quiz đã xong — chọn nghề top 1 hoặc xem chi tiết các nghề được đề xuất.', href: 'career-quiz.html' };
+    }
+    if (!hasCareerSkills) {
+      return { title: 'Chọn 3-5 kỹ năng quan tâm trên Tổng quan', desc: 'Để recommendation kỳ tới chính xác hơn (+13% trọng số skill match).', href: 'home.html' };
+    }
+    return { title: 'Theo dõi Lộ trình kỹ năng', desc: 'Hub đã setup xong. Vào Skill tree để xem skill còn thiếu và môn nào lấp được.', href: 'skill-tree.html' };
+  })();
+
+  const naBox = document.getElementById('hubNextAction');
+  if (naBox) {
+    document.getElementById('hubNextActionTitle').textContent = nextAction.title;
+    document.getElementById('hubNextActionDesc').textContent = nextAction.desc;
+    document.getElementById('hubNextActionLink').setAttribute('href', nextAction.href);
+    naBox.classList.remove('hidden');
+  }
+})();
+</script>
+</body>
+</html>
+
+

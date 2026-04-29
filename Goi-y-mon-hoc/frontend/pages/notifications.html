@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Thông báo</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,sans-serif; margin:0; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <script>
+    tailwind.config = {
+
+      theme: { extend: { colors: {
+        "secondary-container": "#6cf8bb", "surface-container": "#e5eeff",
+        "primary-fixed": "#e2dfff", "surface-variant": "#d3e4fe",
+        "on-surface-variant": "#474651", "background": "#f8f9ff",
+        "surface": "#f8f9ff", "error": "#ba1a1a",
+        "surface-container-low": "#eff4ff", "surface-container-high": "#dce9ff",
+        "on-secondary-container": "#00714d", "on-error-container": "#93000a",
+        "error-container": "#ffdad6", "outline-variant": "#c8c5d3",
+        "surface-tint": "#5654a8", "surface-container-lowest": "#ffffff",
+        "outline": "#777682", "primary-fixed-dim": "#c3c0ff",
+        "secondary": "#006c49", "primary": "#1a146b",
+        "tertiary-container": "#1e19b2", "primary-container": "#312e81",
+        "on-surface": "#0b1c30", "on-error": "#ffffff",
+        "on-primary": "#ffffff", "on-primary-fixed": "#100563",
+        "primary-light": "#eef2ff",
+      }}}
+    }
+  </script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .filter-pill { transition: all 0.15s ease; }
+    .filter-pill[data-active="true"] { background:#1a146b; color:#fff; border-color:#1a146b; }
+    .filter-pill:not([data-active="true"]):hover { background:#eef2ff; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation: fadeIn .25s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+  </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen">
+
+<!-- Tailwind safelist (hidden) — đảm bảo Tailwind CDN gen các class dùng trong template literal khi inject động -->
+<div aria-hidden="true" class="hidden bg-error bg-amber-500 bg-primary bg-error-container bg-amber-100 bg-primary-light text-error text-amber-700 text-primary text-red-700 text-amber-800 ring-red-200 ring-amber-200 ring-indigo-200 bg-red-100"></div>
+
+<!-- Toast -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Sidebar fragment -->
+<div id="sidebarMount"></div>
+
+<!-- Header -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest/95 backdrop-blur border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-on-surface-variant">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
+      <span class="material-symbols-outlined msym text-lg text-primary">notifications</span>
+      Thông báo
+    </h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Main content -->
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-6xl mx-auto">
+
+    <!-- Hero stats -->
+    <section class="rounded-2xl pri-grad text-white p-5 lg:p-6 shadow-sm mb-5 relative overflow-hidden">
+      <div class="absolute -top-8 -right-8 w-40 h-40 bg-white/5 rounded-full pointer-events-none"></div>
+      <div class="relative flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-8">
+        <div class="flex-1">
+          <h1 class="text-xl lg:text-2xl font-bold mb-1">Trung tâm thông báo</h1>
+          <p class="text-sm text-primary-fixed-dim">
+            Cập nhật học vụ, cảnh báo hệ thống và thông tin từ quản trị viên.
+          </p>
+        </div>
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center sm:text-right">
+          <div class="bg-white/10 backdrop-blur rounded-xl px-3 py-2 sm:bg-transparent">
+            <p class="text-2xl font-extrabold leading-none" id="statTotal">—</p>
+            <p class="text-[10px] uppercase tracking-wider text-primary-fixed-dim mt-1">Tổng</p>
+          </div>
+          <div class="bg-white/10 backdrop-blur rounded-xl px-3 py-2 sm:bg-transparent">
+            <p class="text-2xl font-extrabold leading-none" id="statUnread">—</p>
+            <p class="text-[10px] uppercase tracking-wider text-primary-fixed-dim mt-1">Chưa đọc</p>
+          </div>
+          <div class="bg-white/10 backdrop-blur rounded-xl px-3 py-2 sm:bg-transparent">
+            <p class="text-2xl font-extrabold leading-none text-red-200" id="statUrgent">—</p>
+            <p class="text-[10px] uppercase tracking-wider text-primary-fixed-dim mt-1">Khẩn cấp</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter bar -->
+    <section class="bg-white rounded-2xl border border-outline-variant shadow-sm p-3 sm:p-4 mb-5 flex flex-wrap items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2 flex-1">
+        <button class="filter-pill px-3.5 py-1.5 rounded-full text-xs font-semibold border border-outline-variant text-on-surface"
+          data-filter="status" data-value="all" data-active="true" onclick="setFilter('status','all')">
+          Tất cả
+        </button>
+        <button class="filter-pill px-3.5 py-1.5 rounded-full text-xs font-semibold border border-outline-variant text-on-surface"
+          data-filter="status" data-value="unread" onclick="setFilter('status','unread')">
+          Chưa đọc <span id="pillUnreadCount" class="hidden ml-1 bg-error text-white text-[10px] px-1.5 rounded-full"></span>
+        </button>
+        <span class="w-px h-6 bg-outline-variant mx-1 hidden sm:block"></span>
+        <button class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold border border-outline-variant text-on-surface flex items-center gap-1"
+          data-filter="severity" data-value="info" onclick="setFilter('severity','info')">
+          <span class="w-2 h-2 rounded-full bg-primary"></span>Info
+        </button>
+        <button class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold border border-outline-variant text-on-surface flex items-center gap-1"
+          data-filter="severity" data-value="warning" onclick="setFilter('severity','warning')">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>Cảnh báo
+        </button>
+        <button class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold border border-outline-variant text-on-surface flex items-center gap-1"
+          data-filter="severity" data-value="urgent" onclick="setFilter('severity','urgent')">
+          <span class="w-2 h-2 rounded-full bg-error"></span>Khẩn cấp
+        </button>
+      </div>
+      <button onclick="markAllNotifsRead()" id="markAllBtn"
+        class="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-light text-primary text-xs font-semibold rounded-full hover:bg-primary/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="material-symbols-outlined msym text-base">done_all</span>
+        Đánh dấu tất cả đã đọc
+      </button>
+    </section>
+
+    <!-- Loading skeleton -->
+    <div id="loadingState" class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
+      <div class="bg-surface-container rounded-2xl h-32"></div>
+      <div class="bg-surface-container rounded-2xl h-32"></div>
+      <div class="bg-surface-container rounded-2xl h-32"></div>
+      <div class="bg-surface-container rounded-2xl h-32"></div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="hidden py-20 px-6 text-center">
+      <div class="w-24 h-24 mx-auto mb-5 rounded-full bg-surface-container flex items-center justify-center">
+        <span class="material-symbols-outlined msym text-on-surface-variant text-5xl">notifications_off</span>
+      </div>
+      <h3 class="text-lg font-bold text-on-surface mb-1.5" id="emptyTitle">Không có thông báo</h3>
+      <p class="text-sm text-on-surface-variant max-w-md mx-auto" id="emptyMsg">Bạn đã đọc hết tất cả thông báo. Quay lại sau để cập nhật thông tin mới.</p>
+    </div>
+
+    <!-- Notifications grid -->
+    <div id="notifGrid" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 fade-in"></div>
+
+  </div>
+</main>
+
+<script>
+const API_BASE = window.API_BASE;
+function auth(extra = {}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+
+async function callApi(path, opts = {}, timeoutMs = 30000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { signal: ctrl.signal, ...opts });
+    clearTimeout(timer);
+    if (res.status === 401) { localStorage.removeItem('access_token'); window.location.replace('index.html'); return { ok:false, status:401, data:{} }; }
+    let data; try { data = await res.json(); } catch { data = {}; }
+    return { ok: res.ok, status: res.status, data };
+  } catch (err) {
+    clearTimeout(timer);
+    return { ok: false, status: 0, data: { detail: err?.name === 'AbortError' ? 'Timeout.' : 'Không thể kết nối server.' } };
+  }
+}
+
+function showToast(msg, type = 'info', duration = 3000) {
+  const el = document.createElement('div');
+  const colors = {
+    success: 'bg-secondary text-white',
+    error:   'bg-error text-on-error',
+    warning: 'bg-amber-500 text-white',
+    info:    'bg-primary text-on-primary',
+  };
+  const icons = { success:'check_circle', error:'error', warning:'warning', info:'info' };
+  el.className = `pointer-events-auto px-4 py-2.5 rounded-xl shadow-lg ${colors[type]||colors.info} flex items-center gap-2 text-sm font-semibold fade-in`;
+  el.innerHTML = `<span class="material-symbols-outlined msym text-base">${icons[type]||'info'}</span>${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+let _allNotifs = [];
+let _filters = { status: 'all', severity: null }; // status: all|unread; severity: null|info|warning|urgent
+let _expanded = new Set();
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function _timeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return 'Vừa xong';
+  if (diff < 3600) return Math.floor(diff/60) + ' phút trước';
+  if (diff < 86400) return Math.floor(diff/3600) + ' giờ trước';
+  if (diff < 86400*7) return Math.floor(diff/86400) + ' ngày trước';
+  return new Date(dateStr).toLocaleDateString('vi-VN');
+}
+function _fullDate(dateStr) { return new Date(dateStr).toLocaleString('vi-VN'); }
+
+const SEVERITY_META = {
+  urgent:  {
+    label:'Khẩn cấp', icon:'error',
+    bar:'bg-error', iconBg:'bg-error-container', iconColor:'text-error',
+    ring:'ring-red-200', badgeBg:'bg-red-100', badgeText:'text-red-700',
+  },
+  warning: {
+    label:'Cảnh báo', icon:'warning',
+    bar:'bg-amber-500', iconBg:'bg-amber-100', iconColor:'text-amber-700',
+    ring:'ring-amber-200', badgeBg:'bg-amber-100', badgeText:'text-amber-800',
+  },
+  info: {
+    label:'Thông tin', icon:'info',
+    bar:'bg-primary', iconBg:'bg-primary-light', iconColor:'text-primary',
+    ring:'ring-indigo-200', badgeBg:'bg-primary-light', badgeText:'text-primary',
+  },
+};
+function _meta(sev) { return SEVERITY_META[sev] || SEVERITY_META.info; }
+
+function _escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ── Filter logic ───────────────────────────────────────────────────────────
+function setFilter(key, value) {
+  if (key === 'status') {
+    _filters.status = value;
+  } else if (key === 'severity') {
+    // Toggle: click lại cùng severity = bỏ filter
+    _filters.severity = (_filters.severity === value) ? null : value;
+  }
+  _refreshFilterUI();
+  _renderList();
+}
+
+function _refreshFilterUI() {
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    const k = b.dataset.filter, v = b.dataset.value;
+    let isActive = false;
+    if (k === 'status') isActive = (_filters.status === v);
+    else if (k === 'severity') isActive = (_filters.severity === v);
+    b.dataset.active = isActive ? 'true' : 'false';
+  });
+}
+
+function _filtered() {
+  return _allNotifs.filter(n => {
+    if (_filters.status === 'unread' && n.is_read) return false;
+    if (_filters.severity && n.severity !== _filters.severity) return false;
+    return true;
+  });
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function _updateStats() {
+  const total = _allNotifs.length;
+  const unread = _allNotifs.filter(n => !n.is_read).length;
+  const urgent = _allNotifs.filter(n => n.severity === 'urgent' && !n.is_read).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statUnread').textContent = unread;
+  document.getElementById('statUrgent').textContent = urgent;
+  const pillUnread = document.getElementById('pillUnreadCount');
+  if (unread > 0) { pillUnread.textContent = unread > 99 ? '99+' : unread; pillUnread.classList.remove('hidden'); }
+  else pillUnread.classList.add('hidden');
+  const markAllBtn = document.getElementById('markAllBtn');
+  markAllBtn.disabled = (unread === 0);
+  // Update sidebar badge
+  const sb = document.getElementById('sidebarNotifBadge');
+  if (sb) {
+    if (unread > 0) { sb.textContent = unread > 99 ? '99+' : unread; sb.classList.remove('hidden'); }
+    else sb.classList.add('hidden');
+  }
+}
+
+function _renderList() {
+  const grid = document.getElementById('notifGrid');
+  const empty = document.getElementById('emptyState');
+  const items = _filtered();
+
+  if (items.length === 0) {
+    grid.classList.add('hidden');
+    empty.classList.remove('hidden');
+    if (_filters.status === 'unread') {
+      document.getElementById('emptyTitle').textContent = 'Không có thông báo chưa đọc';
+      document.getElementById('emptyMsg').textContent = 'Bạn đã đọc hết tất cả thông báo phù hợp với bộ lọc.';
+    } else if (_filters.severity) {
+      document.getElementById('emptyTitle').textContent = `Không có thông báo "${_meta(_filters.severity).label}"`;
+      document.getElementById('emptyMsg').textContent = 'Thử bỏ bộ lọc để xem tất cả thông báo.';
+    } else {
+      document.getElementById('emptyTitle').textContent = 'Không có thông báo nào';
+      document.getElementById('emptyMsg').textContent = 'Hệ thống chưa có thông báo nào dành cho bạn. Quay lại sau nhé!';
+    }
+    return;
+  }
+
+  empty.classList.add('hidden');
+  grid.classList.remove('hidden');
+
+  grid.innerHTML = items.map(n => _cardHtml(n)).join('');
+}
+
+function _cardHtml(n) {
+  const m = _meta(n.severity);
+  const isExpanded = _expanded.has(n.id);
+  const span2 = (n.severity === 'urgent' && !n.is_read) ? 'md:col-span-2' : '';
+  const opacity = n.is_read ? 'opacity-80' : '';
+  const ringUnread = n.is_read ? '' : `ring-1 ${m.ring}`;
+  const titleWeight = n.is_read ? 'font-semibold' : 'font-bold';
+
+  return `
+    <article class="${span2} ${opacity} ${ringUnread} bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow"
+      data-notif-id="${n.id}">
+      <div class="absolute left-0 top-0 bottom-0 w-1 ${m.bar}"></div>
+      <button class="w-full text-left p-4 sm:p-5 flex gap-3 sm:gap-4" onclick="toggleNotifCard(${n.id})">
+        <div class="flex-shrink-0 mt-0.5">
+          <div class="w-10 h-10 rounded-full ${m.iconBg} flex items-center justify-center">
+            <span class="material-symbols-outlined msym ${m.iconColor}" style="font-variation-settings:'FILL' 1">${m.icon}</span>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <h3 class="text-sm ${titleWeight} text-on-surface leading-snug ${isExpanded ? '' : 'line-clamp-2'} pr-2">${_escapeHtml(n.title)}</h3>
+            <span class="text-[11px] text-on-surface-variant whitespace-nowrap flex-shrink-0">${_timeAgo(n.created_at)}</span>
+          </div>
+          <p class="text-xs text-on-surface-variant ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'} mt-1">${_escapeHtml(n.body)}</p>
+          <div class="flex items-center justify-between mt-3 gap-2">
+            <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${m.badgeBg} ${m.badgeText}">${m.label}</span>
+            <span class="flex items-center gap-2 ${isExpanded ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity">
+              ${!n.is_read ? `<span class="text-[11px] text-primary font-semibold">${isExpanded ? 'Thu gọn' : 'Đánh dấu đã đọc'}</span>` : ''}
+              ${isExpanded ? `<span class="text-[11px] text-on-surface-variant">${_fullDate(n.created_at)}</span>` : ''}
+            </span>
+            ${!n.is_read ? '<span class="absolute top-3 right-3 w-2 h-2 rounded-full bg-primary"></span>' : ''}
+          </div>
+        </div>
+      </button>
+    </article>
+  `;
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
+async function toggleNotifCard(id) {
+  const n = _allNotifs.find(x => x.id === id);
+  if (!n) return;
+  if (_expanded.has(id)) _expanded.delete(id);
+  else _expanded.add(id);
+  if (!n.is_read) {
+    n.is_read = true;
+    callApi(`/notifications/${id}/mark-read`, { method: 'POST', headers: auth() });
+    _updateStats();
+  }
+  _renderList();
+}
+
+async function markAllNotifsRead() {
+  const unreadCount = _allNotifs.filter(n => !n.is_read).length;
+  if (unreadCount === 0) return;
+  const res = await callApi('/notifications/mark-all-read', { method: 'POST', headers: auth() });
+  if (res.ok) {
+    _allNotifs.forEach(n => n.is_read = true);
+    _updateStats();
+    _renderList();
+    showToast(`Đã đánh dấu ${unreadCount} thông báo đã đọc`, 'success');
+  } else {
+    showToast('Không thể cập nhật. Thử lại sau.', 'error');
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function loadNotifs() {
+  const res = await callApi('/notifications/me', { headers: auth() });
+  document.getElementById('loadingState').classList.add('hidden');
+  if (!res.ok) {
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('emptyTitle').textContent = 'Không tải được thông báo';
+    document.getElementById('emptyMsg').textContent = 'Vui lòng kiểm tra kết nối và thử lại.';
+    return;
+  }
+  _allNotifs = res.data || [];
+  _updateStats();
+  _renderList();
+}
+
+(async function init() {
+  const user = await getCurrentUser();
+  if (!user) return;
+  updateTopbarUser(user);
+  // Sidebar user info (if sidebar fragment is present)
+  const sbName = document.getElementById('sidebarUserName');
+  if (sbName) sbName.textContent = user.full_name || user.username || '';
+  const sbAva = document.getElementById('avatarCircle');
+  if (sbAva && user.full_name) sbAva.textContent = user.full_name.trim().split(/\s+/).pop().charAt(0).toUpperCase();
+  await loadNotifs();
+})();
+</script>
+
+</body>
+</html>

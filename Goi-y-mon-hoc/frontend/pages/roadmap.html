@@ -1,0 +1,2116 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Lộ trình học tập</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+  </style>
+  
+  <!-- Smooth page transitions (Chrome 111+, Safari 18+) -->
+  <style>
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) {
+      animation-duration: 0.15s;
+      animation-timing-function: ease-out;
+    }
+    /* Keep sidebar + header stable across transitions (no fade on persistent UI) */
+    #sidebarMount, #sidebarDrawer, #adminSidebar, #adminSidebarMount, header {
+      view-transition-name: none;
+    }
+  </style>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+
+      theme: {
+        extend: {
+          colors: {
+            "background": "#f8f9ff", "on-background": "#0b1c30",
+            "surface": "#f8f9ff", "on-surface": "#0b1c30",
+            "surface-container-lowest": "#ffffff", "surface-container-low": "#eff4ff",
+            "surface-container": "#e5eeff", "surface-container-high": "#dce9ff",
+            "surface-container-highest": "#d3e4fe", "surface-variant": "#d3e4fe",
+            "outline": "#777682", "outline-variant": "#c8c5d3",
+            "on-surface-variant": "#474651",
+            "primary": "#1a146b", "on-primary": "#ffffff",
+            "primary-container": "#312e81", "on-primary-container": "#9c9af4",
+            "secondary": "#006c49", "on-secondary": "#ffffff",
+            "secondary-container": "#6cf8bb", "on-secondary-container": "#00714d",
+            "error": "#ba1a1a", "on-error": "#ffffff",
+            "error-container": "#ffdad6", "on-error-container": "#93000a"
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <script src="_curriculum_chart.js"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body  { font-family:'Inter',sans-serif; }
+    .pri-grad { background:linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+
+    @keyframes spin   { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    .fade-in { animation:fadeIn .25s ease both; }
+
+    ::-webkit-scrollbar       { width:5px; height:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+
+    .rtab-active   { background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.08); color:#1a146b; font-weight:600; }
+    .rtab-inactive { color:#64748B; font-weight:500; }
+    .rtab-inactive:hover { color:#334155; }
+
+    .acc-arrow { transition:transform .2s; }
+    .acc-open .acc-arrow { transform:rotate(180deg); }
+
+    #saveStatus { transition:opacity .3s; }
+
+    .drop-active { background:#EEF2FF !important; border-color:#312e81 !important; }
+    .course-dragging { opacity:.35; }
+
+    .course-card.selected { border-color:#1a146b; background:#EEF2FF; }
+  </style>
+  <!-- Tailwind safelist (ensures CDN generates dynamic classes used in JS) -->
+  <div class="hidden
+    bg-[#eff4ff] bg-red-50 bg-[#eef2ff] bg-violet-50 bg-green-50 bg-amber-50
+    text-[#0b1c30] text-red-700 text-[#1a146b] text-violet-700 text-green-700
+    text-[#777682] text-red-400 text-indigo-400 text-violet-400 text-green-600
+    border-[#c8c5d3] border-red-100 border-indigo-100 border-violet-100
+    bg-green-500 bg-red-400 bg-indigo-300 bg-violet-400
+    bg-green-100 bg-blue-100 bg-blue-700 text-blue-700">
+  </div>
+
+  <style>
+    /* disable browser autofill yellow highlight */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus,
+    select:-webkit-autofill,
+    select:-webkit-autofill:hover,
+    select:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+      -webkit-text-fill-color: inherit !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background antialiased">
+
+<!-- ── TOAST ─────────────────────────────────────────────────────────────────── -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ── SIDEBAR ────────────────────────────────────────────────────────────────── -->
+<div id="sidebarMount"></div>
+
+<!-- ── FIXED HEADER ──────────────────────────────────────────────────────────── -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container flex-shrink-0" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-on-surface-variant">menu</span>
+    </button>
+    <span class="material-symbols-outlined msym text-lg text-primary flex-shrink-0">route</span>
+    <div class="min-w-0">
+      <h2 class="text-base font-bold text-on-background leading-none">Lộ trình học tập</h2>
+      <p id="headerSubtitle" class="text-[11px] text-on-surface-variant mt-0.5 truncate">Đang tải...</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-3 flex-shrink-0">
+    <span id="saveStatus" class="text-xs text-on-surface-variant opacity-0 flex items-center gap-1">
+      <span id="saveIcon" class="material-symbols-outlined msym text-sm">cloud_done</span>
+      <span id="saveText">Đã lưu</span>
+    </span>
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── MAIN ──────────────────────────────────────────────────────────────────── -->
+<main class="lg:ml-60 pt-[60px] min-h-screen">
+<div class="p-4 lg:p-6 max-w-5xl mx-auto">
+
+  <!-- Page title -->
+  <div class="mb-4">
+    <h1 class="text-2xl font-semibold text-[#0b1c30]">Lộ trình học tập</h1>
+    <p id="pageSubtitle" class="text-sm text-[#474651] mt-1">Đang tải...</p>
+  </div>
+
+  <!-- Group nav bar (shared across Lộ trình group: roadmap.html / goals.html / readiness.html) -->
+  <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] shadow-sm p-1 flex gap-1 mb-3 overflow-x-auto">
+    <a href="roadmap.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 bg-[#1a146b] text-white shadow-sm">
+      <span class="material-symbols-outlined msym text-base">route</span>Kế hoạch học tập
+    </a>
+    <a href="goals.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+      <span class="material-symbols-outlined msym text-base">my_location</span>Mục tiêu &amp; Mô phỏng
+    </a>
+    <a href="readiness.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+      <span class="material-symbols-outlined msym text-base">workspace_premium</span>Sẵn sàng tốt nghiệp
+    </a>
+  </div>
+
+  <!-- Tab bar (within "Kế hoạch học tập" page) -->
+  <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] shadow-sm p-1 flex gap-1 mb-5" id="rdTabBar">
+    <button data-tab="personal" onclick="switchRoadmapTab('personal')"
+      class="rd-tab flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 bg-[#1a146b] text-white shadow-sm">
+      <span class="material-symbols-outlined msym text-base">route</span>Lộ trình của tôi
+    </button>
+    <button data-tab="ctdt" onclick="switchRoadmapTab('ctdt')"
+      class="rd-tab flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+      <span class="material-symbols-outlined msym text-base">schema</span>Sơ đồ CTĐT chuẩn
+    </button>
+  </div>
+
+  <!-- ══ TAB 2 — SƠ ĐỒ CTĐT CHUẨN ═══════════════════════════════════════════ -->
+  <div id="ctdtPanel" class="hidden mb-2 bg-white rounded-xl border border-[#c8c5d3] shadow-sm overflow-hidden">
+    <div class="px-4 py-3 bg-slate-50/70 border-b border-[#c8c5d3] flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="material-symbols-outlined msym text-base text-[#312e81]">schema</span>
+        <span class="text-sm font-semibold text-[#0b1c30]">Sơ đồ chương trình đào tạo chuẩn</span>
+        <span id="ctdtSpecBadge" class="text-[10px] font-bold uppercase bg-[#e5eeff] text-[#1a146b] px-1.5 py-0.5 rounded">—</span>
+      </div>
+      <div class="flex items-center gap-3 text-[10px] text-[#474651]">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-[#dcfce7]"></span>đã qua</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-[#ba1a1a]"></span>chưa qua</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-indigo-300"></span>chưa học</span>
+      </div>
+    </div>
+    <div class="overflow-x-auto" data-hscroll="1">
+      <div id="ctdtPanelContainer" class="relative inline-flex gap-4 p-4" style="min-height:200px">
+        <div class="text-sm text-[#777682] p-8">Đang tải sơ đồ...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 1 — LỘ TRÌNH CÁ NHÂN ═══════════════════════════════════════════ -->
+  <div id="panel-personal">
+
+    <!-- Loading -->
+    <div id="rdLoading" class="flex items-center gap-2 py-20 text-[#777682]">
+      <span class="material-symbols-outlined msym spin text-2xl">progress_activity</span>
+      <span class="text-sm">Đang tải lộ trình...</span>
+    </div>
+
+    <!-- Empty (no grades uploaded yet) -->
+    <div id="rdEmpty" class="hidden flex-col items-center justify-center py-24 text-center">
+      <div class="w-20 h-20 bg-[#eef2ff] rounded-3xl flex items-center justify-center mb-5 mx-auto">
+        <span class="material-symbols-outlined msym text-indigo-400 text-5xl" style="font-variation-settings:'FILL' 1">route</span>
+      </div>
+      <h2 class="text-xl font-extrabold mb-2 text-[#0b1c30]">Chưa có dữ liệu lộ trình</h2>
+      <p class="text-sm text-[#777682] mb-6 max-w-sm">Upload bảng điểm và chọn chuyên ngành để hệ thống tự động tạo lộ trình tốt nghiệp.</p>
+      <a href="grades.html" class="pri-grad text-white px-7 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:opacity-90 transition-all inline-block">
+        Upload bảng điểm
+      </a>
+    </div>
+
+    <!-- Content -->
+    <div id="rdContent" class="hidden space-y-4">
+
+      <!-- Compact summary bar: Hero + Progress + Actions trong 1 hàng -->
+      <section id="rdHero" class="bg-white border border-[#c8c5d3] rounded-2xl p-4 flex items-center gap-4 flex-wrap">
+        <!-- Hero info -->
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span class="material-symbols-outlined msym text-white text-xl" style="font-variation-settings:'FILL' 1">my_location</span>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] uppercase tracking-wider text-[#777682] font-semibold">Bước tiếp theo</p>
+            <p id="rdHeroTitle" class="text-base font-bold text-[#0b1c30] leading-tight">Đang tải...</p>
+            <p id="rdHeroSub" class="text-[11px] text-[#474651] mt-0.5"></p>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="flex-1 min-w-[220px]">
+          <div class="flex items-baseline justify-between text-[11px] mb-1 gap-2">
+            <span class="text-[#474651] font-semibold">Tiến độ TN</span>
+            <span class="text-[#474651]">
+              <span id="rdStatPassed" class="font-bold text-emerald-700">0 TC</span>
+              <span class="text-[#777682]"> / </span>
+              <span id="rdStatTarget" class="font-semibold text-[#1a146b]">153 TC</span>
+            </span>
+          </div>
+          <div class="h-2 w-full bg-[#e5eeff] rounded-full overflow-hidden">
+            <div id="rdProgressBar" class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-500" style="width:0%"></div>
+          </div>
+          <div class="mt-1 flex items-center gap-2 text-[10px] text-[#474651] flex-wrap">
+            <span><span id="rdStatPercent" class="font-bold text-emerald-700">0%</span></span>
+            <span class="text-[#c8c5d3]">·</span>
+            <span>còn <span id="rdStatRemaining" class="font-semibold text-[#0b1c30]">— TC</span></span>
+            <span class="text-[#c8c5d3]">·</span>
+            <span>GPA <span id="rdStatGpa" class="font-bold text-[#0b1c30]">—</span></span>
+            <span id="rdStatFailedWrap" class="hidden inline-flex items-center gap-0.5 text-[#ba1a1a] ml-1">
+              <span class="text-[#c8c5d3]">·</span>
+              <span class="material-symbols-outlined msym text-xs">warning</span>
+              <span id="rdStatFailed" class="font-bold">0</span> trượt
+            </span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div id="rdHeroActions" class="flex gap-2 flex-shrink-0 flex-wrap"></div>
+      </section>
+
+      <!-- Compact elective tracker — 3 mini pills inline -->
+      <section id="rdElectiveTracker" class="hidden flex items-center gap-2 flex-wrap text-xs">
+        <span class="text-[#474651] font-semibold flex items-center gap-1">
+          <span class="material-symbols-outlined msym text-violet-500 text-sm">tune</span>
+          Tự chọn:
+        </span>
+        <div id="rdElectiveBars" class="flex gap-2 flex-wrap"></div>
+        <span class="text-[10px] text-[#777682] hidden sm:inline">(click pill để lọc grid)</span>
+      </section>
+
+      <!-- 9-HK CTĐT chuẩn grid -->
+      <section>
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="material-symbols-outlined msym text-base text-[#312e81]">grid_on</span>
+            <h3 class="text-sm font-semibold text-[#0b1c30]">Kế hoạch học tập chuẩn — <span id="rdPlanSpec" class="text-[#1a146b]">CN</span></h3>
+            <span id="rdPlanTotal" class="text-[11px] text-[#777682]"></span>
+            <span id="rdGroupFilterBadge" class="hidden text-[10px] font-bold uppercase bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full cursor-pointer hover:bg-violet-200" onclick="_clearGroupFilter()">
+              Lọc: nhóm <span id="rdGroupFilterLabel">A</span> ✕
+            </span>
+          </div>
+          <div class="flex items-center gap-3 text-[10px] text-[#474651] flex-wrap">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-[#dcfce7]"></span>Đã đạt</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-[#ba1a1a]"></span>Trượt</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-indigo-400"></span>HK hiện tại</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-slate-300"></span>Chưa học</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm border-2 border-dashed border-violet-400"></span>Slot tự chọn</span>
+          </div>
+        </div>
+        <div id="stdPlanGrid"
+             class="grid gap-3 grid-cols-1 sm:grid-cols-3 xl:grid-cols-5 pb-3"></div>
+      </section>
+
+    </div><!-- /#rdContent -->
+  </div><!-- /#panel-personal -->
+
+</div>
+</main>
+
+<!-- ══ MODAL — Thêm môn vào học kỳ ════════════════════════════════════════════ -->
+<div id="addCourseModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div class="bg-white w-full sm:max-w-[560px] sm:mx-4 sm:rounded-2xl rounded-t-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+    <!-- Header -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#c8c5d3] flex-shrink-0">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="text-base font-bold text-[#0b1c30]">Thêm môn học</h3>
+          <p class="text-xs text-[#777682] mt-0.5" id="addCourseModalSub">Chọn môn để thêm vào học kỳ</p>
+        </div>
+        <button onclick="closeAddCourseModal()"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-[#777682] hover:bg-[#eef2ff] transition-colors flex-shrink-0 mt-0.5">
+          <span class="material-symbols-outlined msym text-lg">close</span>
+        </button>
+      </div>
+    </div>
+    <!-- Filter + Search + Sort -->
+    <div class="px-6 py-3 border-b border-[#c8c5d3] flex flex-wrap gap-2 items-center flex-shrink-0">
+      <select autocomplete="off" id="addCourseTypeFilter" onchange="filterAddCourseList()"
+        class="text-xs border border-[#c8c5d3] rounded-lg px-3 py-1.5 bg-white text-[#474651] focus:outline-none focus:ring-2 focus:ring-indigo-200">
+        <option value="">Tất cả loại</option>
+        <option value="required">Bắt buộc</option>
+        <option value="elective">Tự chọn (nhóm B)</option>
+        <option value="elective_c">Tự chọn (nhóm C)</option>
+      </select>
+      <div class="relative flex-1 min-w-[140px]">
+        <span class="material-symbols-outlined msym absolute left-3 top-1/2 -translate-y-1/2 text-[#777682] text-sm">search</span>
+        <input autocomplete="off" id="addCourseSearch" type="text" placeholder="Tìm tên hoặc mã môn..." oninput="filterAddCourseList()"
+          class="w-full pl-8 pr-4 py-1.5 text-xs border border-[#c8c5d3] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"/>
+      </div>
+      <div class="inline-flex items-center gap-1 bg-[#eff4ff] rounded-lg p-0.5" title="Sắp xếp">
+        <button class="mdl-sort-btn bg-[#1a146b] text-white text-[11px] font-semibold px-2 py-1 rounded transition-colors flex items-center gap-1" data-sort="ml" onclick="_setModalSort('ml')">
+          <span class="material-symbols-outlined msym text-xs">auto_awesome</span>AI
+        </button>
+        <button class="mdl-sort-btn bg-[#e5eeff] text-[#474651] text-[11px] font-semibold px-2 py-1 rounded transition-colors" data-sort="code" onclick="_setModalSort('code')">Mã</button>
+        <button class="mdl-sort-btn bg-[#e5eeff] text-[#474651] text-[11px] font-semibold px-2 py-1 rounded transition-colors" data-sort="credits" onclick="_setModalSort('credits')">TC</button>
+      </div>
+    </div>
+    <!-- Selected info bar -->
+    <div id="addCourseSelectedBar" class="hidden px-6 py-2 bg-[#eef2ff] border-b border-indigo-100 flex items-center justify-between flex-shrink-0">
+      <span class="text-xs text-[#1a146b] font-medium">
+        Đã chọn: <span id="addCourseSelectedCount">0</span> môn
+        (<span id="addCourseSelectedTC">0</span> TC)
+      </span>
+      <button onclick="clearAddCourseSelection()" class="text-xs text-indigo-400 hover:text-[#1a146b]">Bỏ chọn tất cả</button>
+    </div>
+    <!-- Course list -->
+    <div id="addCourseList" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-[#c8c5d3] flex items-center justify-between gap-3 flex-shrink-0">
+      <span class="text-xs text-[#777682]">Chọn môn rồi nhấn Xác nhận</span>
+      <div class="flex gap-2">
+        <button onclick="closeAddCourseModal()"
+          class="px-4 py-2 text-sm text-[#474651] border border-[#c8c5d3] rounded-xl hover:bg-[#eef2ff] transition-colors">Hủy</button>
+        <button onclick="confirmAddCourses()" id="addCourseConfirmBtn" disabled
+          class="px-5 py-2 text-sm font-semibold bg-[#1a146b] text-white rounded-xl hover:bg-[#312e81] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          Xác nhận thêm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════════
+const API_BASE = window.API_BASE || 'http://127.0.0.1:8000';
+
+let _me            = null;
+let _progress      = null;
+let _stdPlan       = [];  // /courses/standard-plan response: [{semester_number, total_credits, courses: [...]}]
+let _gradeStatus   = {};  // { course_code: 'passed' | 'failed' | 'current' }
+let _gradeScores   = {};  // { course_code: { score10, letter, term, passed, score4 } }
+let _slotPicks     = {};  // { slot_code (__POOL_A_4_1__): picked_course_code }
+let _spec          = '';  // CN hiện tại (thực hoặc explore)
+let _isSaving      = false;
+let _saveTimer     = null;
+let _courseNotes   = {};
+let _allCoursesMap = {};  // catalog map cho name lookup khi cần
+let _poolMinCredits = {};  // { A: 12, B: 18, C: 6 } — min TC theo group từ /courses/standard-plan
+let _currentHkNum = null;  // HK hiện tại của SV (1-9), null nếu chưa học gì
+let _groupFilter  = null;  // 'a' | 'b' | 'c' | null — filter grid theo group
+
+// Stubs for dead legacy drag-drop code (kept to avoid ReferenceErrors on stale onclick attrs)
+const KHO_TERM_KEY = '__KHO__';
+let _kho = [], _futureTerms = [], _dragData = null;
+let _courseMap = {}, _maxCredits = 22, _prereqMap = {}, _passedCodes = new Set();
+function _renderUnifiedTimeline() { renderPersonalRoadmap(); }
+function _renderFutureTerms() { renderPersonalRoadmap(); }
+
+// Phát hiện slot placeholder: là __POOL_X_HK_N__ (CTĐT chuẩn) hoặc __ELECTIVE_X_N__ (legacy build_semester_roadmap)
+function _isElectiveSlot(course) {
+  const code = course?.course_code || '';
+  return code.startsWith('__POOL_') || code.startsWith('__ELECTIVE_');
+}
+
+// Modal state
+let _modalTargetTerm  = null;
+let _modalAllCourses  = [];
+let _modalCatalogLoaded = false;
+let _modalSelected    = new Set();
+let _modalMlCareer    = null;   // { name, code } or null if no career chosen
+let _modalSortMode    = 'ml';   // 'ml' | 'code' | 'credits'
+
+// ════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════════
+function api(path, opts = {}) {
+  const token = localStorage.getItem('access_token');
+  return fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  }).then(async r => {
+    const data = await r.json().catch(() => ({}));
+    return { ok: r.ok, status: r.status, data };
+  }).catch(() => ({ ok: false, status: 0, data: {} }));
+}
+
+function toast(msg, type = 'info') {
+  const colors = { info:'bg-slate-800', success:'bg-green-600', error:'bg-red-600', warn:'bg-amber-500' };
+  const el = document.createElement('div');
+  el.className = `${colors[type]} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg pointer-events-auto fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function showSaveStatus(state) {
+  const el  = document.getElementById('saveStatus');
+  const ico = document.getElementById('saveIcon');
+  const txt = document.getElementById('saveText');
+  if (state === 'saving') { ico.textContent = 'sync';       ico.classList.add('spin');    txt.textContent = 'Đang lưu...'; }
+  if (state === 'saved')  { ico.textContent = 'cloud_done'; ico.classList.remove('spin'); txt.textContent = 'Đã lưu'; }
+  if (state === 'error')  { ico.textContent = 'cloud_off';  ico.classList.remove('spin'); txt.textContent = 'Lưu thất bại'; }
+  el.style.opacity = '1';
+  if (state !== 'saving') setTimeout(() => { el.style.opacity = '0'; }, 2500);
+}
+
+const SPEC_NAMES = {
+  khmt:'Khoa học Máy tính', mmt:'Mạng máy tính & TT', cnpm:'Công nghệ Phần mềm',
+  httt:'Hệ thống Thông tin', thkt:'Tin học Kinh tế', cnttdh:'CNTT Địa hình', '7480201':'CNTT 7480201',
+  '7480201_07':'Khoa học Máy tính',  '7480201_06':'Mạng máy tính & Truyền thông',
+  '7480201_05':'Công nghệ Phần mềm', '7480201_09':'Hệ thống Thông tin',
+  '7480201_04':'Tin học Kinh tế',    '7480201_08':'CNTT Địa hình',
+};
+const SPEC_LIST = [
+  { code:'7480201_07', label:'Khoa học Máy tính',         abbr:'KHMT',   icon:'memory' },
+  { code:'7480201_06', label:'Mạng máy tính & TT',         abbr:'MMT',    icon:'router' },
+  { code:'7480201_05', label:'Công nghệ Phần mềm',         abbr:'CNPM',   icon:'code_blocks' },
+  { code:'7480201_09', label:'Hệ thống Thông tin',         abbr:'HTTT',   icon:'database' },
+  { code:'7480201_04', label:'Tin học Kinh tế',            abbr:'THKT',   icon:'monitoring' },
+  { code:'7480201_08', label:'CNTT Địa hình',              abbr:'CNTTDH', icon:'public' },
+];
+function specLabel(code) { return SPEC_NAMES[code?.toLowerCase()] || SPEC_NAMES[code] || code || 'CNTT'; }
+function exploreSpecKey(uid) { return `eduguide:explore_spec:${uid || 'me'}`; }
+
+function scoreToLetter(score) {
+  if (score == null) return '—';
+  if (score >= 9.0) return 'A+';
+  if (score >= 8.5) return 'A';
+  if (score >= 8.0) return 'B+';
+  if (score >= 7.0) return 'B';
+  if (score >= 6.5) return 'C+';
+  if (score >= 5.5) return 'C';
+  if (score >= 5.0) return 'D+';
+  if (score >= 4.0) return 'D';
+  return 'F';
+}
+
+function isElective(category) {
+  return category && (category.startsWith('elective') || category === 'elective');
+}
+
+function nextTermLabel(label) {
+  const m = label.match(/HK(\d+)\s+(\d{4})-(\d{4})/i);
+  if (!m) return null;
+  const hk = parseInt(m[1]), y1 = parseInt(m[2]), y2 = parseInt(m[3]);
+  if (hk === 1) return `HK2 ${y1}-${y2}`;
+  if (hk === 2) return `HK1 ${y1 + 1}-${y2 + 1}`;
+  return null;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  ROADMAP LOAD
+// ════════════════════════════════════════════════════════════════════
+async function loadRoadmap() {
+  document.getElementById('rdLoading').classList.remove('hidden');
+  document.getElementById('rdEmpty').classList.add('hidden');
+  document.getElementById('rdContent').classList.add('hidden');
+  document.getElementById('rdOnboardingGate')?.remove();
+
+  // CN: thực hoặc explore từ localStorage
+  const actualSpec = _me?.specialization || '';
+  const exploreSpec = localStorage.getItem(exploreSpecKey(_me?.id)) || '';
+  const specForPlan = actualSpec || exploreSpec;
+  const specPending = !actualSpec;
+  const exploringSpec = (!actualSpec && exploreSpec) ? exploreSpec : null;
+  _spec = specForPlan;
+
+  // ── ONBOARDING GATE — SV chưa có CN bắt buộc chọn 1 CN ─────────────────
+  if (specPending && !exploringSpec) {
+    document.getElementById('rdLoading').classList.add('hidden');
+    _renderOnboardingGate();
+    return;
+  }
+
+  // 4 fetch song song: standard plan + grades + custom slot picks + course notes
+  const [planRes, gradesRes, customRes, notesRes, progRes] = await Promise.all([
+    api(`/courses/standard-plan?spec=${encodeURIComponent(specForPlan)}`),
+    api('/grades/me'),
+    api('/roadmap/custom/me'),
+    api('/me/course-notes'),
+    api('/progress/me'),
+  ]);
+  _courseNotes = (notesRes.ok ? notesRes.data : {}) || {};
+  _progress = progRes.ok ? progRes.data : null;
+
+  document.getElementById('rdLoading').classList.add('hidden');
+
+  if (!planRes.ok || !planRes.data?.semesters?.length) {
+    document.getElementById('rdEmpty').classList.remove('hidden');
+    document.getElementById('rdEmpty').classList.add('flex');
+    return;
+  }
+
+  _stdPlan = planRes.data.semesters || [];
+  _poolMinCredits = planRes.data.pool_min_credits || {};
+  _slotPicks = _parseSlotPicks(customRes.ok ? customRes.data : null);
+
+  // Build status map từ bảng điểm: lấy điểm CAO NHẤT cho mỗi mã môn (rule "học lại = max")
+  _gradeStatus = {};
+  _gradeScores = {};
+  const gradesArr = Array.isArray(gradesRes.data) ? gradesRes.data : [];
+  for (const g of gradesArr) {
+    const code = g.course_code;
+    const prev = _gradeScores[code];
+    if (!prev || (g.score10 || 0) > (prev.score10 || 0)) {
+      _gradeScores[code] = g;
+    }
+  }
+  for (const [code, g] of Object.entries(_gradeScores)) {
+    if (g.passed) _gradeStatus[code] = 'passed';
+    else if (g.score10 != null || g.letter) _gradeStatus[code] = 'failed';
+  }
+
+  _currentHkNum = _computeCurrentHk();
+
+
+  // Banner explore (chỉ hiện khi đang explore — KHÔNG còn banner "chưa explore"
+  // vì onboarding gate đã chặn ở trên)
+  let banner = document.getElementById('rdSpecPendingBanner');
+  if (exploringSpec) {
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'rdSpecPendingBanner';
+      const tabBar = document.getElementById('rdTabBar');
+      if (tabBar) tabBar.parentNode.insertBefore(banner, tabBar.nextSibling);
+    }
+    banner.className = 'bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-300 rounded-2xl p-4 flex items-start gap-3 mb-4';
+    banner.innerHTML = `
+      <span class="material-symbols-outlined msym text-[#006c49] text-2xl flex-shrink-0 mt-0.5" style="font-variation-settings:'FILL' 1">science</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-emerald-900">Đang khám phá: <span class="text-emerald-700">${escHtml(specLabel(exploringSpec))}</span></p>
+        <p class="text-xs text-emerald-800 mt-1">Đây là CN giả lập — đổi CN bất cứ lúc nào hoặc dừng khám phá để quay lại trạng thái chưa chốt CN.</p>
+      </div>
+      <div class="flex-shrink-0 flex gap-2">
+        <button onclick="openExploreSpecModal()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">
+          <span class="material-symbols-outlined msym text-base">swap_horiz</span>Đổi CN
+        </button>
+        <button onclick="stopExploringSpec()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-emerald-300 text-emerald-700 hover:bg-[#dcfce7] text-xs font-bold rounded-lg shadow-sm transition-colors">
+          <span class="material-symbols-outlined msym text-base">close</span>Dừng
+        </button>
+      </div>`;
+  } else if (banner) {
+    banner.remove();
+  }
+
+  document.getElementById('rdContent').classList.remove('hidden');
+  renderPersonalRoadmap();
+}
+
+// Save format: 1 semester sentinel "__PICKS__" với course_codes là array của "slot:code"
+function _parseSlotPicks(customData) {
+  const picks = {};
+  if (!customData?.saved || !Array.isArray(customData.semesters)) return picks;
+  for (const sem of customData.semesters) {
+    if (sem.semester_label === '__PICKS__') {
+      for (const entry of (sem.course_codes || [])) {
+        const idx = String(entry).indexOf(':');
+        if (idx > 0) {
+          const slot = entry.slice(0, idx);
+          const code = entry.slice(idx + 1);
+          picks[slot] = code;
+        }
+      }
+    }
+  }
+  return picks;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  RENDER — CTĐT chuẩn 9 HK + overlay tiến độ cá nhân
+// ════════════════════════════════════════════════════════════════════
+function renderPersonalRoadmap() {
+  _renderHero();
+  _renderStatsBar();
+  _renderElectiveTracker();
+  _renderStandardPlan();
+}
+
+// Suy ra HK hiện tại của SV: HK đầu tiên có >=1 môn BB chưa pass
+function _computeCurrentHk() {
+  if (!_stdPlan.length) return null;
+  // Nếu chưa có grade nào → HK1
+  if (!Object.keys(_gradeStatus).length) return 1;
+  for (const hk of _stdPlan) {
+    const required = (hk.courses || []).filter(c => !c.is_placeholder && c.group === 'compulsory');
+    const pendingReq = required.filter(c => _gradeStatus[c.course_code] !== 'passed');
+    if (pendingReq.length > 0) return hk.semester_number;
+  }
+  // Tất cả BB đã pass → kiểm môn cuối cùng có grade
+  return _stdPlan[_stdPlan.length - 1].semester_number;
+}
+
+function _renderHero() {
+  const setText = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  const failedCount = Object.values(_gradeScores).filter(g => !g.passed && (g.score10 != null || g.letter)).length;
+  const hk = _stdPlan.find(h => h.semester_number === _currentHkNum);
+  const actionsEl = document.getElementById('rdHeroActions');
+  if (actionsEl) actionsEl.innerHTML = '';
+
+  if (!_currentHkNum || !hk) {
+    setText('rdHeroTitle', 'Bắt đầu kế hoạch');
+    setText('rdHeroSub', 'Upload bảng điểm để bắt đầu theo dõi tiến độ.');
+    return;
+  }
+  const required = (hk.courses || []).filter(c => !c.is_placeholder && c.group === 'compulsory');
+  const pendingReq = required.filter(c => _gradeStatus[c.course_code] !== 'passed');
+  const slotsInHk = (hk.courses || []).filter(c => c.is_placeholder);
+  const unpickedSlots = slotsInHk.filter(s => !_slotPicks[s.course_code]);
+
+  setText('rdHeroTitle', `Học kỳ ${_currentHkNum}`);
+  let sub = `${pendingReq.length} môn bắt buộc cần đăng ký`;
+  if (unpickedSlots.length) sub += ` · ${unpickedSlots.length} slot tự chọn chưa chốt môn`;
+  if (failedCount) sub += ` · ${failedCount} môn cần học lại`;
+  setText('rdHeroSub', sub);
+
+  // Quick-action buttons
+  const btn = (icon, label, onclick) => `
+    <button onclick="${onclick}" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white/15 hover:bg-white/25 backdrop-blur rounded-lg text-xs font-bold transition-colors">
+      <span class="material-symbols-outlined msym text-base">${icon}</span>${label}
+    </button>`;
+  let html = '';
+  if (unpickedSlots.length) {
+    const first = unpickedSlots[0];
+    const grp = (first.group || 'a').toUpperCase();
+    html += btn('touch_app', `Chốt slot HK${_currentHkNum}`, `_openSlotPickModal('${first.course_code}','${grp}','HK${_currentHkNum}')`);
+  }
+  html += btn('north_east', 'Cuộn tới HK', `_scrollToHk(${_currentHkNum})`);
+  if (actionsEl) actionsEl.innerHTML = html;
+}
+
+function _renderStatsBar() {
+  // Tổng TC pass + đếm môn trượt
+  let earnedTc = 0, failedCount = 0;
+  for (const [code, g] of Object.entries(_gradeScores)) {
+    if (g.passed) earnedTc += (g.credits || 0);
+    else if (g.score10 != null || g.letter) failedCount += 1;
+  }
+  const realEarned = _progress?.earned_credits ?? earnedTc;
+  const totalPlan = _stdPlan.reduce((s, hk) => s + (hk.total_credits || 0), 0);
+  const remaining = Math.max(0, totalPlan - realEarned);
+  const pct = totalPlan > 0 ? Math.min(100, Math.round((realEarned / totalPlan) * 100)) : 0;
+
+  const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  set('rdStatPassed', `${Math.round(realEarned * 10) / 10} TC`);
+  set('rdStatRemaining', `${Math.round(remaining * 10) / 10} TC`);
+  set('rdStatTarget', `${Math.round(totalPlan * 10) / 10} TC`);
+  set('rdStatFailed', `${failedCount} môn`);
+  set('rdStatPercent', `${pct}%`);
+  set('rdPlanSpec', specLabel(_spec));
+
+  // GPA từ progress (weighted theo backend)
+  const gpa = _progress?.avg_score4 ?? null;
+  set('rdStatGpa', gpa != null ? Number(gpa).toFixed(2) : '—');
+
+  const bar = document.getElementById('rdProgressBar');
+  if (bar) bar.style.width = `${pct}%`;
+
+  const failedWrap = document.getElementById('rdStatFailedWrap');
+  if (failedWrap) failedWrap.classList.toggle('hidden', failedCount === 0);
+
+  const total = _stdPlan.reduce((s, hk) => s + (hk.courses?.length || 0), 0);
+  set('rdPlanTotal', `· ${_stdPlan.length} HK · ${total} môn`);
+}
+
+// Tracker tiến độ tự chọn theo nhóm A/B/C
+function _renderElectiveTracker() {
+  const wrap = document.getElementById('rdElectiveTracker');
+  const bars = document.getElementById('rdElectiveBars');
+  if (!wrap || !bars) return;
+
+  // Build group stats từ _stdPlan: mỗi group có tổng slots + min credits
+  const groups = {};  // { a: { totalSlots, totalCredits, pickedCount, passedCredits } }
+  for (const hk of _stdPlan) {
+    for (const c of (hk.courses || [])) {
+      if (!c.is_placeholder) continue;
+      const g = (c.group || '').toLowerCase();
+      if (!['a','b','c'].includes(g)) continue;
+      groups[g] = groups[g] || { totalSlots: 0, totalCredits: 0, pickedCount: 0, passedCredits: 0 };
+      groups[g].totalSlots += 1;
+      groups[g].totalCredits += (c.credits || 0);
+      const picked = _slotPicks[c.course_code];
+      if (picked) {
+        groups[g].pickedCount += 1;
+        if (_gradeStatus[picked] === 'passed') {
+          groups[g].passedCredits += (c.credits || 0);
+        }
+      }
+    }
+  }
+
+  if (Object.keys(groups).length === 0) {
+    wrap.classList.add('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+
+  const colors = {
+    a: { bg: 'bg-violet-500',  light: 'bg-violet-50',  border: 'border-violet-300',  text: 'text-violet-700' },
+    b: { bg: 'bg-fuchsia-500', light: 'bg-fuchsia-50', border: 'border-fuchsia-300', text: 'text-fuchsia-700' },
+    c: { bg: 'bg-pink-500',    light: 'bg-pink-50',    border: 'border-pink-300',    text: 'text-pink-700' },
+  };
+
+  bars.innerHTML = ['a','b','c'].filter(g => groups[g]).map(g => {
+    const s = groups[g];
+    const minTc = _poolMinCredits[g.toUpperCase()] || s.totalCredits;
+    const earnedTc = s.passedCredits;
+    const pct = minTc > 0 ? Math.min(100, Math.round((earnedTc / minTc) * 100)) : 0;
+    const c = colors[g];
+    const active = _groupFilter === g;
+    return `
+    <button type="button" onclick="_setGroupFilter('${g}')"
+      title="${s.pickedCount}/${s.totalSlots} slot đã chốt"
+      class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${active ? c.border + ' ' + c.light : 'border-[#c8c5d3] bg-white hover:' + c.border} transition-all">
+      <span class="font-bold ${c.text}">Nhóm ${g.toUpperCase()}</span>
+      <span class="w-12 h-1.5 bg-[#e5eeff] rounded-full overflow-hidden">
+        <span class="block h-full ${c.bg} transition-all duration-500" style="width:${pct}%"></span>
+      </span>
+      <span class="text-[10px] text-[#474651]"><span class="font-bold ${c.text}">${earnedTc}</span>/${minTc} TC</span>
+    </button>`;
+  }).join('');
+}
+
+function _setGroupFilter(g) {
+  _groupFilter = (_groupFilter === g) ? null : g;
+  _renderElectiveTracker();
+  _renderStandardPlan();
+
+  const badge = document.getElementById('rdGroupFilterBadge');
+  const lbl = document.getElementById('rdGroupFilterLabel');
+  if (badge && lbl) {
+    if (_groupFilter) {
+      lbl.textContent = _groupFilter.toUpperCase();
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+}
+
+function _clearGroupFilter() {
+  if (!_groupFilter) return;
+  _groupFilter = null;
+  _renderElectiveTracker();
+  _renderStandardPlan();
+  document.getElementById('rdGroupFilterBadge')?.classList.add('hidden');
+}
+
+function _scrollToHk(hkNum) {
+  const grid = document.getElementById('stdPlanGrid');
+  if (!grid) return;
+  const cols = grid.querySelectorAll('[data-hk]');
+  const target = Array.from(cols).find(el => el.getAttribute('data-hk') === String(hkNum));
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+}
+
+function _renderStandardPlan() {
+  const grid = document.getElementById('stdPlanGrid');
+  if (!grid) return;
+  if (!_stdPlan.length) {
+    grid.innerHTML = `<div class="w-full px-4 py-10 text-center">
+      <span class="material-symbols-outlined msym text-[#c8c5d3] text-4xl">grid_off</span>
+      <p class="text-sm text-[#777682] mt-2">Chưa có CTĐT cho CN này.</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = _stdPlan.map(hk => _renderHkColumn(hk)).join('');
+}
+
+function _renderHkColumn(hk) {
+  let courses = hk.courses || [];
+  // Apply group filter (chỉ giữ môn BB + slot/môn của group được chọn)
+  if (_groupFilter) {
+    courses = courses.filter(c => {
+      const g = (c.group || '').toLowerCase();
+      return g === 'compulsory' || g === _groupFilter;
+    });
+  }
+
+  // Compute realized credits dựa trên status overlay
+  let realizedTc = 0;
+  for (const c of (hk.courses || [])) {
+    if (c.is_placeholder) {
+      const pickedCode = _slotPicks[c.course_code];
+      if (pickedCode && _gradeStatus[pickedCode] === 'passed') realizedTc += (c.credits || 0);
+    } else if (_gradeStatus[c.course_code] === 'passed') {
+      realizedTc += (c.credits || 0);
+    }
+  }
+  const planTc = hk.total_credits || 0;
+  const isLocked = hk.semester_number <= 2;
+  const isCurrent = hk.semester_number === _currentHkNum;
+  const isPast = _currentHkNum && hk.semester_number < _currentHkNum;
+
+  let headerBg = 'bg-slate-50';
+  let cardBorder = 'border-[#c8c5d3]';
+  let badgeHtml = '';
+  if (isCurrent) {
+    headerBg = 'bg-[#eef2ff]';
+    cardBorder = 'border-[#312e81] ring-2 ring-indigo-200';
+    badgeHtml = `<span class="text-[9px] font-bold uppercase bg-[#1a146b] text-white px-1.5 py-0.5 rounded">Hiện tại</span>`;
+  } else if (isLocked) {
+    headerBg = 'bg-sky-50';
+  } else if (isPast) {
+    headerBg = 'bg-[#dcfce7]/40';
+    cardBorder = 'border-emerald-100';
+  }
+
+  return `
+  <div data-hk="${hk.semester_number}"
+       class="min-w-0 bg-white border ${cardBorder} rounded-xl shadow-sm overflow-hidden flex flex-col fade-in">
+    <div class="px-3 py-2.5 ${headerBg} border-b border-[#c8c5d3]">
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <p class="text-sm font-bold text-[#0b1c30]">Học kỳ ${hk.semester_number}</p>
+            ${badgeHtml}
+          </div>
+          <p class="text-[11px] text-[#474651] mt-0.5">
+            <span class="font-semibold text-[#006c49]">${Math.round(realizedTc * 10) / 10}</span>
+            <span class="text-[#777682]"> / ${Math.round(planTc * 10) / 10} TC · ${courses.length} môn</span>
+          </p>
+        </div>
+        ${isLocked ? `<span class="material-symbols-outlined msym text-sky-500 text-base" title="Trường xếp">lock</span>` : ''}
+      </div>
+    </div>
+    <div class="flex-1 p-2 space-y-1.5 min-h-[120px]">
+      ${courses.length
+        ? courses.map((c, i) => _renderPlanCell(c, hk.semester_number, i + 1)).join('')
+        : `<div class="text-[11px] text-[#c8c5d3] italic text-center py-6">Không có môn nhóm này</div>`}
+    </div>
+  </div>`;
+}
+
+function _renderPlanCell(c, hkNum, stt) {
+  // Slot tự chọn (placeholder)
+  if (c.is_placeholder) {
+    const slotCode = c.course_code;
+    const group = (c.group || 'a').toUpperCase();
+    const pickedCode = _slotPicks[slotCode];
+
+    if (pickedCode) {
+      // Slot đã được pick → render như môn thường (overlay status)
+      const pickedInfo = _allCoursesMap[pickedCode] || {};
+      const pickedCourse = {
+        course_code: pickedCode,
+        course_name: pickedInfo.course_name || pickedCode,
+        credits: c.credits,
+        group: c.group,
+        _picked_for_slot: slotCode,
+      };
+      return _renderRealCourseCell(pickedCourse, hkNum);
+    }
+
+    // Slot trống → click để pick
+    return `
+    <button type="button" onclick="_openSlotPickModal('${_esc(slotCode)}','${group}','HK${hkNum}')"
+      class="w-full text-left flex items-start gap-1.5 p-2 rounded-lg bg-violet-50 border-2 border-dashed border-violet-300 hover:bg-violet-100 hover:border-violet-400 transition-all group cursor-pointer">
+      <span class="material-symbols-outlined msym text-violet-400 group-hover:text-violet-600 text-sm flex-shrink-0 mt-0.5">touch_app</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-violet-800 leading-snug">Tự chọn nhóm ${group}</p>
+        <p class="text-[10px] text-violet-500 mt-0.5">
+          <span class="font-semibold">${c.credits} TC</span> · <span class="italic">click chọn môn</span>
+        </p>
+      </div>
+    </button>`;
+  }
+  return _renderRealCourseCell(c, hkNum);
+}
+
+function _renderRealCourseCell(c, hkNum) {
+  const status = _gradeStatus[c.course_code];  // 'passed' | 'failed' | undefined
+  const grade = _gradeScores[c.course_code];
+
+  let bg, bd, txtCls, dot, statusBadge = '', subInfo = '';
+  if (status === 'passed') {
+    bg = 'bg-[#dcfce7]'; bd = 'border-[#86efac]'; txtCls = 'text-emerald-900'; dot = 'bg-[#dcfce7]';
+    const score = grade?.score10 != null ? grade.score10.toFixed(1) : '';
+    const letter = grade?.letter || (grade?.score10 != null ? scoreToLetter(grade.score10) : '');
+    subInfo = `${c.credits} TC · <span class="font-bold">${letter}</span>${score ? ' (' + score + ')' : ''}`;
+    statusBadge = '<span class="material-symbols-outlined msym text-emerald-500 text-sm flex-shrink-0">check_circle</span>';
+  } else if (status === 'failed') {
+    bg = 'bg-red-50'; bd = 'border-red-200'; txtCls = 'text-red-800'; dot = 'bg-[#ba1a1a]';
+    const score = grade?.score10 != null ? grade.score10.toFixed(1) : '';
+    subInfo = `${c.credits} TC · <span class="font-bold">F</span>${score ? ' (' + score + ')' : ''} · Học lại`;
+    statusBadge = '<span class="material-symbols-outlined msym text-[#ba1a1a] text-sm flex-shrink-0">cancel</span>';
+  } else {
+    // Chưa học
+    const isElective = c.group && c.group !== 'compulsory';
+    bg = isElective ? 'bg-violet-50/40' : 'bg-slate-50';
+    bd = isElective ? 'border-violet-100' : 'border-[#c8c5d3]';
+    txtCls = 'text-[#0b1c30]';
+    dot = isElective ? 'bg-violet-300' : 'bg-slate-300';
+    subInfo = `${c.credits} TC · ${isElective ? 'TC' : 'BB'}`;
+  }
+
+  const noteIcon = (_courseNotes[c.course_code] && _courseNotes[c.course_code].length)
+    ? `<button onclick="event.stopPropagation();_openStudentCourseNote('${_esc(c.course_code)}','${_esc(c.course_name||c.course_code)}')"
+        title="Cố vấn có ghi chú" class="w-5 h-5 flex items-center justify-center rounded text-amber-500 hover:bg-amber-100 transition-all flex-shrink-0">
+        <span class="material-symbols-outlined msym text-sm">comment</span></button>` : '';
+
+  // Slot đã pick → có nút "đổi môn" để swap lại
+  const pickedSwap = c._picked_for_slot
+    ? `<button onclick="event.stopPropagation();_openSlotPickModal('${_esc(c._picked_for_slot)}','','HK${hkNum}')"
+        title="Đổi môn khác" class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#777682] hover:text-violet-600 hover:bg-violet-100 transition-all flex-shrink-0">
+        <span class="material-symbols-outlined msym text-sm">swap_horiz</span></button>` : '';
+  const pickedBadge = c._picked_for_slot
+    ? '<span class="ml-1 text-[9px] font-bold uppercase bg-violet-100 text-violet-700 px-1 py-0.5 rounded">TC</span>'
+    : '';
+
+  return `
+  <a href="course-detail.html?code=${encodeURIComponent(c.course_code)}"
+     class="flex items-start gap-1.5 p-2 rounded-lg ${bg} border ${bd} hover:shadow-sm transition-all group cursor-pointer no-underline">
+    <span class="w-1.5 h-1.5 rounded-full ${dot} flex-shrink-0 mt-1.5"></span>
+    <div class="flex-1 min-w-0">
+      <p class="text-xs font-semibold ${txtCls} leading-snug" title="${_esc(c.course_name)}">${escHtml(c.course_name)}${pickedBadge}</p>
+      <p class="text-[10px] text-[#474651] mt-0.5">${subInfo}</p>
+    </div>
+    ${statusBadge}
+    ${noteIcon}
+    ${pickedSwap}
+  </a>`;
+}
+
+// ────────────────────────────────────────────────────────────────────
+//  Slot pick modal — chọn môn cụ thể cho slot tự chọn
+// ────────────────────────────────────────────────────────────────────
+function _openSlotPickModal(slotCode, group, hkLabel) {
+  // Suy ra group từ slotCode nếu chưa có
+  const m = slotCode.match(/__POOL_([ABC])_/);
+  const grp = (group || (m ? m[1] : 'A')).toUpperCase();
+  _modalTargetTerm = `__SLOT_PICK__:${slotCode}:${grp}`;
+  _modalSelected.clear();
+
+  // Title rõ ràng + lock filter (slot pick chỉ chọn môn trong nhóm)
+  const titleEl = document.querySelector('#addCourseModal h3');
+  if (titleEl) titleEl.textContent = `Chọn môn tự chọn nhóm ${grp}`;
+  document.getElementById('addCourseModalSub').textContent = `${hkLabel} · pick 1 môn vào slot này`;
+  document.getElementById('addCourseSearch').value = '';
+  const filterEl = document.getElementById('addCourseTypeFilter');
+  if (filterEl) {
+    filterEl.value = (grp === 'C' ? 'elective_c' : 'elective');
+    filterEl.disabled = true;       // lock — không cho user đổi
+    filterEl.classList.add('opacity-60', 'cursor-not-allowed');
+  }
+  // Default sort = "Mã" cho slot pick (AI sort không phù hợp khi pool đã hẹp)
+  if (typeof _setModalSort === 'function') _setModalSort('code');
+
+  _updateModalSelectionBar();
+  document.getElementById('addCourseModal').classList.remove('hidden');
+  if (!_modalCatalogLoaded) {
+    openAddCourseModal(_modalTargetTerm);
+  } else {
+    filterAddCourseList();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  KHO TC CARD — môn tự chọn chưa xếp HK (drag-source + drop-target)
+// ════════════════════════════════════════════════════════════════════
+function _khoCard() {
+  // Tổng kết theo nhóm A/B/C
+  const byGroup = {};
+  _kho.forEach(c => {
+    const g = (c.elective_group || c.course_code.match(/__ELECTIVE_([A-Z])_/)?.[1] || '?');
+    byGroup[g] = byGroup[g] || { count: 0, tc: 0 };
+    byGroup[g].count += 1;
+    byGroup[g].tc += (c.credits || 0);
+  });
+  const groupSummary = Object.keys(byGroup).sort().map(g => {
+    return `<span class="text-[10px] font-semibold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded">Nhóm ${g}: ${byGroup[g].count} môn · ${byGroup[g].tc} TC</span>`;
+  }).join(' ');
+  const totalTc = _kho.reduce((s, c) => s + (c.credits || 0), 0);
+
+  const items = _kho.length
+    ? _kho.map(c => _khoCourseItem(c)).join('')
+    : `<div class="flex items-center justify-center min-h-[120px] text-[11px] text-[#777682] border border-dashed border-[#c8c5d3] rounded-lg p-3 text-center">
+         Kho rỗng. Kéo môn từ HK xuống đây để hoãn xếp.
+       </div>`;
+
+  return `
+  <div class="flex-shrink-0 snap-start w-64 bg-violet-50/40 border-2 border-dashed border-violet-300 rounded-xl shadow-sm overflow-hidden flex flex-col"
+       data-term="${KHO_TERM_KEY}">
+    <div class="px-3 py-2.5 border-b border-violet-200 bg-violet-100/40">
+      <div class="flex items-center gap-1.5">
+        <span class="material-symbols-outlined msym text-violet-600 text-base" style="font-variation-settings:'FILL' 1">inventory_2</span>
+        <p class="text-sm font-bold text-violet-900">Kho TC tự chọn</p>
+      </div>
+      <p class="text-[11px] text-violet-700 mt-0.5">
+        <span class="font-semibold">${_kho.length}</span> môn · <span class="font-semibold">${totalTc} TC</span> chưa xếp HK
+      </p>
+      ${groupSummary ? `<div class="flex flex-wrap gap-1 mt-1.5">${groupSummary}</div>` : ''}
+    </div>
+    <div class="flex-1 p-2 space-y-1.5 min-h-[120px] max-h-[420px] overflow-y-auto transition-colors"
+         ondragover="onTermDragOver(event, '${KHO_TERM_KEY}')"
+         ondragleave="onTermDragLeave(event)"
+         ondrop="onTermDrop(event, '${KHO_TERM_KEY}')">
+      ${items}
+    </div>
+    <div class="border-t border-violet-200 px-3 py-2 bg-violet-50/60 text-[10px] text-violet-700 leading-snug flex items-start gap-1">
+      <span class="material-symbols-outlined msym text-[12px] flex-shrink-0 mt-0.5">info</span>
+      <span>Kéo môn vào HK để xếp · click để chọn môn cụ thể.</span>
+    </div>
+  </div>`;
+}
+
+function _khoCourseItem(c) {
+  const isSlot = _isElectiveSlot(c);
+  const group = (c.elective_group || c.course_code.match(/__ELECTIVE_([A-Z])_/)?.[1] || '?');
+  if (isSlot) {
+    return `
+    <div draggable="true"
+         data-code="${_esc(c.course_code)}"
+         data-term="${KHO_TERM_KEY}"
+         ondragstart="onCourseDragStart(event, '${_esc(c.course_code)}', '${KHO_TERM_KEY}')"
+         ondragend="onCourseDragEnd(event)"
+         class="flex items-start gap-1.5 p-2 rounded-lg bg-violet-50 border border-violet-200 cursor-grab group active:cursor-grabbing select-none">
+      <span class="material-symbols-outlined msym text-violet-300 group-hover:text-violet-500 text-sm flex-shrink-0 mt-0.5">drag_indicator</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-violet-800 leading-snug">Tự chọn nhóm ${group}</p>
+        <p class="text-[10px] text-violet-500 mt-0.5">
+          <span class="font-semibold">${c.credits} TC</span> · slot
+        </p>
+      </div>
+      <button onclick="event.stopPropagation();_specifyKhoSlot('${_esc(c.course_code)}','${group}')"
+        title="Chọn môn cụ thể"
+        class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-violet-400 hover:text-violet-700 hover:bg-violet-100 transition-all flex-shrink-0">
+        <span class="material-symbols-outlined msym text-sm">edit</span>
+      </button>
+      <button onclick="removeFromKho('${_esc(c.course_code)}')"
+        title="Xóa slot khỏi kho"
+        class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#c8c5d3] hover:text-red-400 hover:bg-red-50 transition-all flex-shrink-0">
+        <span class="material-symbols-outlined msym text-sm">close</span>
+      </button>
+    </div>`;
+  }
+  // Real course (đã specify) trong kho — vẫn drag được
+  return `
+  <div draggable="true"
+       data-code="${_esc(c.course_code)}"
+       data-term="${KHO_TERM_KEY}"
+       ondragstart="onCourseDragStart(event, '${_esc(c.course_code)}', '${KHO_TERM_KEY}')"
+       ondragend="onCourseDragEnd(event)"
+       class="flex items-start gap-1.5 p-2 rounded-lg bg-violet-50 border border-violet-200 cursor-grab group active:cursor-grabbing select-none">
+    <span class="material-symbols-outlined msym text-violet-300 group-hover:text-violet-500 text-sm flex-shrink-0 mt-0.5">drag_indicator</span>
+    <div class="flex-1 min-w-0">
+      <p class="text-xs font-semibold text-violet-800 leading-snug" title="${_esc(c.course_name)}">${c.course_name}</p>
+      <p class="text-[10px] text-violet-500 mt-0.5">
+        <span class="font-semibold">${c.credits} TC</span> · TC
+      </p>
+    </div>
+    <button onclick="removeFromKho('${_esc(c.course_code)}')"
+      title="Xóa khỏi kho"
+      class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#c8c5d3] hover:text-red-400 hover:bg-red-50 transition-all flex-shrink-0">
+      <span class="material-symbols-outlined msym text-sm">close</span>
+    </button>
+  </div>`;
+}
+
+function removeFromKho(code) {
+  const idx = _kho.findIndex(c => c.course_code === code);
+  if (idx === -1) return;
+  _kho.splice(idx, 1);
+  _renderUnifiedTimeline();
+  scheduleAutoSave();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  ONBOARDING GATE — SV chưa có CN bắt buộc chọn 1 CN trước khi xem timeline
+// ════════════════════════════════════════════════════════════════════
+function _renderOnboardingGate() {
+  // Xoá banner cũ nếu có (gate thay thế hoàn toàn)
+  document.getElementById('rdSpecPendingBanner')?.remove();
+
+  const tabBar = document.getElementById('rdTabBar');
+  const cards = SPEC_LIST.map(s => `
+    <button type="button" onclick="_pickSpecFromGate('${s.code}')"
+      class="text-left p-4 rounded-2xl border-2 border-[#c8c5d3] hover:border-[#1a146b] hover:bg-[#eef2ff]/50 hover:shadow-md transition-all group">
+      <div class="flex items-start gap-3">
+        <div class="w-12 h-12 rounded-xl bg-[#e5eeff] group-hover:bg-indigo-200 flex items-center justify-center flex-shrink-0 transition-colors">
+          <span class="material-symbols-outlined msym text-[#1a146b] text-2xl">${s.icon}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-bold text-[#0b1c30] group-hover:text-[#1a146b]">${s.label}</p>
+          <p class="text-[11px] text-[#474651] mt-0.5">${s.abbr} · <span class="font-mono">${s.code}</span></p>
+          <p class="text-[11px] text-[#1a146b] font-semibold mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Chọn để build lộ trình →</p>
+        </div>
+      </div>
+    </button>`).join('');
+
+  const html = `
+  <div id="rdOnboardingGate" class="bg-[#ffffff] rounded-2xl border border-[#c8c5d3] shadow-sm p-6 lg:p-8">
+    <div class="text-center mb-6">
+      <div class="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 items-center justify-center mb-3 shadow-lg">
+        <span class="material-symbols-outlined msym text-white text-3xl" style="font-variation-settings:'FILL' 1">school</span>
+      </div>
+      <h2 class="text-xl font-bold text-[#0b1c30]">Chọn chuyên ngành để xem lộ trình của bạn</h2>
+      <p class="text-sm text-[#474651] mt-2 max-w-xl mx-auto">
+        CTĐT 7480201 chia thành 6 chuyên ngành — mỗi CN có khối kiến thức riêng (~40 TC chuyên sâu) cùng tự chọn theo định hướng. Chọn 1 CN để hệ thống build lộ trình đầy đủ 9 học kỳ.
+      </p>
+      <p class="text-xs text-[#777682] mt-2">Bạn có thể đổi CN bất cứ lúc nào — đây chỉ là lộ trình giả lập, không phải quyết định chính thức.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      ${cards}
+    </div>
+
+    <div class="mt-6 pt-5 border-t border-[#c8c5d3] flex items-center justify-between flex-wrap gap-3">
+      <p class="text-xs text-[#474651]">
+        <span class="material-symbols-outlined msym text-[#777682] text-base align-middle">info</span>
+        Chưa chắc chọn CN nào? Xem trang
+        <a href="compare-specs.html" class="text-[#1a146b] font-semibold hover:underline">So sánh 6 CN</a>
+        hoặc làm
+        <a href="career-hub.html" class="text-[#1a146b] font-semibold hover:underline">Quiz hướng nghiệp</a>
+        trước.
+      </p>
+      <a href="ctdt.html" class="text-xs font-semibold text-violet-600 hover:underline inline-flex items-center gap-1">
+        <span class="material-symbols-outlined msym text-base">schema</span>Xem CTĐT chuẩn →
+      </a>
+    </div>
+  </div>`;
+  // Insert gate after tab bar (replacing where timeline would be)
+  if (tabBar) tabBar.insertAdjacentHTML('afterend', html);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  PACE CONTROL (D3) — chỉnh nhịp học (8/9/10/11 HK)
+// ════════════════════════════════════════════════════════════════════
+function paceKey(uid) { return `eduguide:target_terms:${uid || 'me'}`; }
+
+function _syncPaceDropdown() {
+  const sel = document.getElementById('rdPaceSelect');
+  if (!sel) return;
+  const stored = localStorage.getItem(paceKey(_me?.id)) || '9';
+  sel.value = stored;
+}
+
+async function onPaceChange() {
+  const sel = document.getElementById('rdPaceSelect');
+  if (!sel) return;
+  const newVal = sel.value;
+  const cur = localStorage.getItem(paceKey(_me?.id)) || '9';
+  if (newVal === cur) return;
+  if (!confirm(`Đổi nhịp học sang ${newVal} HK?\nLộ trình sẽ rebuild theo nhịp mới (kế hoạch tự sắp xếp hiện tại sẽ bị reset).`)) {
+    sel.value = cur;
+    return;
+  }
+  localStorage.setItem(paceKey(_me?.id), newVal);
+  // Clear custom plan để build lại sạch theo nhịp mới
+  await api('/roadmap/custom/me', { method: 'PUT', body: JSON.stringify({ semesters: [] }) });
+  toast(`Đang rebuild lộ trình ${newVal} HK...`, 'info');
+  loadRoadmap();
+}
+
+async function _pickSpecFromGate(specCode) {
+  localStorage.setItem(exploreSpecKey(_me?.id), specCode);
+  // Clear any saved custom plan so build fresh for this CN
+  await api('/roadmap/custom/me', { method: 'PUT', body: JSON.stringify({ semesters: [] }) });
+  toast(`Đang load lộ trình cho ${specLabel(specCode)}...`, 'info');
+  // Remove gate before reload
+  document.getElementById('rdOnboardingGate')?.remove();
+  loadRoadmap();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  EXPLORE SPEC — SV chưa có CN chọn 1 CN để build nháp lộ trình
+// ════════════════════════════════════════════════════════════════════
+function openExploreSpecModal() {
+  const cur = localStorage.getItem(exploreSpecKey(_me?.id)) || '';
+  const cards = SPEC_LIST.map(s => {
+    const active = s.code === cur;
+    return `
+    <button type="button" onclick="selectExploreSpec('${s.code}')"
+      class="text-left p-3 rounded-xl border-2 transition-all ${active ? 'border-indigo-500 bg-[#eef2ff]' : 'border-[#c8c5d3] hover:border-[#312e81] hover:bg-[#eef2ff]'}">
+      <div class="flex items-start gap-2">
+        <span class="material-symbols-outlined msym text-[#312e81] text-xl flex-shrink-0 mt-0.5">${s.icon}</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-bold text-[#0b1c30]">${s.label}</p>
+          <p class="text-[11px] text-[#474651] mt-0.5">${s.abbr} · ${s.code}</p>
+        </div>
+        ${active ? '<span class="material-symbols-outlined msym text-[#312e81] text-base flex-shrink-0">check_circle</span>' : ''}
+      </div>
+    </button>`;
+  }).join('');
+  const html = `
+  <div id="exploreSpecModal" class="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4" onclick="this.remove()">
+    <div class="bg-[#ffffff] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+      <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+        <span class="material-symbols-outlined msym text-[#312e81]">science</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-base font-bold text-[#0b1c30]">Build nháp lộ trình theo chuyên ngành</p>
+          <p class="text-[11px] text-[#474651] mt-0.5">Chọn 1 CN để xem lộ trình + kho TC giả lập. Bạn có thể đổi sau.</p>
+        </div>
+        <button onclick="document.getElementById('exploreSpecModal')?.remove()"
+          class="w-8 h-8 rounded-lg hover:bg-[#eef2ff] flex items-center justify-center">
+          <span class="material-symbols-outlined msym text-[#474651]">close</span>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        ${cards}
+      </div>
+      <div class="px-5 py-3 border-t border-[#c8c5d3] bg-[#eff4ff] flex items-center justify-between gap-3">
+        <p class="text-[11px] text-[#474651]">⚠ Đổi CN sẽ xoá lộ trình tự sắp xếp hiện tại để build lại sạch.</p>
+        <a href="compare-specs.html" class="text-xs font-semibold text-[#1a146b] hover:underline">So sánh 6 CN →</a>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function selectExploreSpec(specCode) {
+  const cur = localStorage.getItem(exploreSpecKey(_me?.id)) || '';
+  if (cur === specCode) {
+    document.getElementById('exploreSpecModal')?.remove();
+    return;
+  }
+  // Đổi CN → confirm vì sẽ clear custom plan
+  if (!confirm(`Đổi CN khám phá sang ${specLabel(specCode)}?\nLộ trình + kho TC sẽ build lại sạch.`)) return;
+
+  localStorage.setItem(exploreSpecKey(_me?.id), specCode);
+  // Xoá custom plan trên server để load mặc định cho CN mới
+  await api('/roadmap/custom/me', { method: 'PUT', body: JSON.stringify({ semesters: [] }) });
+  document.getElementById('exploreSpecModal')?.remove();
+  toast(`Đang load lộ trình giả lập cho ${specLabel(specCode)}...`, 'info');
+  loadRoadmap();
+}
+
+async function stopExploringSpec() {
+  if (!confirm('Dừng khám phá CN? Lộ trình sẽ trở về trạng thái chưa chọn CN.')) return;
+  localStorage.removeItem(exploreSpecKey(_me?.id));
+  await api('/roadmap/custom/me', { method: 'PUT', body: JSON.stringify({ semesters: [] }) });
+  toast('Đã dừng khám phá CN.', 'info');
+  loadRoadmap();
+}
+
+// SV click ✎ trên slot → mở modal chọn môn cụ thể, lọc theo nhóm tự chọn
+function _specifyKhoSlot(slotCode, group) {
+  _modalTargetTerm = '__KHO_REPLACE__:' + slotCode;
+  _modalSelected.clear();
+  document.getElementById('addCourseModalSub').textContent = `Chọn 1 môn nhóm ${group} để thay slot trong kho`;
+  document.getElementById('addCourseSearch').value = '';
+  // Pre-set filter: nhóm B = elective, nhóm C = elective_c (theo logic filterAddCourseList)
+  const filterEl = document.getElementById('addCourseTypeFilter');
+  if (filterEl) filterEl.value = (group === 'C' ? 'elective_c' : 'elective');
+  _updateModalSelectionBar();
+  document.getElementById('addCourseModal').classList.remove('hidden');
+  // Reuse modal load flow
+  if (!_modalCatalogLoaded) {
+    openAddCourseModal('__KHO_REPLACE__:' + slotCode);  // triggers loader (overrides target — ok)
+  } else {
+    filterAddCourseList();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  FUTURE TERM CARD (render-only — called by _renderUnifiedTimeline)
+// ════════════════════════════════════════════════════════════════════
+function _futureTermCard(term, idx) {
+  // School-assigned term (HK1-HK2 năm 1) — read-only, không drag/drop, hiện banner
+  if (term.is_assigned_by_school) {
+    const totalTC = Math.round((term.courses || []).reduce((s, c) => s + (c.credits || 0), 0) * 10) / 10;
+    const courseChips = (term.courses || []).map(c => {
+      const isEl = isElective(c.category);
+      const cls = isEl ? 'bg-violet-50 text-violet-800 border-violet-200' : 'bg-sky-50 text-sky-800 border-sky-200';
+      return `<a href="course-detail.html?code=${encodeURIComponent(c.course_code)}"
+        class="block bg-white border ${cls} rounded-lg px-2 py-1.5 text-xs hover:shadow-sm transition-shadow"
+        title="${_esc(c.course_name)}">
+        <p class="font-medium leading-tight truncate">${c.course_name}</p>
+        <p class="text-[10px] opacity-70 mt-0.5">${c.course_code} · ${c.credits} TC</p>
+      </a>`;
+    }).join('');
+    return `
+    <div class="flex-shrink-0 snap-start w-64 bg-sky-50/30 border-2 border-dashed border-sky-300 rounded-xl shadow-sm overflow-hidden flex flex-col"
+         data-term="${_esc(term.term_label)}">
+      <div class="px-3 py-2.5 border-b border-sky-200 bg-sky-100/40">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined msym text-sky-600 text-base">verified_user</span>
+              <p class="text-sm font-bold text-sky-900 truncate" title="${_esc(term.term_label)}">${term.term_label}</p>
+            </div>
+            <p class="text-[11px] text-sky-700 mt-0.5">
+              <span class="font-semibold">${totalTC}</span><span class="text-sky-500"> TC · ${term.courses.length} môn</span>
+            </p>
+          </div>
+          <span class="material-symbols-outlined msym text-sky-500 text-base flex-shrink-0" title="Khoá — do trường xếp">lock</span>
+        </div>
+      </div>
+      <div class="flex-1 p-2 space-y-1.5 min-h-[120px] max-h-[420px] overflow-y-auto">
+        ${courseChips}
+      </div>
+      <div class="border-t border-sky-200 px-3 py-2 bg-sky-50/60 text-[10px] text-sky-700 leading-snug flex items-start gap-1">
+        <span class="material-symbols-outlined msym text-[12px] flex-shrink-0 mt-0.5">info</span>
+        <span>HK năm 1 do nhà trường xếp theo CTĐT — không tự chỉnh sửa</span>
+      </div>
+    </div>`;
+  }
+
+  // (Đã bỏ branch render placeholder HK7-9 — backend không còn sinh placeholder nữa.
+  //  Khi SV chưa chọn CN, timeline kết thúc ở HK kiến thức chung, và phần dưới
+  //  hiển thị card "Khám phá 6 CN" để build nháp lộ trình thay vì giả vờ có HK.)
+
+  const totalTC = Math.round(term.courses.reduce((s, c) => s + (c.credits || 0), 0) * 10) / 10;
+  const isLast  = idx === _futureTerms.length - 1;
+  const overTC  = totalTC > _maxCredits;
+  const pct     = Math.min(100, Math.round((totalTC / _maxCredits) * 100));
+
+  return `
+  <div class="flex-shrink-0 snap-start w-64 bg-white border-2 border-dashed border-indigo-200 rounded-xl shadow-sm overflow-hidden fade-in flex flex-col"
+       data-term="${_esc(term.term_label)}">
+    <!-- Header: fixed height -->
+    <div class="px-3 py-2.5 border-b border-[#c8c5d3] bg-[#eef2ff]/40">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <p class="text-sm font-bold text-[#0b1c30] truncate" title="${_esc(term.term_label)}">${term.term_label}</p>
+            ${overTC ? `<span class="text-[10px] font-bold bg-red-100 text-[#ba1a1a] px-1.5 py-0.5 rounded">Vượt</span>` : ''}
+          </div>
+          <p class="text-[11px] text-[#474651] mt-0.5">
+            <span class="${overTC ? 'text-[#ba1a1a] font-semibold' : 'font-semibold text-[#1a146b]'}">${totalTC}</span>
+            <span class="text-[#777682]">/ ${_maxCredits} TC</span>
+            <span class="text-[#c8c5d3]">· ${term.courses.length} môn</span>
+          </p>
+          <div class="mt-1.5 h-1 w-full bg-[#e5eeff] rounded-full overflow-hidden">
+            <div class="${overTC ? 'bg-red-400' : 'bg-indigo-400'} h-full rounded-full transition-all duration-500" style="width:${pct}%"></div>
+          </div>
+        </div>
+        ${isLast ? `
+        <button onclick="removeTerm('${_esc(term.term_label)}')" title="Xóa học kỳ"
+          class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded text-[#c8c5d3] hover:bg-red-50 hover:text-red-400 transition-colors">
+          <span class="material-symbols-outlined msym text-sm">delete_outline</span>
+        </button>` : ''}
+      </div>
+    </div>
+    <!-- Drop zone (scrollable inside column if many courses) -->
+    <div class="flex-1 p-2 space-y-1.5 min-h-[120px] max-h-[420px] overflow-y-auto transition-colors"
+         ondragover="onTermDragOver(event, '${_esc(term.term_label)}')"
+         ondragleave="onTermDragLeave(event)"
+         ondrop="onTermDrop(event, '${_esc(term.term_label)}')">
+      ${term.courses.map(c => _futureCourseItem(c, term.term_label)).join('') || `
+        <div class="flex items-center justify-center h-full min-h-[90px] text-[11px] text-[#777682] border border-dashed border-[#c8c5d3] rounded-lg p-3 text-center">
+          Kéo môn vào đây<br/>hoặc nhấn “Thêm môn”
+        </div>`}
+    </div>
+    <!-- Add button: fixed at bottom -->
+    <button onclick="openAddCourseModal('${_esc(term.term_label)}')"
+      class="border-t border-[#c8c5d3] py-2 text-xs font-semibold text-[#1a146b] hover:bg-[#eef2ff] transition-colors flex items-center justify-center gap-1">
+      <span class="material-symbols-outlined msym text-sm">add</span>Thêm môn
+    </button>
+  </div>`;
+}
+
+function _futureCourseItem(c, termLabel) {
+  // Slot tự chọn (chưa specify) — render khác: click vào popup chọn môn cụ thể
+  if (_isElectiveSlot(c)) {
+    const group = c.elective_group || c.course_code.match(/__ELECTIVE_([A-Z])_/)?.[1] || '?';
+    return `
+    <div draggable="true"
+         data-code="${_esc(c.course_code)}"
+         data-term="${_esc(termLabel)}"
+         ondragstart="onCourseDragStart(event, '${_esc(c.course_code)}', '${_esc(termLabel)}')"
+         ondragend="onCourseDragEnd(event)"
+         onclick="_specifySlotInTerm('${_esc(c.course_code)}','${group}','${_esc(termLabel)}')"
+         class="flex items-start gap-1.5 p-2 rounded-lg bg-violet-50 border-2 border-dashed border-violet-300 cursor-pointer group active:cursor-grabbing select-none hover:bg-violet-100 hover:border-violet-400 transition-colors">
+      <span class="material-symbols-outlined msym text-violet-400 group-hover:text-violet-600 text-sm flex-shrink-0 mt-0.5">touch_app</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-violet-800 leading-snug">Tự chọn nhóm ${group}</p>
+        <p class="text-[10px] text-violet-500 mt-0.5">
+          <span class="font-semibold">${c.credits} TC</span> · <span class="italic">click chọn môn</span>
+        </p>
+      </div>
+      <button onclick="event.stopPropagation();_moveSlotToKho('${_esc(c.course_code)}','${_esc(termLabel)}')"
+        title="Đẩy slot này về kho"
+        class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-violet-400 hover:text-violet-700 hover:bg-violet-200 transition-all flex-shrink-0">
+        <span class="material-symbols-outlined msym text-sm">unarchive</span>
+      </button>
+      <button onclick="event.stopPropagation();removeCourseFromTerm('${_esc(c.course_code)}', '${_esc(termLabel)}')"
+        title="Xóa slot khỏi HK"
+        class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#c8c5d3] hover:text-red-400 hover:bg-red-50 transition-all flex-shrink-0">
+        <span class="material-symbols-outlined msym text-sm">close</span>
+      </button>
+    </div>`;
+  }
+
+  const elect = isElective(c.category);
+  const dot   = elect ? 'bg-violet-400' : 'bg-indigo-400';
+  const bg    = elect ? 'bg-violet-50'  : 'bg-[#eef2ff]';
+  const bd    = elect ? 'border-violet-100' : 'border-indigo-100';
+  const txt   = elect ? 'text-violet-800'   : 'text-indigo-800';
+  const sub   = elect ? 'text-violet-500'   : 'text-[#312e81]';
+  const lbl   = elect ? 'TC' : 'BB';
+
+  return `
+  <div draggable="true"
+       data-code="${_esc(c.course_code)}"
+       data-term="${_esc(termLabel)}"
+       ondragstart="onCourseDragStart(event, '${_esc(c.course_code)}', '${_esc(termLabel)}')"
+       ondragend="onCourseDragEnd(event)"
+       class="flex items-start gap-1.5 p-2 rounded-lg ${bg} border ${bd} cursor-grab group active:cursor-grabbing select-none">
+    <span class="material-symbols-outlined msym text-[#c8c5d3] group-hover:text-[#474651] text-sm flex-shrink-0 mt-0.5">drag_indicator</span>
+    <div class="flex-1 min-w-0">
+      <p class="text-xs font-semibold ${txt} leading-snug" title="${_esc(c.course_name)}">${c.course_name}</p>
+      <div class="flex items-center gap-1 mt-0.5">
+        <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>
+        <span class="text-[10px] ${sub} font-semibold">${c.credits} TC</span>
+        <span class="text-[10px] ${sub}">·</span>
+        <span class="text-[10px] ${sub} uppercase tracking-wide">${lbl}</span>
+      </div>
+    </div>
+    ${(_courseNotes[c.course_code] && _courseNotes[c.course_code].length) ? `
+    <button onclick="event.stopPropagation();_openStudentCourseNote('${_esc(c.course_code)}','${_esc(c.course_name||c.course_code)}')"
+      title="Cố vấn có ghi chú về môn này"
+      class="w-5 h-5 flex items-center justify-center rounded text-amber-500 hover:bg-amber-100 transition-all flex-shrink-0">
+      <span class="material-symbols-outlined msym text-sm">comment</span>
+    </button>` : ''}
+    <a href="course-detail.html?code=${encodeURIComponent(c.course_code)}"
+       title="Xem chi tiết môn"
+       onclick="event.stopPropagation()"
+       class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#c8c5d3] hover:text-[#312e81] hover:bg-[#e5eeff] transition-all flex-shrink-0">
+      <span class="material-symbols-outlined msym text-sm">open_in_new</span>
+    </a>
+    <button onclick="removeCourseFromTerm('${_esc(c.course_code)}', '${_esc(termLabel)}')"
+      class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#c8c5d3] hover:text-red-400 hover:bg-red-50 transition-all flex-shrink-0">
+      <span class="material-symbols-outlined msym text-sm">close</span>
+    </button>
+  </div>`;
+}
+
+// D4: Click slot trong HK column → mở modal chọn môn cụ thể (filter theo nhóm).
+// Khác với _specifyKhoSlot (kho) — slot này ở HK cụ thể, replace tại chỗ.
+function _specifySlotInTerm(slotCode, group, termLabel) {
+  _modalTargetTerm = '__HK_REPLACE__:' + termLabel + ':' + slotCode;
+  _modalSelected.clear();
+  document.getElementById('addCourseModalSub').textContent = `${termLabel} · Chọn 1 môn nhóm ${group} cho slot này`;
+  document.getElementById('addCourseSearch').value = '';
+  const filterEl = document.getElementById('addCourseTypeFilter');
+  if (filterEl) filterEl.value = (group === 'C' ? 'elective_c' : 'elective');
+  _updateModalSelectionBar();
+  document.getElementById('addCourseModal').classList.remove('hidden');
+  if (!_modalCatalogLoaded) {
+    openAddCourseModal('__HK_REPLACE__:' + termLabel + ':' + slotCode);
+  } else {
+    filterAddCourseList();
+  }
+}
+
+// D4: Đẩy slot từ HK column về kho (parking)
+function _moveSlotToKho(slotCode, termLabel) {
+  const term = _futureTerms.find(t => t.term_label === termLabel);
+  if (!term) return;
+  const idx = term.courses.findIndex(c => c.course_code === slotCode);
+  if (idx === -1) return;
+  const slot = term.courses[idx];
+  term.courses.splice(idx, 1);
+  _kho.push(slot);
+  _renderUnifiedTimeline();
+  scheduleAutoSave();
+}
+
+function escHtml(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+// ── Student-side read-only note popup ─────────────────────────────────────
+function _openStudentCourseNote(code, name) {
+  const notes = _courseNotes[code] || [];
+  const list = notes.map(n => `
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1">
+        <p class="text-xs font-bold text-amber-800">${escHtml(n.advisor_name || 'Cố vấn')}</p>
+        <p class="text-[10px] text-amber-600">${n.created_at ? new Date(n.created_at).toLocaleString('vi-VN') : ''}</p>
+      </div>
+      <p class="text-sm text-amber-900 whitespace-pre-wrap">${escHtml(n.content || '')}</p>
+    </div>
+  `).join('');
+  const html = `
+  <div id="stuNoteModal" class="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4" onclick="this.remove()">
+    <div class="bg-[#ffffff] rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+      <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+        <span class="material-symbols-outlined msym text-amber-500">comment</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] uppercase tracking-wider text-[#777682] font-bold">Ghi chú từ cố vấn</p>
+          <p class="text-sm font-bold text-[#0b1c30] truncate">${escHtml(name)} <span class="font-mono text-xs text-[#777682]">${escHtml(code)}</span></p>
+        </div>
+        <button onclick="document.getElementById('stuNoteModal')?.remove()"
+          class="w-8 h-8 rounded-lg hover:bg-[#eef2ff] flex items-center justify-center">
+          <span class="material-symbols-outlined msym text-[#474651]">close</span>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+        ${list || '<p class="text-sm text-[#777682] italic">Chưa có ghi chú nào.</p>'}
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function _esc(s) { return String(s || '').replace(/'/g, "\\'"); }
+
+// ════════════════════════════════════════════════════════════════════
+//  DRAG & DROP
+// ════════════════════════════════════════════════════════════════════
+function onCourseDragStart(event, code, fromTerm) {
+  _dragData = { code, fromTerm };
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', code);
+  setTimeout(() => event.target.classList.add('course-dragging'), 0);
+}
+
+function onCourseDragEnd(event) {
+  event.target.classList.remove('course-dragging');
+  _dragData = null;
+}
+
+function onTermDragOver(event, toTerm) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  event.currentTarget.classList.add('drop-active');
+}
+
+function onTermDragLeave(event) {
+  // Only remove if leaving the drop zone itself (not a child)
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    event.currentTarget.classList.remove('drop-active');
+  }
+}
+
+function onTermDrop(event, toTerm) {
+  event.preventDefault();
+  event.currentTarget.classList.remove('drop-active');
+  if (!_dragData) return;
+  const { code, fromTerm } = _dragData;
+  _dragData = null;
+  if (fromTerm === toTerm) return;
+  _moveCourse(code, fromTerm, toTerm);
+}
+
+function _moveCourse(code, fromTerm, toTerm) {
+  // Lấy source courses array (kho hoặc HK)
+  const fromIsKho = fromTerm === KHO_TERM_KEY;
+  const toIsKho   = toTerm   === KHO_TERM_KEY;
+  const fromArr = fromIsKho ? _kho : (_futureTerms.find(t => t.term_label === fromTerm)?.courses);
+  const toArr   = toIsKho   ? _kho : (_futureTerms.find(t => t.term_label === toTerm)?.courses);
+  if (!fromArr || !toArr) return;
+
+  const cIdx = fromArr.findIndex(c => c.course_code === code);
+  if (cIdx === -1) return;
+  const course = fromArr[cIdx];
+
+  // Check TC limit (chỉ khi đích là HK, kho không giới hạn)
+  if (!toIsKho) {
+    const currentTC = toArr.reduce((s, c) => s + (c.credits || 0), 0);
+    if (currentTC + (course.credits || 0) > _maxCredits) {
+      toast(`Học kỳ ${toTerm} sẽ vượt giới hạn ${_maxCredits} TC/kỳ (hiện ${currentTC} TC + ${course.credits} TC mới).`, 'warn');
+    }
+  }
+
+  // Check prereqs (warn only — don't block) — chỉ khi đích là HK
+  if (!toIsKho) {
+    const prereqs = _prereqMap[code] || [];
+    if (prereqs.length > 0) {
+      const toIdx = _futureTerms.findIndex(t => t.term_label === toTerm);
+      const availBefore = new Set([..._passedCodes]);
+      for (let i = 0; i < toIdx; i++)
+        _futureTerms[i].courses.forEach(c => availBefore.add(c.course_code));
+      const unmet = prereqs.filter(p => !availBefore.has(p));
+      if (unmet.length > 0) {
+        const names = unmet.map(p => _courseMap[p]?.course_name || p).join(', ');
+        toast(`Cảnh báo: Chưa đủ tiên quyết — ${names}`, 'warn');
+      }
+    }
+  }
+
+  fromArr.splice(cIdx, 1);
+  toArr.push(course);
+  _renderUnifiedTimeline();
+  scheduleAutoSave();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  ADD / REMOVE HK
+// ════════════════════════════════════════════════════════════════════
+function addNextTerm() {
+  const lastTerm = _futureTerms[_futureTerms.length - 1];
+  if (!lastTerm) {
+    // Fallback: guess from current date
+    const y = new Date().getFullYear();
+    _futureTerms.push({ term_label: `HK1 ${y}-${y + 1}`, courses: [] });
+  } else {
+    const next = nextTermLabel(lastTerm.term_label);
+    if (!next) { toast('Không tính được học kỳ tiếp theo.', 'warn'); return; }
+    _futureTerms.push({ term_label: next, courses: [] });
+  }
+  _renderFutureTerms();
+  scheduleAutoSave();
+  // Scroll to new card in unified timeline
+  setTimeout(() => {
+    const cards = document.getElementById('timelineContainer').querySelectorAll('[data-term]');
+    cards[cards.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'end' });
+  }, 100);
+}
+
+function removeTerm(termLabel) {
+  const idx  = _futureTerms.findIndex(t => t.term_label === termLabel);
+  if (idx === -1) return;
+  const term = _futureTerms[idx];
+  if (term.courses.length > 1) {
+    toast('Chỉ có thể xóa học kỳ khi còn trống hoặc ≤1 môn.', 'warn');
+    return;
+  }
+  _futureTerms.splice(idx, 1);
+  _renderFutureTerms();
+  scheduleAutoSave();
+}
+
+function removeCourseFromTerm(code, termLabel) {
+  const term = _futureTerms.find(t => t.term_label === termLabel);
+  if (!term) return;
+  term.courses = term.courses.filter(c => c.course_code !== code);
+  _renderFutureTerms();
+  scheduleAutoSave();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  AUTO-SAVE
+// ════════════════════════════════════════════════════════════════════
+function scheduleAutoSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveCustomRoadmap, 1000);
+}
+
+async function saveCustomRoadmap() {
+  if (_isSaving) return;
+  _isSaving = true;
+  showSaveStatus('saving');
+  // Format mới: 1 sentinel "__PICKS__" với course_codes là array của "slot:code"
+  // VD: ["__POOL_A_4_1__:7080515", "__POOL_B_7_2__:7080112"]
+  const codes = Object.entries(_slotPicks).map(([slot, code]) => `${slot}:${code}`);
+  const payload = {
+    semesters: codes.length
+      ? [{ semester_label: '__PICKS__', course_codes: codes }]
+      : [],
+  };
+  const res = await api('/roadmap/custom/me', { method: 'PUT', body: JSON.stringify(payload) });
+  _isSaving = false;
+  showSaveStatus(res.ok ? 'saved' : 'error');
+  if (!res.ok) toast('Lưu thất bại. Thử lại sau.', 'error');
+}
+
+// saveRoadmapManual is alias (called from "Lưu kế hoạch" button)
+function saveRoadmapManual() { saveCustomRoadmap(); }
+
+// ════════════════════════════════════════════════════════════════════
+//  ADD COURSE MODAL
+// ════════════════════════════════════════════════════════════════════
+async function openAddCourseModal(termLabel) {
+  _modalTargetTerm = termLabel;
+  _modalSelected.clear();
+  // Chỉ set subtitle generic nếu chưa được caller set (slot pick đã set subtitle riêng)
+  if (!String(termLabel).startsWith('__')) {
+    document.getElementById('addCourseModalSub').textContent = `Học kỳ: ${termLabel}`;
+    document.getElementById('addCourseSearch').value = '';
+    document.getElementById('addCourseTypeFilter').value = '';
+  }
+  _updateModalSelectionBar();
+  document.getElementById('addCourseModal').classList.remove('hidden');
+
+  if (!_modalCatalogLoaded) {
+    document.getElementById('addCourseList').innerHTML =
+      '<p class="text-xs text-[#777682] text-center py-8">Đang tải + xếp hạng ML...</p>';
+    const [catalogRes, rankRes] = await Promise.all([
+      api('/courses/catalog/me'),
+      api('/courses/rank-for-me'),
+    ]);
+    const raw = Array.isArray(catalogRes.data) ? catalogRes.data : (catalogRes.data?.courses || []);
+    // Exclude completed (passed) courses
+    _modalAllCourses = raw.filter(c => c.status !== 'completed');
+
+    // Merge ML ranking into course objects
+    const mlMap = {};
+    const mlCareer = rankRes.ok ? { name: rankRes.data?.career_name, code: rankRes.data?.career_code } : null;
+    if (rankRes.ok && Array.isArray(rankRes.data?.courses)) {
+      for (const item of rankRes.data.courses) {
+        mlMap[item.course_code] = item;
+      }
+    }
+    _modalAllCourses.forEach(c => {
+      const ml = mlMap[c.course_code];
+      if (ml) {
+        c._ml_score = ml.ml_score;
+        c._ml_percent = ml.ml_percent;
+        c._ml_reason = ml.reason;
+        c._ml_tags = ml.tags || [];
+        c._ml_breakdown = ml.breakdown;
+      }
+      if (!_allCoursesMap[c.course_code])
+        _allCoursesMap[c.course_code] = { course_name: c.course_name, credits: c.credits };
+    });
+    _modalMlCareer = mlCareer;
+    _modalCatalogLoaded = true;
+    // Re-render plan để picked slots hiển thị tên môn đầy đủ (không phải mã)
+    _renderStandardPlan();
+  }
+  filterAddCourseList();
+}
+
+function closeAddCourseModal() {
+  document.getElementById('addCourseModal').classList.add('hidden');
+  _modalTargetTerm = null;
+  _modalSelected.clear();
+  // Reset slot-pick UI lock
+  const filterEl = document.getElementById('addCourseTypeFilter');
+  if (filterEl) {
+    filterEl.disabled = false;
+    filterEl.classList.remove('opacity-60', 'cursor-not-allowed');
+  }
+  const titleEl = document.querySelector('#addCourseModal h3');
+  if (titleEl) titleEl.textContent = 'Thêm môn học';
+}
+
+function filterAddCourseList() {
+  const q    = (document.getElementById('addCourseSearch').value || '').toLowerCase().trim();
+  const type = document.getElementById('addCourseTypeFilter').value;
+
+  // Slot pick mode: ẩn môn đã được pick cho slot khác (tránh duplicate)
+  const isSlotPick = (_modalTargetTerm || '').startsWith('__SLOT_PICK__:');
+  const pickedCodes = isSlotPick ? new Set(Object.values(_slotPicks)) : new Set();
+
+  const filtered = _modalAllCourses.filter(c => {
+    if (pickedCodes.has(c.course_code)) return false;
+    const matchQ = !q || (c.course_name || '').toLowerCase().includes(q) || (c.course_code || '').toLowerCase().includes(q);
+    const cType  = c.elective_group ? 'elective' : 'required';
+    const matchT = !type || cType === type || (type === 'elective_c' && c.elective_group === 'C');
+    return matchQ && matchT;
+  });
+
+  // Sort by current mode
+  if (_modalSortMode === 'ml') {
+    filtered.sort((a, b) => (b._ml_score ?? 0) - (a._ml_score ?? 0));
+  } else if (_modalSortMode === 'code') {
+    filtered.sort((a, b) => (a.course_code || '').localeCompare(b.course_code || ''));
+  } else if (_modalSortMode === 'credits') {
+    filtered.sort((a, b) => (b.credits || 0) - (a.credits || 0));
+  }
+
+  _renderModalCourseList(filtered);
+}
+
+function _setModalSort(mode) {
+  _modalSortMode = mode;
+  document.querySelectorAll('.mdl-sort-btn').forEach(b => {
+    const active = b.dataset.sort === mode;
+    b.classList.toggle('bg-indigo-600', active);
+    b.classList.toggle('text-white', active);
+    b.classList.toggle('text-[#474651]', !active);
+    b.classList.toggle('bg-[#e5eeff]', !active);
+  });
+  filterAddCourseList();
+}
+
+function _renderModalCourseList(courses) {
+  const el = document.getElementById('addCourseList');
+  if (!courses.length) {
+    el.innerHTML = '<p class="text-xs text-[#777682] text-center py-8">Không tìm thấy môn phù hợp.</p>';
+    return;
+  }
+
+  // ML banner at top (explains current ranking signal)
+  let banner = '';
+  if (_modalSortMode === 'ml' && _modalMlCareer?.name) {
+    banner = `<div class="bg-[#eef2ff] border border-indigo-100 rounded-xl p-2.5 mb-2 flex items-center gap-2 text-[11px] text-[#1a146b]">
+      <span class="material-symbols-outlined msym text-sm text-[#312e81]">auto_awesome</span>
+      <span>Xếp hạng ML theo định hướng <strong>${_esc(_modalMlCareer.name)}</strong> · điểm của bạn · rating từ SV khác</span>
+    </div>`;
+  } else if (_modalSortMode === 'ml') {
+    banner = `<div class="bg-amber-50 border border-amber-100 rounded-xl p-2.5 mb-2 flex items-center gap-2 text-[11px] text-amber-700">
+      <span class="material-symbols-outlined msym text-sm">tips_and_updates</span>
+      <span>Chọn định hướng nghề tại <a href="career-hub.html" class="underline font-semibold">Hướng nghề</a> để AI xếp hạng chính xác hơn.</span>
+    </div>`;
+  }
+
+  el.innerHTML = banner + courses.map((c, i) => {
+    const sel = _modalSelected.has(c.course_code);
+    const elect = !!c.elective_group;
+    const lbl = elect ? `Tự chọn ${c.elective_group || ''}` : 'Bắt buộc';
+    const statusBadge = c.status === 'failed'
+      ? '<span class="text-[10px] bg-red-50 text-[#ba1a1a] px-1.5 py-0.5 rounded font-semibold">Trượt lần trước</span>'
+      : '';
+    const mlPct = c._ml_percent;
+    const topBadge = (_modalSortMode === 'ml' && i < 3 && mlPct > 0)
+      ? `<span class="text-[9px] font-bold bg-[#1a146b] text-white px-1.5 py-0.5 rounded">TOP ${i+1}</span>`
+      : '';
+    let mlBadge = '';
+    if (mlPct != null && mlPct > 0) {
+      const cls = mlPct >= 70 ? 'bg-emerald-100 text-emerald-700' :
+                  mlPct >= 40 ? 'bg-[#e5eeff] text-[#1a146b]' :
+                                'bg-[#e5eeff] text-[#474651]';
+      mlBadge = `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold ${cls} px-1.5 py-0.5 rounded" title="${_esc(c._ml_reason||'')}">
+        <span class="material-symbols-outlined msym text-[11px]">auto_awesome</span>${mlPct}%
+      </span>`;
+    }
+    // Tag chips from ML
+    let tagChips = '';
+    if (_modalSortMode === 'ml' && Array.isArray(c._ml_tags) && c._ml_tags.length) {
+      const chipMap = {
+        career: ['bg-purple-50 text-purple-700', '🎯 Khớp định hướng'],
+        strong_fit: ['bg-[#dcfce7] text-emerald-700', '💪 Thế mạnh'],
+        weak_area: ['bg-amber-50 text-amber-700', '🌱 Mở rộng lĩnh vực'],
+        peer_loved: ['bg-pink-50 text-pink-700', '⭐ SV yêu thích'],
+      };
+      tagChips = c._ml_tags
+        .filter(t => chipMap[t])
+        .map(t => `<span class="text-[9px] ${chipMap[t][0]} px-1.5 py-0.5 rounded">${chipMap[t][1]}</span>`)
+        .join(' ');
+    }
+    const rating = c._ml_breakdown?.avg_rating_stars;
+    const ratingCount = c._ml_breakdown?.rating_count;
+    const ratingBadge = (rating && ratingCount >= 3)
+      ? `<span class="text-[10px] text-amber-600 font-semibold">★ ${rating} <span class="text-[#777682]">(${ratingCount})</span></span>`
+      : '';
+
+    return `
+    <div class="course-card flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-colors hover:border-[#312e81] ${sel ? 'selected' : 'border-[#c8c5d3] bg-white'}"
+         onclick="toggleModalCourse('${_esc(c.course_code)}', this)">
+      <div class="w-5 h-5 rounded-md border-2 ${sel ? 'bg-indigo-600 border-indigo-600' : 'border-[#c8c5d3]'} flex items-center justify-center flex-shrink-0 mt-0.5">
+        ${sel ? '<span class="material-symbols-outlined msym text-white text-sm">check</span>' : ''}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          ${topBadge}
+          <p class="text-sm font-medium text-[#0b1c30] truncate">${c.course_name}</p>
+          ${mlBadge}
+          ${statusBadge}
+        </div>
+        <p class="text-[11px] text-[#777682] mt-0.5">
+          <span class="font-mono">${c.course_code}</span> · ${c.credits || '?'} TC · ${lbl}
+          ${ratingBadge ? ' · ' + ratingBadge : ''}
+        </p>
+        ${tagChips ? `<div class="flex gap-1 flex-wrap mt-1.5">${tagChips}</div>` : ''}
+        ${c._ml_reason && _modalSortMode === 'ml' ? `<p class="text-[10px] text-[#474651] italic mt-1">${_esc(c._ml_reason)}</p>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleModalCourse(code, cardEl) {
+  // Slot pick mode = single-select: bỏ chọn cũ trước khi chọn mới
+  const isSlotPick = (_modalTargetTerm || '').startsWith('__SLOT_PICK__:');
+  if (isSlotPick && !_modalSelected.has(code)) {
+    _modalSelected.clear();
+    // Re-render tất cả cards để bỏ visual đã selected ở card khác
+    filterAddCourseList();
+    _modalSelected.add(code);
+    _updateModalSelectionBar();
+    return;
+  }
+  if (_modalSelected.has(code)) {
+    _modalSelected.delete(code);
+  } else {
+    _modalSelected.add(code);
+  }
+  _updateModalSelectionBar();
+  // Re-render just this card's checkbox state without full re-render
+  const isSel = _modalSelected.has(code);
+  cardEl.classList.toggle('selected', isSel);
+  const chk = cardEl.querySelector('div.rounded-md');
+  if (chk) {
+    chk.className = `w-5 h-5 rounded-md border-2 ${isSel ? 'bg-indigo-600 border-indigo-600' : 'border-[#c8c5d3]'} flex items-center justify-center flex-shrink-0`;
+    chk.innerHTML = isSel ? '<span class="material-symbols-outlined msym text-white text-sm">check</span>' : '';
+  }
+}
+
+function _updateModalSelectionBar() {
+  const count = _modalSelected.size;
+  const tc = [..._modalSelected].reduce((sum, code) => {
+    const c = _modalAllCourses.find(x => x.course_code === code);
+    return sum + (c?.credits || 0);
+  }, 0);
+  document.getElementById('addCourseSelectedCount').textContent = count;
+  document.getElementById('addCourseSelectedTC').textContent    = tc;
+  document.getElementById('addCourseSelectedBar').classList.toggle('hidden', count === 0);
+  document.getElementById('addCourseConfirmBtn').disabled = count === 0;
+}
+
+function clearAddCourseSelection() {
+  _modalSelected.clear();
+  filterAddCourseList();
+  _updateModalSelectionBar();
+}
+
+function confirmAddCourses() {
+  if (!_modalTargetTerm || _modalSelected.size === 0) return;
+
+  // Slot pick flow (D4 redesign): __SLOT_PICK__:<slotCode>:<group>
+  if (_modalTargetTerm.startsWith('__SLOT_PICK__:')) {
+    const rest = _modalTargetTerm.substring('__SLOT_PICK__:'.length);
+    // slotCode có thể chứa dấu ":" trong code (vd __POOL_A_4_1__) → dùng lastIndexOf
+    const lastColon = rest.lastIndexOf(':');
+    const slotCode = rest.substring(0, lastColon);
+    const code = [..._modalSelected][0];
+    const c = _modalAllCourses.find(x => x.course_code === code);
+    if (c) {
+      // Tránh trùng môn đã pick cho slot khác hoặc đã pass
+      const alreadyPickedFor = Object.entries(_slotPicks).find(([s, p]) => p === code && s !== slotCode);
+      if (alreadyPickedFor) {
+        toast(`Môn này đã được chọn cho slot khác.`, 'warn');
+        closeAddCourseModal();
+        return;
+      }
+      _slotPicks[slotCode] = code;
+      // Cache info để render hiển thị tên môn
+      _allCoursesMap[code] = { course_name: c.course_name, credits: c.credits };
+      toast(`Đã chọn ${c.course_name}.`, 'success');
+    }
+    closeAddCourseModal();
+    renderPersonalRoadmap();  // re-render all (hero + stats + tracker + grid)
+    scheduleAutoSave();
+    return;
+  }
+
+  // Fallback: không thuộc flow nào đã biết → đóng modal
+  closeAddCourseModal();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  CTĐT REFERENCE PANEL (in-page, collapsed by default)
+// ════════════════════════════════════════════════════════════════════
+let _ctdtChart = null;
+let _ctdtLoaded = false;
+
+async function switchRoadmapTab(tab) {
+  // Tab button styles
+  document.querySelectorAll('.rd-tab').forEach(b => {
+    const active = b.dataset.tab === tab;
+    b.classList.toggle('bg-indigo-600', active);
+    b.classList.toggle('text-white', active);
+    b.classList.toggle('shadow-sm', active);
+    b.classList.toggle('text-[#474651]', !active);
+    b.classList.toggle('hover:bg-[#eef2ff]', !active);
+  });
+  // Panel visibility
+  document.getElementById('panel-personal').classList.toggle('hidden', tab !== 'personal');
+  document.getElementById('ctdtPanel').classList.toggle('hidden', tab !== 'ctdt');
+  // URL hash sync (allows direct deep-link to #ctdt + browser back/forward)
+  const newHash = tab === 'ctdt' ? '#ctdt' : '';
+  if (location.hash !== newHash) {
+    history.replaceState(null, '', location.pathname + location.search + newHash);
+  }
+  // Lazy-load CTĐT chart on first visit
+  if (tab === 'ctdt' && !_ctdtLoaded) await _loadCtdtPanel();
+}
+
+async function _loadCtdtPanel() {
+  const spec = (_me?.specialization || '').trim();
+  if (!spec) {
+    document.getElementById('ctdtPanelContainer').innerHTML =
+      '<p class="text-sm text-[#777682] p-6">Chưa xác định chuyên ngành. Upload bảng điểm để hệ thống nhận diện chuyên ngành.</p>';
+    return;
+  }
+  const badge = document.getElementById('ctdtSpecBadge');
+  if (badge) badge.textContent = specLabel(spec);
+
+  const [planRes, gradesRes] = await Promise.all([
+    api(`/courses/standard-plan?spec=${encodeURIComponent(spec)}`),
+    api('/grades/me'),
+  ]);
+  if (!planRes.ok || !planRes.data?.semesters?.length) {
+    document.getElementById('ctdtPanelContainer').innerHTML =
+      '<p class="text-sm text-red-400 p-6">Không tải được sơ đồ CTĐT.</p>';
+    return;
+  }
+  const gradeStatus = {};
+  if (gradesRes.ok && Array.isArray(gradesRes.data)) {
+    for (const g of gradesRes.data) {
+      if (g.passed) gradeStatus[g.course_code] = 'passed';
+      else if (g.score10 != null || g.letter) gradeStatus[g.course_code] = 'failed';
+    }
+  }
+  const courses = [];
+  for (const sem of planRes.data.semesters) {
+    for (const c of (sem.courses || [])) {
+      courses.push({
+        course_code: c.course_code, course_name: c.course_name,
+        credits: c.credits, count_toward_credits: c.count_toward_credits,
+        typical_semester: sem.semester_number, prereqs: c.prereqs || [],
+        group: c.required_specialization ? 'c' : 'compulsory',
+        status: gradeStatus[c.course_code] || null,
+      });
+    }
+  }
+  const container = document.getElementById('ctdtPanelContainer');
+  container.innerHTML = '';  // clear loading placeholder
+  if (!_ctdtChart) _ctdtChart = initCurriculumChart(container, { canEdit: false });
+  _ctdtChart.render(courses);
+  _ctdtLoaded = true;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  SIDEBAR TOGGLE
+// ════════════════════════════════════════════════════════════════════
+// toggleSidebar provided by sidebar-init.js
+
+// ════════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════════
+(async () => {
+  if (typeof checkAuth === 'function') checkAuth();
+  const token = localStorage.getItem('access_token');
+  if (!token) { window.location.replace('index.html'); return; }
+
+  // Sidebar is injected synchronously by sidebar-init.js
+
+  try {
+    const s = document.createElement('script');
+    s.src = 'floating-chat.js';
+    document.body.appendChild(s);
+  } catch (_) {}
+
+  const [meRes, progRes] = await Promise.all([
+    api('/auth/me'),
+    api('/progress/me'),
+  ]);
+
+  if (!meRes.ok) { window.location.replace('index.html'); return; }
+
+  _me       = meRes.data;
+  _progress = progRes.ok ? progRes.data : null;
+
+  updateTopbarUser(_me);
+  // Subtitle dùng explore_spec nếu SV chưa có CN nhưng đang khám phá
+  const exploreSpec = localStorage.getItem(exploreSpecKey(_me?.id)) || '';
+  const effectiveSpec = _me.specialization || exploreSpec || '';
+  const cnLabel = effectiveSpec ? specLabel(effectiveSpec) : 'CNTT (chưa chốt CN)';
+  const cnPrefix = _me.specialization ? 'Chuyên ngành' : (exploreSpec ? 'Đang khám phá' : 'Ngành');
+  const earned   = _progress?.earned_credits ?? _progress?.total_credits ?? '?';
+  const subtitle = `${cnPrefix}: ${cnLabel} · ${earned} TC tích lũy / 153 TC`;
+  document.getElementById('headerSubtitle').textContent = subtitle;
+  document.getElementById('pageSubtitle').textContent   = subtitle;
+
+  // Sidebar user info (may already be injected)
+  setTimeout(() => {
+    const n = document.getElementById('sidebarUserName');
+    if (n) n.textContent = _me.full_name || _me.username;
+    const sp = document.getElementById('sidebarSpec');
+    if (sp) sp.textContent = cn;
+  }, 200);
+
+  loadRoadmap();
+
+  // Auto-switch to CTĐT tab if URL hash = #ctdt (deep-link or redirect from ctdt.html)
+  if (location.hash === '#ctdt') {
+    setTimeout(() => switchRoadmapTab('ctdt'), 300);
+  }
+})();
+</script>
+</body>
+</html>

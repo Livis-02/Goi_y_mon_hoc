@@ -1,0 +1,298 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Đánh giá của tôi</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.15s; animation-timing-function: ease-out; }
+    #sidebarMount, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+  </style>
+  <script>
+    tailwind.config = { darkMode:'class', theme:{ extend:{ colors:{
+      primary:'#1a146b','on-surface':'#0f172a',outline:'#94a3b8',
+    }}}}
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+<div id="sidebarMount"></div>
+
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d] truncate">Đánh giá của tôi</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-4xl mx-auto space-y-5">
+
+    <!-- Group nav bar (shared with settings.html) -->
+    <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] shadow-sm p-1 flex gap-1">
+      <a href="settings.html" class="flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+        <span class="material-symbols-outlined msym text-base">person</span>Cài đặt
+      </a>
+      <a href="my-reviews.html" class="flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 bg-[#1a146b] text-white shadow-sm">
+        <span class="material-symbols-outlined msym text-base">rate_review</span>Đánh giá đã viết
+      </a>
+    </div>
+
+    <!-- Loading -->
+    <div id="mrLoading" class="bg-[#ffffff] rounded-2xl p-10 text-center">
+      <span class="material-symbols-outlined msym text-3xl text-[#c8c5d3] spin">progress_activity</span>
+      <p class="text-sm text-[#777682] mt-2">Đang tải...</p>
+    </div>
+
+    <!-- Empty -->
+    <div id="mrEmpty" class="hidden bg-[#ffffff] rounded-2xl border border-[#c8c5d3] p-10 text-center">
+      <span class="material-symbols-outlined msym text-5xl text-[#c8c5d3] block mb-3">rate_review</span>
+      <h2 class="text-lg font-bold text-[#0b1c30] mb-1">Bạn chưa có đánh giá nào</h2>
+      <p class="text-sm text-[#474651] mb-5 max-w-md mx-auto">
+        Sau khi pass môn học, bạn có thể đánh giá môn (sao + nhận xét) để giúp SV khác chọn môn tốt hơn.
+      </p>
+      <a href="grades.html" class="inline-flex items-center gap-1.5 px-5 py-2.5 pri-grad text-white rounded-xl text-sm font-bold shadow hover:opacity-90 transition-all">
+        <span class="material-symbols-outlined msym text-base">grading</span>Vào bảng điểm để đánh giá
+      </a>
+    </div>
+
+    <!-- Content -->
+    <div id="mrContent" class="hidden space-y-4 fade-in">
+
+      <!-- Hero summary -->
+      <div class="bg-gradient-to-br from-amber-400 to-rose-500 rounded-2xl text-white p-6 shadow-md">
+        <div class="flex items-center gap-4 flex-wrap">
+          <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined msym text-3xl text-white" style="font-variation-settings:'FILL' 1">rate_review</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[10px] uppercase tracking-wider text-white/70 font-bold">Đánh giá của bạn</p>
+            <h1 class="text-xl lg:text-2xl font-bold mt-1"><span id="mrTotal">—</span> môn đã đánh giá</h1>
+            <p class="text-sm text-white/85 mt-1" id="mrSubtitle">—</p>
+          </div>
+          <div class="text-right">
+            <p class="text-[10px] uppercase text-white/70">Trung bình</p>
+            <p class="text-3xl font-extrabold" id="mrAvgGiven">—</p>
+            <p class="text-[10px] text-white/70">★ bạn cho</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] px-3 py-2 shadow-sm flex items-center gap-2 flex-wrap">
+        <span class="text-xs font-semibold text-[#474651]">Lọc:</span>
+        <button onclick="_filter('all')" id="mrFilterAll" class="px-3 py-1 text-xs font-semibold rounded-lg bg-[#e5eeff] text-[#1a146b]">Tất cả</button>
+        <button onclick="_filter('with_review')" id="mrFilterReview" class="px-3 py-1 text-xs font-semibold rounded-lg bg-[#eff4ff] text-[#474651] hover:bg-violet-100 hover:text-violet-700">Có nhận xét</button>
+        <button onclick="_filter('star_only')" id="mrFilterStarsOnly" class="px-3 py-1 text-xs font-semibold rounded-lg bg-[#eff4ff] text-[#474651] hover:bg-amber-100 hover:text-amber-700">Chỉ sao</button>
+      </div>
+
+      <!-- List -->
+      <div id="mrList" class="space-y-3"></div>
+    </div>
+  </div>
+</main>
+
+<script src="floating-chat.js"></script>
+<script>
+const API = window.API_BASE;
+function H(extra={}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg, type='info', duration=3000) {
+  const cls = { success:'bg-[#dcfce7]0', error:'bg-[#ba1a1a]', warning:'bg-amber-500', info:'bg-[#eef2ff]0' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto px-4 py-2.5 ${cls[type]||cls.info} text-white text-sm font-medium rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+let _items = [];
+let _filterMode = 'all';
+
+checkAuth();
+
+(async function init() {
+  try {
+    const ur = await fetch(`${API}/auth/me`, { headers: H() });
+    if (ur.ok) {
+      const u = await ur.json();
+      updateTopbarUser(u);
+    }
+  } catch {}
+  await loadReviews();
+})();
+
+async function loadReviews() {
+  try {
+    const res = await fetch(`${API}/me/reviews`, { headers: H() });
+    if (!res.ok) {
+      document.getElementById('mrLoading').classList.add('hidden');
+      showToast('Lỗi tải đánh giá', 'error');
+      return;
+    }
+    const d = await res.json();
+    _items = d.items || [];
+    document.getElementById('mrLoading').classList.add('hidden');
+    if (!_items.length) {
+      document.getElementById('mrEmpty').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('mrContent').classList.remove('hidden');
+    _renderHero();
+    _renderList();
+  } catch (e) {
+    document.getElementById('mrLoading').classList.add('hidden');
+    showToast('Lỗi: ' + e.message, 'error');
+  }
+}
+
+function _renderHero() {
+  const total = _items.length;
+  const totalRev = _items.filter(i => i.has_review).length;
+  const avg = _items.reduce((s, i) => s + i.rating, 0) / total;
+  document.getElementById('mrTotal').textContent = total;
+  document.getElementById('mrSubtitle').textContent =
+    `${totalRev}/${total} có nhận xét chi tiết · giúp ${total} môn có dữ liệu đánh giá`;
+  document.getElementById('mrAvgGiven').textContent = avg.toFixed(1);
+}
+
+function _filter(mode) {
+  _filterMode = mode;
+  for (const k of ['All', 'Review', 'StarsOnly']) {
+    const el = document.getElementById('mrFilter' + k);
+    if (!el) continue;
+    const isActive =
+      (k === 'All' && mode === 'all') ||
+      (k === 'Review' && mode === 'with_review') ||
+      (k === 'StarsOnly' && mode === 'star_only');
+    if (isActive) {
+      el.className = 'px-3 py-1 text-xs font-semibold rounded-lg bg-[#e5eeff] text-[#1a146b]';
+    } else {
+      const hover = k === 'Review' ? 'hover:bg-violet-100 hover:text-violet-700'
+                  : k === 'StarsOnly' ? 'hover:bg-amber-100 hover:text-amber-700'
+                  : 'hover:bg-[#e5eeff] hover:text-[#1a146b]';
+      el.className = 'px-3 py-1 text-xs font-semibold rounded-lg bg-[#eff4ff] text-[#474651] ' + hover;
+    }
+  }
+  _renderList();
+}
+
+function _renderList() {
+  let list = _items;
+  if (_filterMode === 'with_review') list = _items.filter(i => i.has_review);
+  else if (_filterMode === 'star_only') list = _items.filter(i => !i.has_review);
+
+  const el = document.getElementById('mrList');
+  if (!list.length) {
+    el.innerHTML = '<p class="text-xs text-[#777682] italic text-center py-8">Không có item nào.</p>';
+    return;
+  }
+  el.innerHTML = list.map(it => {
+    const stars = [1,2,3,4,5].map(i =>
+      `<span class="text-base ${i <= it.rating ? 'text-amber-400' : 'text-slate-200'}">★</span>`
+    ).join('');
+    const reviewBlock = it.has_review
+      ? `<p class="text-sm text-[#0b1c30] leading-relaxed mt-2 whitespace-pre-line bg-[#eff4ff] rounded-lg p-3 border border-[#c8c5d3]">${escHtml(it.review)}</p>`
+      : `<p class="text-xs text-[#777682] italic mt-2">Chỉ chấm sao, không có nhận xét chi tiết.</p>`;
+    return `<div class="bg-[#ffffff] rounded-2xl border border-[#c8c5d3] p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer"
+      onclick="if(event.target.closest('button')||event.target.closest('a'))return;window.location.href='course-detail.html?code=${encodeURIComponent(it.course_code)}'">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined msym text-amber-500">menu_book</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <a href="course-detail.html?code=${encodeURIComponent(it.course_code)}"
+            class="block">
+            <p class="text-sm font-bold text-[#0b1c30] hover:text-[#1a146b] truncate">${escHtml(it.course_name)}</p>
+            <p class="text-[11px] text-[#777682] mt-0.5"><span class="font-mono">${escHtml(it.course_code)}</span>${it.credits ? ` · ${it.credits} TC` : ''}</p>
+          </a>
+          <div class="flex gap-0.5 mt-1.5">${stars}</div>
+          ${reviewBlock}
+        </div>
+        <div class="flex flex-col gap-1 flex-shrink-0">
+          <a href="course-detail.html?code=${encodeURIComponent(it.course_code)}"
+            title="Xem/sửa đánh giá"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-[#777682] hover:bg-[#eef2ff] hover:text-[#1a146b] transition-colors">
+            <span class="material-symbols-outlined msym text-base">edit</span>
+          </a>
+          <button onclick="_deleteReview('${escHtml(it.course_code)}','${escHtml(it.course_name)}')"
+            title="Xóa đánh giá"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-[#777682] hover:bg-[#ffdad6] hover:text-[#ba1a1a] transition-colors">
+            <span class="material-symbols-outlined msym text-base">delete</span>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function _deleteReview(code, name) {
+  if (!confirm(`Xóa đánh giá môn "${name}"?\nSao và nhận xét sẽ bị xóa hoàn toàn.`)) return;
+  const res = await fetch(`${API}/courses/${encodeURIComponent(code)}/rate`, {
+    method: 'DELETE', headers: H(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    showToast(err.detail || 'Lỗi xóa', 'error');
+    return;
+  }
+  showToast(`Đã xóa đánh giá ${code}`, 'success');
+  await loadReviews();
+}
+</script>
+</body>
+</html>
+
+

@@ -1,0 +1,136 @@
+<!-- sidebar.html — Reusable sidebar fragment
+     Usage: fetch this file and insert into a container div, then call initSidebar(user)
+     Depends on: auth.js (getToken, logout) being loaded first
+-->
+
+<aside id="sidebarDrawer" class="fixed left-0 top-0 h-screen w-60 flex flex-col bg-surface-container-lowest border-r border-outline-variant z-50 shadow-sm transition-transform duration-300 -translate-x-full lg:translate-x-0">
+
+  <!-- Logo -->
+  <div class="flex items-center gap-3 px-5 py-5 border-b border-outline-variant flex-shrink-0">
+    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-on-primary flex-shrink-0 pri-grad">
+      <span class="material-symbols-outlined msym text-base" style="font-variation-settings:'FILL' 1">school</span>
+    </div>
+    <div>
+      <h1 class="text-sm font-extrabold text-primary leading-none tracking-tight">EduGuide</h1>
+      <p class="text-[10px] text-on-surface-variant mt-0.5">Cổng Sinh viên · CNTT</p>
+    </div>
+  </div>
+
+  <!-- User info -->
+  <div class="mx-3 my-3 p-3 bg-primary-fixed rounded-xl flex-shrink-0">
+    <div class="flex items-center gap-2.5 mb-2">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-on-primary font-bold text-sm flex-shrink-0 pri-grad" id="avatarCircle">?</div>
+      <div class="overflow-hidden flex-1 min-w-0">
+        <p class="text-sm font-semibold text-primary truncate" id="sidebarUserName">Đang tải...</p>
+        <p class="text-[10px] text-primary-container truncate" id="sidebarSpec">CNTT 7480201</p>
+      </div>
+    </div>
+    <!-- Mini progress bar -->
+    <div id="sidebarProgressWrap" class="hidden">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[9px] text-on-surface-variant uppercase tracking-wide">Tiến độ TC</span>
+        <span class="text-[9px] font-bold text-primary" id="sidebarProgressLabel">0%</span>
+      </div>
+      <div class="h-1.5 w-full bg-outline-variant rounded-full overflow-hidden">
+        <div id="sidebarProgressBar" class="h-full rounded-full transition-all duration-700 pri-grad" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 overflow-y-auto px-2 pb-2" id="sideNav">
+
+    <!-- ── Học tập ───────────────────────────────────────────────────── -->
+    <p class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest px-3 mb-1.5 mt-2">Học tập</p>
+    <a href="home.html" data-page="home.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">dashboard</span>Tổng quan
+    </a>
+    <a href="grades.html" data-page="grades.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">grade</span>Bảng điểm
+    </a>
+    <a href="roadmap.html" data-page="roadmap.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">route</span>Lộ trình
+    </a>
+    <a href="ctdt.html" data-page="ctdt.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">schema</span>Sơ đồ CTĐT
+    </a>
+    <a href="readiness.html" data-page="readiness.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">workspace_premium</span>Sẵn sàng TN
+    </a>
+
+    <!-- ── Định hướng nghề ───────────────────────────────────────────── -->
+    <p class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest px-3 mb-1.5 mt-3">Định hướng nghề</p>
+    <a href="career-hub.html" data-page="career-hub.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">rocket_launch</span>Hướng nghiệp
+    </a>
+    <a href="career-quiz.html" data-page="career-quiz.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">quiz</span>Quiz hướng nghiệp
+    </a>
+    <a href="goals.html" data-page="goals.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">my_location</span>Mục tiêu &amp; GPA
+    </a>
+    <a href="compare-specs.html" data-page="compare-specs.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">compare_arrows</span>So sánh CN
+    </a>
+    <a href="skill-tree.html" data-page="skill-tree.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">account_tree</span>Lộ trình kỹ năng
+    </a>
+
+    <!-- ── Hỗ trợ ────────────────────────────────────────────────────── -->
+    <p class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest px-3 mb-1.5 mt-3">Hỗ trợ</p>
+    <a href="messaging.html" data-page="messaging.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">forum</span>Trao đổi cố vấn
+    </a>
+    <a href="ai-chat.html" data-page="ai-chat.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">smart_toy</span>Trợ lý AI
+    </a>
+    <a href="my-reviews.html" data-page="my-reviews.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">rate_review</span>Đánh giá của tôi
+    </a>
+    <a href="settings.html" data-page="settings.html"
+      class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all">
+      <span class="material-symbols-outlined msym text-xl">settings</span>Cài đặt
+    </a>
+  </nav>
+
+  <!-- Bottom: logout -->
+  <div class="border-t border-outline-variant px-2 py-3 flex-shrink-0">
+    <button id="sidebarLogoutBtn"
+      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-error-container hover:text-error transition-all">
+      <span class="material-symbols-outlined msym text-xl">logout</span>Đăng xuất
+    </button>
+  </div>
+</aside>
+
+<!-- Sidebar overlay (mobile) -->
+<div id="sidebarOverlay" class="hidden fixed inset-0 bg-black/60 z-40 lg:hidden"></div>
+
+<style>
+  .pri-grad { background: linear-gradient(135deg, #1a146b 0%, #312e81 100%); }
+  .sidebar-link { color: #474651; }
+  .sidebar-link:hover { background: #eff4ff; color: #0b1c30; }
+  .sidebar-link.active {
+    background: #e2dfff;
+    color: #1a146b;
+    font-weight: 600;
+    border-right: 3px solid #1a146b;
+  }
+  .sidebar-link.active .material-symbols-outlined {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+</style>
+
+<!-- JS is handled by sidebar-init.js in each host page (innerHTML does not execute scripts) -->

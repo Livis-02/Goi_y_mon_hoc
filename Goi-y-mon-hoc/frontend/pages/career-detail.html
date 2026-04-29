@@ -1,0 +1,515 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Chi tiết định hướng nghề</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.15s; animation-timing-function: ease-out; }
+    #sidebarMount, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{ colors:{
+        primary:'#1a146b','primary-fixed':'#eef2ff','primary-container':'#312e81',
+        'on-primary':'#ffffff','on-surface':'#0f172a',
+        outline:'#94a3b8',
+      }}}
+    }
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<!-- Tailwind safelist (dynamic colors) -->
+<div class="hidden" aria-hidden="true">
+  <span class="bg-amber-50 bg-amber-100 bg-amber-500 bg-amber-600 text-amber-500 text-amber-600 text-amber-700 border-amber-200 from-amber-500 to-amber-600"></span>
+  <span class="bg-[#eef2ff] bg-[#e5eeff] bg-[#eef2ff]0 bg-indigo-600 text-[#312e81] text-[#1a146b] text-[#1a146b] border-indigo-200 from-indigo-500 to-indigo-600"></span>
+  <span class="bg-violet-50 bg-violet-100 bg-violet-500 bg-violet-600 text-violet-500 text-violet-600 text-violet-700 border-violet-200 from-violet-500 to-violet-600"></span>
+  <span class="bg-[#dcfce7] bg-emerald-100 bg-[#dcfce7]0 bg-emerald-600 text-emerald-500 text-[#006c49] text-emerald-700 border-[#86efac] from-emerald-500 to-emerald-600"></span>
+  <span class="bg-rose-50 bg-rose-100 bg-rose-500 bg-rose-600 text-rose-500 text-rose-600 text-rose-700 border-rose-200 from-rose-500 to-rose-600"></span>
+  <span class="bg-cyan-50 bg-cyan-100 bg-cyan-500 bg-cyan-600 text-cyan-500 text-cyan-600 text-cyan-700 border-cyan-200 from-cyan-500 to-cyan-600"></span>
+  <span class="bg-blue-50 bg-blue-100 bg-blue-500 bg-blue-600 text-blue-500 text-blue-600 text-blue-700 border-blue-200 from-blue-500 to-blue-600"></span>
+  <span class="bg-teal-50 bg-teal-100 bg-teal-500 bg-teal-600 text-teal-500 text-teal-600 text-teal-700 border-teal-200 from-teal-500 to-teal-600"></span>
+</div>
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+<div id="sidebarMount"></div>
+
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <button onclick="history.length > 1 ? history.back() : (window.location.href='career-hub.html')"
+      class="flex items-center gap-1 px-2 py-1 rounded-lg text-[#474651] hover:bg-[#eef2ff] transition-colors text-sm">
+      <span class="material-symbols-outlined msym text-base">arrow_back</span>
+      <span class="hidden sm:inline">Quay lại</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d] truncate">Chi tiết định hướng nghề</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-5xl mx-auto">
+
+    <!-- Loading -->
+    <div id="cdLoading" class="space-y-4">
+      <div class="bg-[#ffffff] rounded-2xl p-10 border border-[#c8c5d3] animate-pulse h-40"></div>
+      <div class="bg-[#ffffff] rounded-2xl p-6 border border-[#c8c5d3] animate-pulse h-48"></div>
+    </div>
+
+    <!-- Error -->
+    <div id="cdError" class="hidden bg-[#ffffff] rounded-2xl border border-red-200 p-10 text-center">
+      <span class="material-symbols-outlined msym text-5xl text-red-300 block mb-3">error</span>
+      <h2 class="text-lg font-bold text-[#0b1c30] mb-1">Không tìm thấy định hướng</h2>
+      <p class="text-sm text-[#474651] mb-5" id="cdErrorMsg">—</p>
+      <a href="career-hub.html" class="inline-flex items-center gap-1.5 px-4 py-2 pri-grad text-white text-sm font-semibold rounded-xl shadow hover:opacity-90 transition-all">
+        <span class="material-symbols-outlined msym text-base">explore</span>Quay về Hub hướng nghề
+      </a>
+    </div>
+
+    <!-- Content -->
+    <div id="cdContent" class="hidden space-y-5 fade-in">
+
+      <!-- Hero -->
+      <div id="cdHero" class="rounded-2xl text-white p-6 shadow-md">
+        <!-- Filled by JS with bg gradient based on path color -->
+      </div>
+
+      <!-- 2-col layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        <!-- LEFT main -->
+        <div class="lg:col-span-2 space-y-5">
+
+          <!-- Long description -->
+          <section id="cdDescSection" class="hidden bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3]">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+              <span class="material-symbols-outlined msym text-[#312e81] text-base">description</span>
+              <h3 class="font-semibold text-sm text-[#0b1c30]">Mô tả nghề</h3>
+            </div>
+            <div class="px-5 py-4">
+              <p id="cdLongDesc" class="text-sm text-[#0b1c30] leading-relaxed whitespace-pre-line">—</p>
+            </div>
+          </section>
+
+          <!-- Skills stack -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3]">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined msym text-amber-500 text-base">build</span>
+                <h3 class="font-semibold text-sm text-[#0b1c30]">Kỹ năng cần đạt</h3>
+              </div>
+              <span id="cdSkillsCount" class="text-xs text-[#777682]">— skills</span>
+            </div>
+            <div id="cdSkillsList" class="divide-y divide-[#c8c5d3]">
+              <p class="px-5 py-6 text-xs text-[#777682] text-center italic">Đang tải...</p>
+            </div>
+          </section>
+
+          <!-- Related courses -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3]">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined msym text-emerald-500 text-base">menu_book</span>
+                <h3 class="font-semibold text-sm text-[#0b1c30]">Môn học liên quan</h3>
+              </div>
+              <span id="cdCoursesCount" class="text-xs text-[#777682]">— môn</span>
+            </div>
+            <div id="cdCoursesList" class="divide-y divide-[#c8c5d3]">
+              <p class="px-5 py-6 text-xs text-[#777682] text-center italic">Đang tải...</p>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- RIGHT aside -->
+        <aside class="space-y-5 lg:sticky lg:top-20 self-start">
+
+          <!-- My choice action -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+              <span class="material-symbols-outlined msym text-[#312e81] text-base">rocket_launch</span>
+              <h3 class="font-semibold text-sm text-[#0b1c30]">Hành động</h3>
+            </div>
+            <div class="px-5 py-4 space-y-2">
+              <button id="cdChoosePrimaryBtn" onclick="_choosePrimary()"
+                class="w-full pri-grad text-white py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined msym text-base">flag</span><span>Chọn làm định hướng chính</span>
+              </button>
+              <button id="cdChooseSecondaryBtn" onclick="_chooseSecondary()"
+                class="w-full bg-violet-50 text-violet-700 py-2 rounded-lg text-sm font-semibold hover:bg-violet-100 transition-colors flex items-center justify-center gap-1.5 border border-violet-100">
+                <span class="material-symbols-outlined msym text-base">bookmark</span><span>Đặt làm định hướng phụ</span>
+              </button>
+              <a id="cdSkillTreeLink" href="skill-tree.html"
+                class="w-full bg-[#dcfce7] text-emerald-700 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5 border border-emerald-100">
+                <span class="material-symbols-outlined msym text-base">account_tree</span><span>Xem skill tree + gap</span>
+              </a>
+            </div>
+          </section>
+
+          <!-- Stats card -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+              <span class="material-symbols-outlined msym text-violet-500 text-base">analytics</span>
+              <h3 class="font-semibold text-sm text-[#0b1c30]">Thống kê</h3>
+            </div>
+            <div class="px-5 py-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <p class="text-xs text-[#474651]">Sinh viên đã chọn</p>
+                <p id="cdStudentCount" class="text-base font-bold text-[#0b1c30]">—</p>
+              </div>
+              <div id="cdMyProgressBlock" class="hidden">
+                <div class="flex items-center justify-between mb-1.5">
+                  <p class="text-xs text-[#474651]">Tiến độ kỹ năng của bạn</p>
+                  <p id="cdProgressPercent" class="text-xs font-bold text-[#006c49]">0%</p>
+                </div>
+                <div class="h-1.5 bg-[#e5eeff] rounded-full overflow-hidden">
+                  <div id="cdProgressBar" class="h-full bg-[#dcfce7]0 rounded-full" style="width:0%"></div>
+                </div>
+                <p id="cdProgressText" class="text-[10px] text-[#777682] mt-1">—</p>
+              </div>
+              <div id="cdPassedCoursesBlock" class="hidden pt-3 border-t border-[#c8c5d3]">
+                <p class="text-xs text-[#474651] mb-1">Môn đã pass cho hướng này</p>
+                <p id="cdPassedCount" class="text-sm font-bold text-[#006c49]">— / —</p>
+              </div>
+            </div>
+          </section>
+
+        </aside>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="floating-chat.js"></script>
+<script>
+const API = window.API_BASE;
+function H(extra = {}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+
+function showToast(msg, type='info', duration=3000) {
+  const cls = { success:'bg-[#dcfce7]0', error:'bg-[#ba1a1a]', warning:'bg-amber-500', info:'bg-[#eef2ff]0' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto px-4 py-2.5 ${cls[type]||cls.info} text-white text-sm font-medium rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function getCodeFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return (params.get('code') || '').trim();
+}
+
+let _careerData = null;
+
+const PRIORITY_LABELS = {
+  1: { label: 'Bắt buộc', cls: 'bg-red-100 text-red-700', icon: 'priority_high' },
+  2: { label: 'Quan trọng', cls: 'bg-amber-100 text-amber-700', icon: 'star' },
+  3: { label: 'Bổ trợ', cls: 'bg-[#e5eeff] text-[#474651]', icon: 'tips_and_updates' },
+};
+const SKILL_TYPE_LABELS = {
+  language: 'Ngôn ngữ',
+  framework: 'Framework',
+  tool: 'Công cụ',
+  certification: 'Chứng chỉ',
+  course: 'Khóa học',
+  soft: 'Kỹ năng mềm',
+};
+
+checkAuth();
+
+(async function init() {
+  const code = getCodeFromUrl();
+  if (!code) {
+    document.getElementById('cdLoading').classList.add('hidden');
+    document.getElementById('cdError').classList.remove('hidden');
+    document.getElementById('cdErrorMsg').textContent = 'Thiếu mã định hướng (?code=...)';
+    return;
+  }
+  try {
+    const ur = await fetch(`${API}/auth/me`, { headers: H() });
+    if (ur.ok) {
+      const u = await ur.json();
+      updateTopbarUser(u);
+    }
+  } catch {}
+  await loadCareerDetail(code);
+})();
+
+async function loadCareerDetail(code) {
+  try {
+    const res = await fetch(`${API}/careers/${encodeURIComponent(code)}`, { headers: H() });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      document.getElementById('cdLoading').classList.add('hidden');
+      document.getElementById('cdError').classList.remove('hidden');
+      document.getElementById('cdErrorMsg').textContent = err.detail || `Lỗi ${res.status}`;
+      return;
+    }
+    _careerData = await res.json();
+    document.getElementById('cdLoading').classList.add('hidden');
+    document.getElementById('cdContent').classList.remove('hidden');
+    _renderHero();
+    _renderDescription();
+    _renderSkills();
+    _renderRelatedCourses();
+    _renderStats();
+  } catch (e) {
+    document.getElementById('cdLoading').classList.add('hidden');
+    document.getElementById('cdError').classList.remove('hidden');
+    document.getElementById('cdErrorMsg').textContent = 'Lỗi kết nối: ' + (e.message || e);
+  }
+}
+
+function _renderHero() {
+  const d = _careerData;
+  const color = d.color || 'indigo';
+  const heroEl = document.getElementById('cdHero');
+  document.title = `${d.name} — EduGuide`;
+  // Update skill-tree link with career code
+  const stLink = document.getElementById('cdSkillTreeLink');
+  if (stLink) stLink.href = `skill-tree.html?code=${encodeURIComponent(d.code)}`;
+
+  let badge = '';
+  if (d.is_my_primary) {
+    badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-white/25 text-white text-[10px] font-bold rounded-full"><span class="material-symbols-outlined msym text-xs">flag</span>Đây là định hướng chính của bạn</span>';
+  } else if (d.is_my_secondary) {
+    badge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-white/25 text-white text-[10px] font-bold rounded-full"><span class="material-symbols-outlined msym text-xs">bookmark</span>Định hướng phụ</span>';
+  }
+
+  heroEl.className = `rounded-2xl text-white p-6 shadow-md bg-gradient-to-br from-${color}-500 to-${color}-600`;
+  heroEl.innerHTML = `
+    <div class="flex items-start gap-4 flex-wrap">
+      <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined msym text-3xl text-white" style="font-variation-settings:'FILL' 1">${escHtml(d.icon || 'work')}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-[10px] uppercase tracking-wider text-white/70 font-bold">Định hướng nghề · Mã: ${escHtml(d.code)}</p>
+        <h1 class="text-2xl font-bold mt-1">${escHtml(d.name)}</h1>
+        ${d.short_description ? `<p class="text-sm text-white/90 mt-2 leading-relaxed">${escHtml(d.short_description)}</p>` : ''}
+        ${badge ? `<div class="mt-3">${badge}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function _renderDescription() {
+  const d = _careerData;
+  if (!d.long_description || !d.long_description.trim()) {
+    document.getElementById('cdDescSection').classList.add('hidden');
+    return;
+  }
+  document.getElementById('cdDescSection').classList.remove('hidden');
+  document.getElementById('cdLongDesc').textContent = d.long_description;
+}
+
+function _renderSkills() {
+  const skills = _careerData.skills || [];
+  document.getElementById('cdSkillsCount').textContent = skills.length === 0 ? 'Chưa có' : `${skills.length} skills`;
+
+  // Group by priority
+  const byPrio = { 1: [], 2: [], 3: [] };
+  skills.forEach(s => {
+    const p = s.priority || 2;
+    if (byPrio[p]) byPrio[p].push(s);
+    else byPrio[2].push(s);
+  });
+
+  const listEl = document.getElementById('cdSkillsList');
+  if (skills.length === 0) {
+    listEl.innerHTML = `<p class="px-5 py-6 text-xs text-[#777682] text-center italic">Quản trị chưa cập nhật danh sách kỹ năng cho hướng này.</p>`;
+    return;
+  }
+  let html = '';
+  for (const prio of [1, 2, 3]) {
+    const list = byPrio[prio];
+    if (!list.length) continue;
+    const meta = PRIORITY_LABELS[prio];
+    html += `<div class="px-5 py-3 bg-slate-50/50 border-b border-[#c8c5d3]">
+      <div class="flex items-center gap-2">
+        <span class="${meta.cls} px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1">
+          <span class="material-symbols-outlined msym text-xs">${meta.icon}</span>${meta.label}
+        </span>
+        <span class="text-[10px] text-[#777682]">${list.length} skill${list.length > 1 ? 's' : ''}</span>
+      </div>
+    </div>`;
+    list.forEach(s => {
+      const typeLbl = SKILL_TYPE_LABELS[s.skill_type] || s.skill_type || '';
+      const levelLbl = s.level ? `<span class="text-[10px] text-[#777682] ml-1.5">${escHtml(s.level)}</span>` : '';
+      const hours = s.estimated_hours ? `<span class="text-[10px] text-[#777682] ml-1.5">~${s.estimated_hours}h</span>` : '';
+      const sourceLink = s.source_url
+        ? `<a href="${escHtml(s.source_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
+            class="text-[11px] text-[#1a146b] hover:underline inline-flex items-center gap-0.5 mt-1"><span class="material-symbols-outlined msym text-xs">open_in_new</span>${escHtml(s.source_name || s.source_type || 'Tài liệu học')}</a>`
+        : (s.source_name ? `<p class="text-[11px] text-[#777682] mt-1">${escHtml(s.source_name)}</p>` : '');
+      html += `<div class="px-5 py-3 hover:bg-[#eef2ff] transition-colors">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined msym text-[#777682] text-base flex-shrink-0 mt-0.5">${s.skill_type === 'certification' ? 'workspace_premium' : (s.skill_type === 'course' ? 'school' : 'check_circle')}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-baseline gap-1.5 flex-wrap">
+              <p class="text-sm font-semibold text-[#0b1c30]">${escHtml(s.skill_name)}</p>
+              ${typeLbl ? `<span class="text-[10px] text-[#474651]">${typeLbl}</span>` : ''}${levelLbl}${hours}
+            </div>
+            ${s.description ? `<p class="text-xs text-[#474651] mt-0.5 leading-relaxed">${escHtml(s.description)}</p>` : ''}
+            ${sourceLink}
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+  listEl.innerHTML = html;
+}
+
+function _renderRelatedCourses() {
+  const courses = _careerData.related_courses || [];
+  document.getElementById('cdCoursesCount').textContent = courses.length === 0 ? 'Chưa có' : `${courses.length} môn`;
+  const passed = new Set(_careerData.passed_related_courses || []);
+
+  const listEl = document.getElementById('cdCoursesList');
+  if (courses.length === 0) {
+    listEl.innerHTML = `<p class="px-5 py-6 text-xs text-[#777682] text-center italic">Chưa có môn học nào được map với hướng này.</p>`;
+    return;
+  }
+  listEl.innerHTML = courses.map(c => {
+    const isPassed = passed.has(c.course_code);
+    const passedBadge = isPassed
+      ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full"><span class="material-symbols-outlined msym text-xs" style="font-variation-settings:'FILL' 1">check_circle</span>Đã pass</span>`
+      : '';
+    const relevance = c.relevance != null ? Math.round(c.relevance * 100) : null;
+    const relevanceBadge = relevance != null ? `<span class="text-[10px] text-[#777682]">Liên quan ${relevance}%</span>` : '';
+    return `<a href="course-detail.html?code=${encodeURIComponent(c.course_code)}"
+      class="block px-5 py-3 hover:bg-[#eef2ff] transition-colors flex items-center gap-3">
+      <span class="material-symbols-outlined msym ${isPassed ? 'text-emerald-500' : 'text-[#777682]'} text-xl flex-shrink-0">menu_book</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <p class="text-sm font-semibold text-[#0b1c30] truncate">${escHtml(c.course_name)}</p>
+          ${passedBadge}
+        </div>
+        <div class="flex items-center gap-2 mt-0.5 text-[11px] text-[#777682]">
+          <span class="font-mono">${escHtml(c.course_code)}</span>
+          ${c.credits != null ? `<span>· ${c.credits} TC</span>` : ''}
+          ${c.typical_semester ? `<span>· HK ${c.typical_semester}</span>` : ''}
+          ${relevanceBadge ? `<span>· ${relevanceBadge}</span>` : ''}
+        </div>
+      </div>
+      <span class="material-symbols-outlined msym text-[#c8c5d3] text-base flex-shrink-0">chevron_right</span>
+    </a>`;
+  }).join('');
+}
+
+function _renderStats() {
+  const d = _careerData;
+  // Student count
+  document.getElementById('cdStudentCount').textContent = (d.student_count || 0) + ' SV';
+
+  // My skill progress
+  const prog = d.my_skill_progress;
+  if (prog && prog.total > 0) {
+    document.getElementById('cdMyProgressBlock').classList.remove('hidden');
+    document.getElementById('cdProgressPercent').textContent = `${prog.percent}%`;
+    document.getElementById('cdProgressBar').style.width = `${prog.percent}%`;
+    document.getElementById('cdProgressText').textContent = `${prog.completed} / ${prog.total} skill đã đạt`;
+  }
+
+  // Passed related courses
+  const total = (d.related_courses || []).length;
+  const passed = (d.passed_related_courses || []).length;
+  if (total > 0) {
+    document.getElementById('cdPassedCoursesBlock').classList.remove('hidden');
+    document.getElementById('cdPassedCount').textContent = `${passed} / ${total}`;
+  }
+
+  // Update buttons state
+  const primBtn = document.getElementById('cdChoosePrimaryBtn');
+  const secBtn = document.getElementById('cdChooseSecondaryBtn');
+  if (d.is_my_primary) {
+    primBtn.disabled = true;
+    primBtn.innerHTML = '<span class="material-symbols-outlined msym text-base">check_circle</span><span>Đang là định hướng chính ✓</span>';
+    primBtn.className = 'w-full bg-[#dcfce7]0 text-white py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 cursor-default';
+  }
+  if (d.is_my_secondary) {
+    secBtn.disabled = true;
+    secBtn.innerHTML = '<span class="material-symbols-outlined msym text-base">check_circle</span><span>Đang là định hướng phụ ✓</span>';
+    secBtn.className = 'w-full bg-emerald-100 text-emerald-700 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 cursor-default border border-[#86efac]';
+  }
+}
+
+async function _choosePrimary() {
+  await _setChoice('primary');
+}
+async function _chooseSecondary() {
+  await _setChoice('secondary');
+}
+
+async function _setChoice(slot) {
+  if (!_careerData) return;
+  const code = _careerData.code;
+  const res = await fetch(`${API}/careers/me/choose`, {
+    method: 'POST', headers: H({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ code, slot }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    showToast(err.detail || 'Lỗi cập nhật định hướng', 'error');
+    return;
+  }
+  showToast(slot === 'primary' ? 'Đã chọn làm định hướng chính' : 'Đã đặt làm định hướng phụ', 'success');
+  await loadCareerDetail(code);
+}
+</script>
+</body>
+</html>
+
+

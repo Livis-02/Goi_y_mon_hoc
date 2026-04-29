@@ -1,0 +1,627 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <title>EduGuide — Đăng nhập</title>
+  <!-- Smooth page transitions (Chrome 111+, Safari 18+) -->
+  <style>
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) {
+      animation-duration: 0.15s;
+      animation-timing-function: ease-out;
+    }
+    /* Keep sidebar + header stable across transitions (no fade on persistent UI) */
+    #sidebarMount, #sidebarDrawer, #adminSidebar, #adminSidebarMount, header {
+      view-transition-name: none;
+    }
+  </style>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <style>
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+  <script id="tailwind-config">
+    tailwind.config = {
+
+      theme: { extend: { colors: {
+        "background":                  "#f8f9ff",
+        "on-background":               "#0b1c30",
+        "surface":                     "#f8f9ff",
+        "on-surface":                  "#0b1c30",
+        "on-surface-variant":          "#474651",
+        "surface-bright":              "#f8f9ff",
+        "surface-dim":                 "#cbdbf5",
+        "surface-variant":             "#d3e4fe",
+        "surface-container-lowest":    "#ffffff",
+        "surface-container-low":       "#eff4ff",
+        "surface-container":           "#e5eeff",
+        "surface-container-high":      "#dce9ff",
+        "surface-container-highest":   "#d3e4fe",
+        "surface-tint":                "#5654a8",
+        "inverse-surface":             "#213145",
+        "inverse-on-surface":          "#eaf1ff",
+        "outline":                     "#777682",
+        "outline-variant":             "#c8c5d3",
+        "primary":                     "#1a146b",
+        "on-primary":                  "#ffffff",
+        "primary-container":           "#312e81",
+        "on-primary-container":        "#9c9af4",
+        "primary-fixed":               "#e2dfff",
+        "primary-fixed-dim":           "#c3c0ff",
+        "on-primary-fixed":            "#100563",
+        "inverse-primary":             "#c3c0ff",
+        "secondary":                   "#006c49",
+        "on-secondary":                "#ffffff",
+        "secondary-container":         "#6cf8bb",
+        "on-secondary-container":      "#00714d",
+        "tertiary":                    "#0a0086",
+        "tertiary-container":          "#1e19b2",
+        "error":                       "#ba1a1a",
+        "on-error":                    "#ffffff",
+        "error-container":             "#ffdad6",
+        "on-error-container":          "#93000a",
+      }}}
+    }
+  </script>
+
+  <style>
+    /* disable browser autofill yellow highlight */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus,
+    select:-webkit-autofill,
+    select:-webkit-autofill:hover,
+    select:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+      -webkit-text-fill-color: inherit !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    /* Ẩn icon "show password" mặc định của Edge/IE để không trùng với nút tự viết */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+      display: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex bg-surface text-on-surface">
+
+  <!-- ── LEFT PANEL: Deep indigo gradient (hidden on mobile) ── -->
+  <aside class="hidden lg:flex flex-col justify-between w-[40%] min-h-screen px-12 py-14 relative overflow-hidden flex-shrink-0" style="background:linear-gradient(135deg,#0f0c4a 0%,#1a146b 50%,#312e81 100%)">
+    <!-- Background decoration circles -->
+    <div class="absolute -top-20 -right-20 w-72 h-72 bg-white/5 rounded-full pointer-events-none"></div>
+    <div class="absolute -bottom-24 -left-16 w-96 h-96 bg-black/10 rounded-full pointer-events-none"></div>
+    <div class="absolute top-1/2 right-8 w-32 h-32 bg-white/5 rounded-full pointer-events-none"></div>
+
+    <div class="relative z-10">
+      <!-- Logo -->
+      <div class="flex items-center gap-3 mb-14">
+        <div class="w-11 h-11 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center shadow-lg">
+          <span class="material-symbols-outlined text-white text-2xl" style="font-variation-settings:'FILL' 1">school</span>
+        </div>
+        <span class="text-white font-extrabold text-xl tracking-tight">EduGuide</span>
+      </div>
+
+      <!-- Tagline -->
+      <h2 class="text-white text-[2.2rem] font-bold leading-tight mb-4">
+        Học thông minh hơn.<br/>Tốt nghiệp đúng hạn.
+      </h2>
+      <p class="text-indigo-200 text-sm leading-relaxed mb-12 max-w-[320px]">
+        Hệ thống gợi ý môn học cá nhân hóa dành riêng cho sinh viên ngành CNTT.
+      </p>
+
+      <!-- Feature list -->
+      <ul class="space-y-6">
+        <li class="flex items-start gap-4">
+          <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings:'FILL' 1">trending_up</span>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm leading-tight">Theo dõi tiến độ tích lũy</p>
+            <p class="text-indigo-200 text-xs mt-1 leading-relaxed">Tín chỉ, GPA và lộ trình tốt nghiệp theo thời gian thực</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-4">
+          <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm leading-tight">Gợi ý môn học thông minh</p>
+            <p class="text-indigo-200 text-xs mt-1 leading-relaxed">Dựa trên kết quả học tập và điều kiện tiên quyết</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-4">
+          <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings:'FILL' 1">psychology</span>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm leading-tight">AI tư vấn lộ trình</p>
+            <p class="text-indigo-200 text-xs mt-1 leading-relaxed">Định hướng nghề nghiệp và học tập từ trợ lý AI</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Bottom branding -->
+    <div class="relative z-10">
+      <p class="text-indigo-300 text-xs">Ngành CNTT 7480201</p>
+    </div>
+  </aside>
+
+  <!-- ── RIGHT PANEL: form ── -->
+  <main class="flex-1 flex flex-col items-center justify-center min-h-screen bg-surface px-5 py-12">
+
+    <!-- Mobile hero (hidden on desktop) -->
+    <div class="lg:hidden w-full max-w-[440px] mb-6 rounded-2xl overflow-hidden" style="background:linear-gradient(135deg,#0f0c4a 0%,#1a146b 60%,#312e81 100%)">
+      <div class="px-6 py-5 relative">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+        <!-- Logo row -->
+        <div class="flex items-center gap-2.5 mb-3 relative z-10">
+          <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shadow">
+            <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings:'FILL' 1">school</span>
+          </div>
+          <span class="text-white font-extrabold text-lg tracking-tight">EduGuide</span>
+        </div>
+        <!-- Tagline -->
+        <p class="text-white font-bold text-base leading-snug mb-3 relative z-10">
+          Học thông minh hơn.<br/>Tốt nghiệp đúng hạn.
+        </p>
+        <!-- Feature chips -->
+        <div class="flex flex-wrap gap-2 relative z-10">
+          <span class="inline-flex items-center gap-1 bg-white/15 text-white text-[11px] font-medium px-2.5 py-1 rounded-full">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">trending_up</span>
+            Theo dõi tiến độ
+          </span>
+          <span class="inline-flex items-center gap-1 bg-white/15 text-white text-[11px] font-medium px-2.5 py-1 rounded-full">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+            Gợi ý môn học AI
+          </span>
+          <span class="inline-flex items-center gap-1 bg-white/15 text-white text-[11px] font-medium px-2.5 py-1 rounded-full">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">psychology</span>
+            Tư vấn lộ trình
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="w-full max-w-[440px] bg-white rounded-2xl shadow-md px-10 py-10">
+
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold text-on-surface mb-1">Chào mừng trở lại!</h1>
+        <p class="text-on-surface-variant text-sm">Nhập thông tin để tiếp tục.</p>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form autocomplete="off" id="loginForm" class="space-y-4">
+      <input type="text" style="display:none" tabindex="-1" autocomplete="off">
+      <input type="password" style="display:none" tabindex="-1" autocomplete="new-password">
+        <div>
+          <label class="block text-xs font-semibold text-on-surface-variant mb-1.5">Mã sinh viên</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">person</span>
+            <input autocomplete="off" id="loginUsername" type="text" placeholder="Mã sinh viên"
+              class="w-full h-11 pl-10 pr-4 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline/50"/>
+          </div>
+          <p class="text-[11px] text-on-surface-variant mt-1">Dùng mã sinh viên do trường cấp</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-on-surface-variant mb-1.5">Mật khẩu</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">lock</span>
+            <input autocomplete="new-password" id="loginPassword" type="password" placeholder="••••••••"
+              class="w-full h-11 pl-10 pr-10 bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-outline/50"/>
+            <button type="button" onclick="togglePw('loginPassword', this)" aria-label="Hiện/ẩn mật khẩu"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors">
+              <span class="material-symbols-outlined text-lg">visibility</span>
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" class="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer"/>
+            <span class="text-on-surface-variant">Ghi nhớ đăng nhập</span>
+          </label>
+          <button type="button" onclick="openForgotPassword()" class="text-primary hover:text-primary-container font-medium">Quên mật khẩu?</button>
+        </div>
+        <div id="loginError" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-lg"></div>
+        <button type="submit" id="loginBtn"
+          class="w-full h-11 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm active:scale-[0.98]">
+          Đăng nhập
+          <span class="material-symbols-outlined text-lg">arrow_forward</span>
+        </button>
+      </form>
+
+      <footer class="mt-8 text-center space-y-1">
+        <p class="text-[12px] text-on-surface-variant">Chưa có tài khoản? <button type="button" onclick="openContactAdmin()" class="text-primary font-medium hover:underline focus:outline-none focus:underline">Liên hệ admin</button> để được cấp tài khoản sinh viên.</p>
+        <p class="text-[11px] text-outline/60">© 2025 EduGuide · Hệ thống Gợi ý Môn học CNTT 7480201</p>
+      </footer>
+    </div>
+  </main>
+
+<!-- ══ MODAL: Thiết lập tài khoản (first-login, không thể đóng) ════════════ -->
+<div id="setupModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#eef2ff">
+        <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1;color:#1a146b">manage_accounts</span>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-on-surface">Thiết lập tài khoản</h2>
+        <p class="text-xs text-outline mt-0.5">Hoàn tất để bắt đầu sử dụng EduGuide</p>
+      </div>
+    </div>
+
+    <form autocomplete="off" id="setupForm" class="space-y-4">
+      <input type="text" style="display:none" tabindex="-1" autocomplete="off">
+      <input type="password" style="display:none" tabindex="-1" autocomplete="new-password">
+      <!-- Email -->
+      <div>
+        <label class="text-xs font-semibold text-on-surface-variant mb-1 block">Email Google của bạn</label>
+        <input id="setupEmail" type="email" placeholder="example@gmail.com" autocomplete="new-email"
+          class="w-full h-11 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"/>
+        <p class="text-[11px] text-outline mt-1">Dùng để khôi phục mật khẩu khi quên.</p>
+      </div>
+
+      <!-- Mật khẩu mới -->
+      <div>
+        <label class="text-xs font-semibold text-on-surface-variant mb-1 block">Mật khẩu mới</label>
+        <div class="relative">
+          <input id="setupPassword" type="password" placeholder="Tối thiểu 8 ký tự" autocomplete="new-password"
+            class="w-full h-11 px-4 pr-10 rounded-xl border border-outline-variant bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"/>
+          <button type="button" onclick="togglePw('setupPassword', this)" aria-label="Hiện/ẩn mật khẩu"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary">
+            <span class="material-symbols-outlined text-lg">visibility</span>
+          </button>
+        </div>
+        <ul class="mt-1.5 space-y-0.5 text-[11px]" id="setup-reqs">
+          <li id="setup-req-len"   class="text-outline flex items-center gap-1"><span class="material-symbols-outlined text-sm">circle</span>Ít nhất 8 ký tự</li>
+          <li id="setup-req-upper" class="text-outline flex items-center gap-1"><span class="material-symbols-outlined text-sm">circle</span>Có chữ hoa</li>
+          <li id="setup-req-lower" class="text-outline flex items-center gap-1"><span class="material-symbols-outlined text-sm">circle</span>Có chữ thường</li>
+          <li id="setup-req-digit" class="text-outline flex items-center gap-1"><span class="material-symbols-outlined text-sm">circle</span>Có chữ số</li>
+        </ul>
+      </div>
+
+      <!-- Xác nhận mật khẩu -->
+      <div>
+        <label class="text-xs font-semibold text-on-surface-variant mb-1 block">Xác nhận mật khẩu</label>
+        <input id="setupConfirm" type="password" placeholder="Nhập lại mật khẩu" autocomplete="new-password"
+          class="w-full h-11 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"/>
+      </div>
+
+      <div id="setupError" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-lg"></div>
+
+      <button type="submit" id="setupBtn"
+        class="w-full h-11 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm active:scale-[0.98]">
+        Hoàn tất thiết lập
+        <span class="material-symbols-outlined text-lg">check_circle</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ══ MODAL: Quên mật khẩu ══════════════════════════════════════════════════ -->
+<div id="forgotModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-7">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-base font-bold text-on-surface">Quên mật khẩu</h2>
+      <button onclick="closeForgotPassword()" aria-label="Đóng" class="text-outline hover:text-on-surface transition-colors">
+        <span class="material-symbols-outlined text-xl">close</span>
+      </button>
+    </div>
+
+    <!-- Bước 1: nhập email -->
+    <div id="forgotStep1">
+      <p class="text-sm text-outline mb-4">Nhập email đã đăng ký, chúng tôi sẽ gửi link đặt lại mật khẩu.</p>
+      <form autocomplete="off" id="forgotForm" class="space-y-3">
+      <input type="text" style="display:none" tabindex="-1" autocomplete="off">
+      <input type="password" style="display:none" tabindex="-1" autocomplete="new-password">
+        <input autocomplete="new-email" id="forgotEmail" type="email" placeholder="email@gmail.com"
+          class="w-full h-11 px-4 rounded-xl border border-outline-variant bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"/>
+        <div id="forgotError" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-lg"></div>
+        <button type="submit" id="forgotBtn"
+          class="w-full h-11 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-semibold text-sm flex items-center justify-center gap-2 transition-colors">
+          Gửi link đặt lại
+          <span class="material-symbols-outlined text-lg">send</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Bước 2: thành công -->
+    <div id="forgotStep2" class="hidden text-center py-4">
+      <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+        <span class="material-symbols-outlined text-green-600 text-3xl" style="font-variation-settings:'FILL' 1">mark_email_read</span>
+      </div>
+      <p class="font-semibold text-on-surface mb-2">Kiểm tra hộp thư!</p>
+      <p class="text-sm text-outline">Nếu email tồn tại, bạn sẽ nhận link đặt lại mật khẩu trong vài phút.</p>
+      <button onclick="closeForgotPassword()"
+        class="mt-5 px-6 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary-container transition-colors">
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Liên hệ quản trị viên ════════════════════════════════════════ -->
+<div id="contactAdminModal" class="hidden fixed inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-outline-variant flex items-center gap-3 bg-primary-fixed">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#1a146b">
+        <span class="material-symbols-outlined text-white text-lg" style="font-variation-settings:'FILL' 1">support_agent</span>
+      </div>
+      <div>
+        <p class="text-sm font-bold leading-tight" style="color:#1a146b">Liên hệ Quản trị viên</p>
+        <p class="text-[11px] text-outline mt-0.5">Để được cấp tài khoản sinh viên</p>
+      </div>
+    </div>
+    <div id="contactAdminBody" class="p-5 space-y-2.5 text-sm">
+      <div class="text-center text-slate-400 py-3">
+        <span class="material-symbols-outlined text-2xl animate-spin">refresh</span>
+        <p class="text-xs mt-1">Đang tải…</p>
+      </div>
+    </div>
+    <div class="px-5 pb-5 flex justify-end">
+      <button type="button" onclick="closeContactAdmin()"
+        class="px-4 py-2 text-sm font-semibold bg-surface-container text-on-surface rounded-lg hover:bg-surface-container-high transition-colors">
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.VITE_API_BASE
+  || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://127.0.0.1:8000'
+      : window.location.origin);
+
+// ── Toggle password visibility ─────────────────────────────────────────────────
+function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const icon  = btn.querySelector('.material-symbols-outlined');
+  const show  = input.type === 'password';
+  input.type  = show ? 'text' : 'password';
+  icon.textContent = show ? 'visibility_off' : 'visibility';
+}
+
+// ── Contact admin modal ────────────────────────────────────────────────────────
+async function openContactAdmin() {
+  const modal = document.getElementById('contactAdminModal');
+  const body  = document.getElementById('contactAdminBody');
+  modal.classList.remove('hidden');
+  body.innerHTML = `<div class="text-center text-outline py-3">
+    <span class="material-symbols-outlined text-2xl animate-spin">refresh</span>
+    <p class="text-xs mt-1">Đang tải…</p></div>`;
+  try {
+    const res = await fetch(API_BASE + '/public/contact');
+    const info = res.ok ? await res.json() : {};
+    const rows = [];
+    if (info.email) {
+      rows.push(`<div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-outline text-lg">mail</span>
+        <a href="mailto:${info.email}" class="text-primary font-medium hover:underline break-all">${info.email}</a>
+      </div>`);
+    }
+    if (info.phone) {
+      rows.push(`<div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-outline text-lg">call</span>
+        <a href="tel:${info.phone}" class="text-primary font-medium hover:underline">${info.phone}</a>
+      </div>`);
+    }
+    if (info.office) {
+      rows.push(`<div class="flex items-start gap-2">
+        <span class="material-symbols-outlined text-outline text-lg">location_on</span>
+        <span class="text-on-surface">${info.office}</span>
+      </div>`);
+    }
+    body.innerHTML = rows.length
+      ? `<p class="text-xs text-outline mb-1">Bạn có thể liên hệ quản trị viên theo các thông tin sau:</p>${rows.join('')}`
+      : `<div class="text-center py-2">
+          <p class="text-sm text-on-surface-variant">Vui lòng liên hệ trực tiếp <strong class="text-on-surface">Phòng Đào tạo</strong> của trường để được cấp tài khoản.</p>
+          <p class="text-[11px] text-outline mt-2">Quản trị viên chưa cấu hình thông tin liên hệ công khai.</p>
+        </div>`;
+  } catch (_) {
+    body.innerHTML = `<p class="text-sm text-on-surface-variant text-center py-2">Không tải được thông tin liên hệ. Vui lòng liên hệ <strong>Phòng Đào tạo</strong> trực tiếp.</p>`;
+  }
+}
+function closeContactAdmin() {
+  document.getElementById('contactAdminModal').classList.add('hidden');
+}
+document.getElementById('contactAdminModal').addEventListener('click', (e) => {
+  if (e.target.id === 'contactAdminModal') closeContactAdmin();
+});
+
+function redirectByRole(role) {
+  if (role === 'admin') { window.location.replace('admin.html'); return; }
+  if (role === 'advisor') { window.location.replace('advisor.html'); return; }
+  window.location.replace('home.html');
+}
+
+// ── API helper ─────────────────────────────────────────────────────────────────
+async function callApi(path, options = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, options);
+    let data; try { data = await res.json(); } catch { data = {}; }
+    return { ok: res.ok, status: res.status, data };
+  } catch { return { ok: false, status: 0, data: { detail: 'Không thể kết nối tới server.' } }; }
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function hideError(id) { document.getElementById(id).classList.add('hidden'); }
+
+function extractError(data) {
+  if (typeof data?.detail === 'string') return data.detail;
+  if (Array.isArray(data?.detail)) return data.detail.map(e => e.msg || e.message || JSON.stringify(e)).join('; ');
+  return 'Đã xảy ra lỗi.';
+}
+
+// ── Login ──────────────────────────────────────────────────────────────────────
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError('loginError');
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> Đang đăng nhập...';
+
+  const res = await callApi('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: document.getElementById('loginUsername').value.trim(),
+      password: document.getElementById('loginPassword').value,
+    }),
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = 'Đăng nhập <span class="material-symbols-outlined text-lg">arrow_forward</span>';
+
+  if (res.ok && res.data.access_token) {
+    localStorage.setItem('access_token', res.data.access_token);
+    if (res.data.require_setup) {
+      openSetupModal(res.data.access_token);
+    } else {
+      redirectByRole(res.data.role || 'student');
+    }
+  } else {
+    showError('loginError', extractError(res.data) || 'Tên tài khoản hoặc mật khẩu không đúng.');
+  }
+});
+
+// ── Setup modal (first login) ──────────────────────────────────────────────
+let _setupToken = null;
+
+function openSetupModal(token) {
+  _setupToken = token;
+  document.getElementById('setupModal').classList.remove('hidden');
+  document.getElementById('setupEmail').focus();
+}
+
+// Password requirements live update
+document.getElementById('setupPassword').addEventListener('input', function () {
+  const v = this.value;
+  function req(id, ok) {
+    const li = document.getElementById(id);
+    li.className = (ok ? 'text-secondary' : 'text-outline') + ' flex items-center gap-1';
+    li.querySelector('span').textContent = ok ? 'check_circle' : 'circle';
+  }
+  req('setup-req-len',   v.length >= 8);
+  req('setup-req-upper', /[A-Z]/.test(v));
+  req('setup-req-lower', /[a-z]/.test(v));
+  req('setup-req-digit', /[0-9]/.test(v));
+});
+
+document.getElementById('setupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('setupError');
+  errEl.classList.add('hidden');
+  const btn = document.getElementById('setupBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> Đang lưu...';
+
+  const email   = document.getElementById('setupEmail').value.trim();
+  const newPw   = document.getElementById('setupPassword').value;
+  const confirm = document.getElementById('setupConfirm').value;
+
+  if (!email) { errEl.textContent = 'Vui lòng nhập email.'; errEl.classList.remove('hidden'); btn.disabled=false; btn.innerHTML='Hoàn tất thiết lập <span class="material-symbols-outlined text-lg">check_circle</span>'; return; }
+  if (newPw !== confirm) { errEl.textContent = 'Mật khẩu xác nhận không khớp.'; errEl.classList.remove('hidden'); btn.disabled=false; btn.innerHTML='Hoàn tất thiết lập <span class="material-symbols-outlined text-lg">check_circle</span>'; return; }
+
+  const res = await callApi('/auth/me/setup-account', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_setupToken}` },
+    body: JSON.stringify({ email, new_password: newPw, confirm_password: confirm }),
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = 'Hoàn tất thiết lập <span class="material-symbols-outlined text-lg">check_circle</span>';
+
+  if (res.ok) {
+    document.getElementById('setupModal').classList.add('hidden');
+    // Token vẫn hợp lệ — redirect thẳng vào trang chính theo role
+    const role = res.data.role || 'student';
+    if (role === 'advisor') {
+      window.location.replace('advisor.html');
+    } else if (role === 'admin') {
+      window.location.replace('admin.html');
+    } else {
+      window.location.replace('home.html');
+    }
+  } else {
+    errEl.textContent = extractError(res.data);
+    errEl.classList.remove('hidden');
+  }
+});
+
+// ── Forgot password ────────────────────────────────────────────────────────
+function openForgotPassword() {
+  document.getElementById('forgotModal').classList.remove('hidden');
+  document.getElementById('forgotStep1').classList.remove('hidden');
+  document.getElementById('forgotStep2').classList.add('hidden');
+  document.getElementById('forgotError').classList.add('hidden');
+  document.getElementById('forgotEmail').value = '';
+  setTimeout(() => document.getElementById('forgotEmail').focus(), 50);
+}
+function closeForgotPassword() {
+  document.getElementById('forgotModal').classList.add('hidden');
+}
+document.getElementById('forgotForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('forgotError');
+  errEl.classList.add('hidden');
+  const btn = document.getElementById('forgotBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> Đang gửi...';
+
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) { errEl.textContent = 'Vui lòng nhập email.'; errEl.classList.remove('hidden'); btn.disabled=false; btn.innerHTML='Gửi link đặt lại <span class="material-symbols-outlined text-lg">send</span>'; return; }
+
+  const res = await callApi('/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = 'Gửi link đặt lại <span class="material-symbols-outlined text-lg">send</span>';
+
+  if (res.ok) {
+    document.getElementById('forgotStep1').classList.add('hidden');
+    document.getElementById('forgotStep2').classList.remove('hidden');
+  } else {
+    errEl.textContent = extractError(res.data);
+    errEl.classList.remove('hidden');
+  }
+});
+
+// ── Redirect if already logged in ─────────────────────────────────────────────
+(async () => {
+  const token = localStorage.getItem('access_token');
+  if (!token) return;
+  const res = await callApi('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    if (res.status === 401) localStorage.removeItem('access_token');
+    return;
+  }
+  // Setup-account gate: chưa hoàn tất thiết lập (email + đổi MK) → mở modal, KHÔNG redirect
+  if (res.data.is_first_login) {
+    openSetupModal(token);
+    return;
+  }
+  redirectByRole(res.data.role);
+})();
+</script>
+</body>
+</html>

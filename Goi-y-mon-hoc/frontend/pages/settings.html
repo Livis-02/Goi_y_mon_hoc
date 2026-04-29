@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Cài đặt</title>
+  <style>
+    html,body{background:#f8f9ff;color:#0b1c30;font-family:'Inter',system-ui,sans-serif;margin:0;}
+    @view-transition{navigation:auto;}
+    ::view-transition-old(root),::view-transition-new(root){animation-duration:.15s;animation-timing-function:ease-out;}
+    #sidebarMount,header{view-transition-name:none;}
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode:"class",
+      theme:{extend:{colors:{
+        "secondary-container":"#6cf8bb","surface-container":"#e5eeff",
+        "secondary-fixed":"#6ffbbe","primary-fixed":"#e2dfff",
+        "on-secondary-fixed":"#002113","surface-variant":"#d3e4fe",
+        "inverse-surface":"#213145","on-surface-variant":"#474651",
+        "background":"#f8f9ff","surface":"#f8f9ff",
+        "error":"#ba1a1a","surface-container-low":"#eff4ff",
+        "surface-container-highest":"#d3e4fe","surface-container-high":"#dce9ff",
+        "on-secondary-container":"#00714d","on-error-container":"#93000a",
+        "surface-bright":"#f8f9ff","inverse-primary":"#c3c0ff",
+        "on-background":"#0b1c30","error-container":"#ffdad6",
+        "outline-variant":"#c8c5d3","on-secondary":"#ffffff",
+        "surface-tint":"#5654a8","inverse-on-surface":"#eaf1ff",
+        "surface-container-lowest":"#ffffff","outline":"#777682",
+        "primary-fixed-dim":"#c3c0ff","secondary":"#006c49",
+        "on-primary-container":"#9c9af4","surface-dim":"#cbdbf5",
+        "primary":"#1a146b","tertiary":"#0a0086",
+        "tertiary-container":"#1e19b2","primary-container":"#312e81",
+        "on-surface":"#0b1c30","on-error":"#ffffff",
+        "on-primary":"#ffffff","tertiary-fixed":"#e1e0ff",
+        "on-primary-fixed":"#100563","on-tertiary":"#ffffff",
+        "on-tertiary-container":"#979aff","on-tertiary-fixed":"#07006c",
+      },borderRadius:{DEFAULT:"0.125rem",lg:"0.25rem",xl:"0.5rem",full:"0.75rem"},
+      spacing:{gutter:"24px",base:"4px","2xl":"48px",md:"16px",sm:"8px",xl:"32px",margin:"32px",lg:"24px",xs:"4px"},
+      fontFamily:{"body-lg":["Inter"],"h1":["Inter"],"h2":["Inter"],"h3":["Inter"],"body-md":["Inter"],"body-sm":["Inter"],"label-md":["Inter"],"label-sm":["Inter"]},
+      fontSize:{
+        "body-lg":["18px",{lineHeight:"1.6",fontWeight:"400"}],
+        "h1":["36px",{lineHeight:"1.2",letterSpacing:"-0.02em",fontWeight:"700"}],
+        "h2":["30px",{lineHeight:"1.3",letterSpacing:"-0.01em",fontWeight:"600"}],
+        "h3":["24px",{lineHeight:"1.3",fontWeight:"600"}],
+        "body-md":["16px",{lineHeight:"1.5",fontWeight:"400"}],
+        "body-sm":["14px",{lineHeight:"1.5",fontWeight:"400"}],
+        "label-md":["14px",{lineHeight:"1.2",fontWeight:"600"}],
+        "label-sm":["12px",{lineHeight:"1.2",fontWeight:"500"}],
+      }}}
+    }
+  </script>
+  <style>
+    .msym{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle;}
+    ::-webkit-scrollbar{width:5px;}
+    ::-webkit-scrollbar-thumb{background:#c8c5d3;border-radius:10px;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+    .fade-in{animation:fadeIn .2s ease both;}
+    input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{
+      -webkit-box-shadow:0 0 0 1000px #fff inset !important;
+      -webkit-text-fill-color:inherit !important;
+      transition:background-color 5000s ease-in-out 0s;
+    }
+    input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:none;}
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased min-h-screen">
+
+<!-- Toast -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Sidebar fragment -->
+<div id="sidebarMount"></div>
+
+<!-- Header -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest/95 backdrop-blur border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-on-surface-variant">menu</span>
+    </button>
+    <span class="material-symbols-outlined msym text-lg text-primary">settings</span>
+    <h2 class="text-base font-bold text-on-surface">Cài đặt</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="lg:ml-60 pt-[60px] min-h-screen">
+  <div class="max-w-5xl mx-auto px-4 lg:px-8 py-8">
+
+    <!-- Page header -->
+    <div class="mb-8">
+      <h1 class="font-h2 text-h2 text-on-surface mb-1">Cài đặt</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Quản lý thông tin tài khoản, bảo mật và tùy chọn hệ thống.</p>
+    </div>
+
+    <!-- Tab nav (settings / my-reviews) -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-1 flex gap-1 mb-8 w-fit">
+      <a href="settings.html" class="py-2 px-4 rounded-lg text-sm font-semibold flex items-center gap-2 bg-primary text-on-primary shadow-sm">
+        <span class="material-symbols-outlined msym text-base">person</span>Cài đặt
+      </a>
+      <a href="my-reviews.html" class="py-2 px-4 rounded-lg text-sm font-semibold flex items-center gap-2 text-on-surface-variant hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined msym text-base">rate_review</span>Đánh giá đã viết
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- Left: main settings -->
+      <div class="lg:col-span-2 flex flex-col gap-6">
+
+        <!-- Section 1: Thông tin cá nhân -->
+        <section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+          <div class="px-6 py-5 border-b border-outline-variant flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#eef2ff">
+              <span class="material-symbols-outlined msym text-primary text-lg" style="font-variation-settings:'FILL' 1">person</span>
+            </div>
+            <div>
+              <h2 class="font-label-md text-label-md text-on-surface text-base font-semibold">Thông tin cá nhân</h2>
+              <p class="font-body-sm text-body-sm text-on-surface-variant text-xs mt-0.5">Thông tin cơ bản về hồ sơ sinh viên của bạn.</p>
+            </div>
+          </div>
+          <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Họ tên (editable) -->
+            <div class="md:col-span-2 flex flex-col gap-1.5">
+              <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Họ và tên</label>
+              <input autocomplete="off" type="text" id="fullName" placeholder="Nhập họ tên đầy đủ..."
+                class="px-4 py-2.5 bg-surface-container-lowest border border-outline rounded-xl text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                onblur="this.value = normViName(this.value)"/>
+            </div>
+            <!-- Username (readonly) -->
+            <div class="flex flex-col gap-1.5">
+              <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tên đăng nhập</label>
+              <input autocomplete="off" type="text" id="usernameField" disabled
+                class="px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface-variant text-sm cursor-not-allowed opacity-70"/>
+              <p class="text-xs text-on-surface-variant">Tên đăng nhập không thể thay đổi</p>
+            </div>
+            <!-- Chuyên ngành (readonly) -->
+            <div class="flex flex-col gap-1.5">
+              <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Chuyên ngành</label>
+              <input id="specializationDisplay" type="text" readonly
+                class="px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface text-sm cursor-not-allowed"
+                value="—"/>
+              <select id="specializationSelect" class="hidden">
+                <option value="">-- Chưa chọn --</option>
+                <option value="7480201_07">Khoa học máy tính (KHMT)</option>
+                <option value="7480201_06">Mạng máy tính (MMT)</option>
+                <option value="7480201_05">Kỹ thuật phần mềm (KTPM)</option>
+                <option value="7480201_09">Hệ thống thông tin (HTTT)</option>
+                <option value="7480201_04">Tin học kinh tế (THKT)</option>
+                <option value="7480201_08">CNTT Địa học (CNTTDH)</option>
+              </select>
+              <div id="specWarning" class="hidden text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg"></div>
+            </div>
+            <!-- Ghi chú CN -->
+            <div class="md:col-span-2 text-xs text-on-surface-variant flex items-start gap-1.5 bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2.5">
+              <span class="material-symbols-outlined msym text-sm text-on-surface-variant mt-0.5">lock</span>
+              <span>Chuyên ngành do nhà trường phân công. Bạn có thể <a href="compare-specs.html" class="text-primary underline">tham khảo 6 hướng</a> hoặc <a href="messaging.html" class="text-primary underline">trao đổi với cố vấn</a>.</span>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex justify-end">
+            <button onclick="saveProfile()" id="saveProfileBtn"
+              class="px-5 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-xl shadow-sm hover:bg-primary-container transition-colors flex items-center gap-2 disabled:opacity-50">
+              <span class="material-symbols-outlined msym text-base" id="saveProfileIcon">save</span>Lưu thông tin
+            </button>
+          </div>
+        </section>
+
+        <!-- Section 2: Mục tiêu học tập -->
+        <section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+          <div class="px-6 py-5 border-b border-outline-variant flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary/10">
+              <span class="material-symbols-outlined msym text-secondary text-lg" style="font-variation-settings:'FILL' 1">target</span>
+            </div>
+            <div>
+              <h2 class="text-base font-semibold text-on-surface">Mục tiêu học tập</h2>
+              <p class="text-xs text-on-surface-variant mt-0.5">Ảnh hưởng đến gợi ý môn học và phân tích tiến độ</p>
+            </div>
+          </div>
+          <div class="p-6 flex flex-col gap-5">
+            <div class="grid grid-cols-2 gap-4">
+              <!-- GPA mục tiêu -->
+              <div class="flex flex-col gap-1.5">
+                <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">GPA mục tiêu</label>
+                <input autocomplete="off" type="number" id="targetGpa" min="0.0" max="4.0" step="0.1" placeholder="VD: 3.2"
+                  class="px-4 py-2.5 border border-outline rounded-xl text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-surface-container-lowest"/>
+                <p class="text-xs text-on-surface-variant">Thang điểm 4.0</p>
+              </div>
+              <!-- TC tối đa/kỳ -->
+              <div class="flex flex-col gap-1.5">
+                <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">TC tối đa/kỳ</label>
+                <input autocomplete="off" type="number" id="maxCredits" min="10" max="25" step="1" placeholder="VD: 20"
+                  class="px-4 py-2.5 border border-outline rounded-xl text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-surface-container-lowest"/>
+                <p class="text-xs text-on-surface-variant" id="maxCreditsHint">Giới hạn theo GPA: 18–25 TC/kỳ</p>
+              </div>
+            </div>
+            <!-- Định hướng nghề nghiệp -->
+            <div class="flex flex-col gap-1.5">
+              <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Định hướng nghề nghiệp</label>
+              <select autocomplete="off" id="careerGoal"
+                class="px-4 py-2.5 border border-outline rounded-xl text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-surface-container-lowest">
+                <option value="">Chưa chọn</option>
+                <option value="AI & Machine Learning">AI &amp; Machine Learning</option>
+                <option value="Kỹ thuật dữ liệu">Kỹ thuật dữ liệu</option>
+                <option value="Phát triển phần mềm">Phát triển phần mềm</option>
+                <option value="An toàn thông tin">An toàn thông tin</option>
+                <option value="Phát triển Web/Mobile">Phát triển Web/Mobile</option>
+                <option value="Quản trị hệ thống">Quản trị hệ thống &amp; Mạng</option>
+                <option value="Kinh doanh CNTT">Kinh doanh CNTT</option>
+              </select>
+              <p class="text-xs text-on-surface-variant">Ảnh hưởng đến thứ tự gợi ý môn học</p>
+            </div>
+            <!-- Độ khó -->
+            <div class="flex flex-col gap-2">
+              <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Ưu tiên độ khó môn học</label>
+              <div class="flex gap-3">
+                <label class="flex-1 flex flex-col items-center gap-1.5 p-3 border-2 border-outline-variant rounded-xl cursor-pointer hover:border-primary transition-all has-[:checked]:border-primary has-[:checked]:bg-surface-container-low">
+                  <input type="radio" name="difficulty" value="easy" class="sr-only"/>
+                  <span class="material-symbols-outlined msym text-on-surface-variant text-xl">sentiment_satisfied</span>
+                  <span class="text-xs font-medium text-on-surface-variant">Dễ hơn</span>
+                </label>
+                <label class="flex-1 flex flex-col items-center gap-1.5 p-3 border-2 border-outline-variant rounded-xl cursor-pointer hover:border-primary transition-all has-[:checked]:border-primary has-[:checked]:bg-surface-container-low">
+                  <input type="radio" name="difficulty" value="balanced" class="sr-only"/>
+                  <span class="material-symbols-outlined msym text-on-surface-variant text-xl">balance</span>
+                  <span class="text-xs font-medium text-on-surface-variant">Cân bằng</span>
+                </label>
+                <label class="flex-1 flex flex-col items-center gap-1.5 p-3 border-2 border-outline-variant rounded-xl cursor-pointer hover:border-primary transition-all has-[:checked]:border-primary has-[:checked]:bg-surface-container-low">
+                  <input type="radio" name="difficulty" value="challenging" class="sr-only"/>
+                  <span class="material-symbols-outlined msym text-on-surface-variant text-xl">local_fire_department</span>
+                  <span class="text-xs font-medium text-on-surface-variant">Thách thức</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex justify-end">
+            <button onclick="saveGoals()" id="saveGoalsBtn"
+              class="px-5 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-xl shadow-sm hover:bg-primary-container transition-colors flex items-center gap-2 disabled:opacity-50">
+              <span class="material-symbols-outlined msym text-base" id="saveGoalsIcon">save</span>Lưu mục tiêu
+            </button>
+          </div>
+        </section>
+
+        <!-- Section 3: Đổi mật khẩu (collapsible) -->
+        <section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+          <button onclick="togglePasswordSection()"
+            class="w-full flex items-center justify-between px-6 py-4 hover:bg-surface-container transition-colors">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-error-container/30">
+                <span class="material-symbols-outlined msym text-error text-lg">lock</span>
+              </div>
+              <span class="text-base font-semibold text-on-surface">Đổi mật khẩu</span>
+            </div>
+            <span class="material-symbols-outlined msym text-on-surface-variant transition-transform duration-200" id="pwChevron">expand_more</span>
+          </button>
+          <div id="pwSection" class="hidden px-6 pb-6 border-t border-outline-variant">
+            <div class="space-y-4 mt-5">
+              <div class="flex flex-col gap-1.5 max-w-md">
+                <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Mật khẩu hiện tại</label>
+                <div class="relative">
+                  <input autocomplete="new-password" type="password" id="pwCurrent"
+                    class="w-full px-4 py-2.5 pr-11 border border-outline rounded-xl text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-surface-container-lowest"/>
+                  <button type="button" onclick="togglePw('pwCurrent','eyeCurrent')" aria-label="Hiện/ẩn mật khẩu"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined msym text-base" id="eyeCurrent">visibility</span>
+                  </button>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1.5 max-w-md">
+                <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Mật khẩu mới</label>
+                <div class="relative">
+                  <input autocomplete="new-password" type="password" id="pwNew"
+                    class="w-full px-4 py-2.5 pr-11 border border-outline rounded-xl text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-surface-container-lowest"/>
+                  <button type="button" onclick="togglePw('pwNew','eyeNew')" aria-label="Hiện/ẩn mật khẩu"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined msym text-base" id="eyeNew">visibility</span>
+                  </button>
+                </div>
+                <p class="text-xs text-on-surface-variant">Tối thiểu 8 ký tự</p>
+              </div>
+              <div class="flex flex-col gap-1.5 max-w-md">
+                <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Xác nhận mật khẩu mới</label>
+                <div class="relative">
+                  <input autocomplete="new-password" type="password" id="pwConfirm"
+                    class="w-full px-4 py-2.5 pr-11 border border-outline rounded-xl text-on-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-surface-container-lowest"/>
+                  <button type="button" onclick="togglePw('pwConfirm','eyeConfirm')" aria-label="Hiện/ẩn mật khẩu"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined msym text-base" id="eyeConfirm">visibility</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button onclick="changePassword()" id="changePwBtn"
+              class="mt-5 px-5 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-xl shadow-sm hover:bg-primary-container transition-colors flex items-center gap-2 disabled:opacity-50">
+              <span class="material-symbols-outlined msym text-base" id="changePwIcon">lock_reset</span>Đổi mật khẩu
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right column -->
+      <div class="flex flex-col gap-6">
+
+        <!-- Section 4: Thông báo -->
+        <section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+          <div class="px-6 py-5 border-b border-outline-variant flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#eef2ff">
+              <span class="material-symbols-outlined msym text-primary text-lg" style="font-variation-settings:'FILL' 1">notifications_active</span>
+            </div>
+            <h2 class="text-base font-semibold text-on-surface">Thông báo</h2>
+          </div>
+          <div class="p-6 flex flex-col gap-5">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p class="font-label-md text-label-md text-on-surface text-sm font-semibold">Nhận thông báo qua Email</p>
+                <p class="text-xs text-on-surface-variant mt-0.5">Lịch thi, kết quả học tập mới.</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input checked class="sr-only peer" type="checkbox"/>
+                <div class="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              </label>
+            </div>
+            <div class="h-px bg-outline-variant"></div>
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p class="font-label-md text-label-md text-on-surface text-sm font-semibold">Âm thanh trong ứng dụng</p>
+                <p class="text-xs text-on-surface-variant mt-0.5">Phát âm thanh khi có thông báo.</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input class="sr-only peer" type="checkbox"/>
+                <div class="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 5: Đăng xuất -->
+        <section class="bg-error-container/20 rounded-xl border border-error/20 overflow-hidden">
+          <div class="p-6 flex flex-col items-center text-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-error-container text-error flex items-center justify-center">
+              <span class="material-symbols-outlined msym">power_settings_new</span>
+            </div>
+            <div>
+              <p class="font-semibold text-on-surface text-sm mb-1">Kết thúc phiên làm việc</p>
+              <p class="text-xs text-on-surface-variant">Đăng xuất khỏi thiết bị này để bảo mật tài khoản.</p>
+            </div>
+            <button onclick="logout()"
+              class="w-full px-6 py-2.5 bg-error text-on-error font-label-md text-label-md rounded-xl shadow-sm hover:bg-error/90 transition-colors flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined msym text-sm">logout</span>Đăng xuất
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Floating chat -->
+<div id="floatingChatMount"></div>
+
+<script>
+function normViName(s) {
+  if (!s) return '';
+  return s.trim().split(/\s+/).map(w => w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '').join(' ');
+}
+
+let _me = null;
+let _origSpec = '';
+
+function showToast(msg, type = 'info') {
+  const colors = { info:'bg-slate-800', success:'bg-secondary', error:'bg-error', warning:'bg-amber-500' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto ${colors[type]||colors.info} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function authH() { return { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' }; }
+async function apiFetch(url, opts = {}) {
+  const r = await fetch(url, { headers: authH(), ...opts });
+  if (!r.ok) { const t = await r.json().catch(() => ({})); throw new Error(t.detail || r.status); }
+  return r.json();
+}
+
+async function init() {
+  checkAuth();
+  const _fcScript = document.createElement('script');
+  _fcScript.src = 'floating-chat.js';
+  document.body.appendChild(_fcScript);
+
+  try {
+    [_me] = await Promise.all([apiFetch('/auth/me')]);
+    const profile = await apiFetch('/profile/me');
+    fillProfile(_me, profile);
+  } catch(e) {
+    showToast('Không thể tải dữ liệu: ' + e.message, 'error');
+  }
+}
+
+function fillProfile(user, profile) {
+  updateTopbarUser(user);
+  document.getElementById('fullName').value = user.full_name || '';
+  document.getElementById('usernameField').value = user.username || '';
+
+  const specEl = document.getElementById('specializationSelect');
+  const specDisplay = document.getElementById('specializationDisplay');
+  _origSpec = user.specialization || '';
+  const SPEC_NAMES = {
+    '7480201_07': 'Khoa học máy tính (KHMT)',
+    '7480201_06': 'Mạng máy tính (MMT)',
+    '7480201_05': 'Kỹ thuật phần mềm (KTPM)',
+    '7480201_09': 'Hệ thống thông tin (HTTT)',
+    '7480201_04': 'Tin học kinh tế (THKT)',
+    '7480201_08': 'CNTT Địa học (CNTTDH)',
+  };
+  if (specDisplay) {
+    if (!_origSpec) {
+      specDisplay.value = 'Chưa được phân công chuyên ngành';
+      specDisplay.classList.add('text-amber-600');
+    } else {
+      specDisplay.value = SPEC_NAMES[_origSpec] || _origSpec;
+    }
+  }
+  if (specEl) {
+    const match = Array.from(specEl.options).find(o => o.value === _origSpec);
+    if (match) specEl.value = match.value;
+  }
+
+  if (profile.target_gpa != null) document.getElementById('targetGpa').value = profile.target_gpa;
+  if (profile.max_credits_per_term != null) document.getElementById('maxCredits').value = profile.max_credits_per_term;
+  if (profile.career_goal) {
+    const cg = document.getElementById('careerGoal');
+    const m = Array.from(cg.options).find(o => o.value === profile.career_goal);
+    if (m) cg.value = profile.career_goal;
+  }
+  if (profile.difficulty_preference) {
+    const radio = document.querySelector(`input[name="difficulty"][value="${profile.difficulty_preference}"]`);
+    if (radio) radio.checked = true;
+  }
+}
+
+async function saveProfile() {
+  const fullName = document.getElementById('fullName').value.trim();
+  if (!fullName) { showToast('Họ tên không được để trống', 'warning'); return; }
+
+  const btn = document.getElementById('saveProfileBtn');
+  const icon = document.getElementById('saveProfileIcon');
+  btn.disabled = true; icon.textContent = 'hourglass_empty';
+
+  try {
+    const calls = [apiFetch('/auth/me/full-name', { method:'PATCH', body: JSON.stringify({ full_name: fullName }) })];
+    const newSpec = document.getElementById('specializationSelect').value;
+    if (newSpec && newSpec !== _origSpec)
+      calls.push(apiFetch('/auth/me/specialization', { method:'PATCH', body: JSON.stringify({ specialization: newSpec }) }));
+    await Promise.all(calls);
+    _origSpec = newSpec;
+    document.getElementById('specWarning').classList.add('hidden');
+    document.getElementById('topbarUserName').textContent = fullName;
+    updateTopbarUser({full_name: fullName, role: 'student'});
+    showToast('Đã lưu thông tin', 'success');
+  } catch(e) {
+    showToast('Lỗi: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; icon.textContent = 'save';
+  }
+}
+
+async function saveGoals() {
+  const btn = document.getElementById('saveGoalsBtn');
+  const icon = document.getElementById('saveGoalsIcon');
+  btn.disabled = true; icon.textContent = 'hourglass_empty';
+
+  const payload = {};
+  const gpaVal = parseFloat(document.getElementById('targetGpa').value);
+  if (!isNaN(gpaVal)) {
+    if (gpaVal < 0 || gpaVal > 4) { showToast('GPA phải từ 0 đến 4.0', 'warning'); btn.disabled=false; icon.textContent='save'; return; }
+    payload.target_gpa = gpaVal;
+  }
+  const tcVal = parseFloat(document.getElementById('maxCredits').value);
+  if (!isNaN(tcVal)) {
+    if (tcVal < 6 || tcVal > 30) { showToast('TC/kỳ phải từ 6 đến 30', 'warning'); btn.disabled=false; icon.textContent='save'; return; }
+    payload.max_credits_per_term = tcVal;
+  }
+  const cg = document.getElementById('careerGoal').value;
+  payload.career_goal = cg || null;
+  const diff = document.querySelector('input[name="difficulty"]:checked');
+  if (diff) payload.difficulty_preference = diff.value;
+
+  try {
+    await apiFetch('/profile/me', { method:'PATCH', body: JSON.stringify(payload) });
+    showToast('Đã lưu mục tiêu học tập', 'success');
+  } catch(e) {
+    showToast('Lỗi: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; icon.textContent = 'save';
+  }
+}
+
+function togglePasswordSection() {
+  const section = document.getElementById('pwSection');
+  const chevron = document.getElementById('pwChevron');
+  const isHidden = section.classList.toggle('hidden');
+  chevron.style.transform = isHidden ? '' : 'rotate(180deg)';
+}
+
+function togglePw(inputId, iconId) {
+  const inp = document.getElementById(inputId);
+  const ico = document.getElementById(iconId);
+  if (inp.type === 'password') { inp.type = 'text'; ico.textContent = 'visibility_off'; }
+  else { inp.type = 'password'; ico.textContent = 'visibility'; }
+}
+
+async function changePassword() {
+  const current = document.getElementById('pwCurrent').value;
+  const newPw = document.getElementById('pwNew').value;
+  const confirm = document.getElementById('pwConfirm').value;
+
+  if (!current) { showToast('Nhập mật khẩu hiện tại', 'warning'); return; }
+  if (newPw.length < 8) { showToast('Mật khẩu mới phải ít nhất 8 ký tự', 'warning'); return; }
+  if (newPw !== confirm) { showToast('Mật khẩu xác nhận không khớp', 'warning'); return; }
+
+  const btn = document.getElementById('changePwBtn');
+  const icon = document.getElementById('changePwIcon');
+  btn.disabled = true; icon.textContent = 'hourglass_empty';
+
+  try {
+    await apiFetch('/auth/me/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ old_password: current, new_password: newPw }),
+    });
+    ['pwCurrent','pwNew','pwConfirm'].forEach(id => {
+      document.getElementById(id).value = '';
+      document.getElementById(id).type = 'password';
+    });
+    ['eyeCurrent','eyeNew','eyeConfirm'].forEach(id => document.getElementById(id).textContent = 'visibility');
+    document.getElementById('pwSection').classList.add('hidden');
+    document.getElementById('pwChevron').style.transform = '';
+    showToast('Đổi mật khẩu thành công', 'success');
+  } catch(e) {
+    showToast('Lỗi: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; icon.textContent = 'lock_reset';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

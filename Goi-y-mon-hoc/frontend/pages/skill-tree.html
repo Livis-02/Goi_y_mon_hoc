@@ -1,0 +1,468 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Lộ trình kỹ năng</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.15s; animation-timing-function: ease-out; }
+    #sidebarMount, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{ colors:{
+        primary:'#1a146b', 'on-surface':'#0f172a', outline:'#94a3b8',
+      }}}
+    }
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<!-- Tailwind safelist -->
+<div class="hidden" aria-hidden="true">
+  <span class="bg-amber-50 bg-amber-100 bg-amber-500 text-amber-700 border-amber-200"></span>
+  <span class="bg-[#eef2ff] bg-[#e5eeff] bg-[#eef2ff]0 text-[#1a146b] border-indigo-200"></span>
+  <span class="bg-violet-50 bg-violet-100 bg-violet-500 text-violet-700 border-violet-200"></span>
+  <span class="bg-[#dcfce7] bg-emerald-100 bg-[#dcfce7]0 text-emerald-700 border-[#86efac]"></span>
+  <span class="bg-rose-50 bg-rose-100 bg-rose-500 text-rose-700 border-rose-200"></span>
+  <span class="bg-cyan-50 bg-cyan-100 bg-cyan-500 text-cyan-700 border-cyan-200"></span>
+  <span class="bg-blue-50 bg-blue-100 bg-blue-500 text-blue-700 border-blue-200"></span>
+  <span class="bg-teal-50 bg-teal-100 bg-teal-500 text-teal-700 border-teal-200"></span>
+  <span class="bg-orange-50 bg-orange-100 bg-orange-500 text-orange-700 border-orange-200"></span>
+  <span class="bg-sky-50 bg-sky-100 bg-sky-500 text-sky-700 border-sky-200"></span>
+  <span class="bg-red-50 bg-red-100 bg-[#ba1a1a] text-red-700 border-red-200"></span>
+  <span class="bg-[#eff4ff] bg-[#e5eeff] bg-slate-500 text-[#0b1c30] border-[#c8c5d3]"></span>
+</div>
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+<div id="sidebarMount"></div>
+
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d] truncate">Lộ trình kỹ năng</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-6xl mx-auto">
+
+    <!-- Loading -->
+    <div id="stLoading" class="space-y-4">
+      <div class="bg-[#ffffff] rounded-2xl p-10 border border-[#c8c5d3] animate-pulse h-32"></div>
+      <div class="bg-[#ffffff] rounded-2xl p-6 border border-[#c8c5d3] animate-pulse h-64"></div>
+    </div>
+
+    <!-- No career chosen state -->
+    <div id="stNoCareer" class="hidden bg-[#ffffff] rounded-2xl border border-[#c8c5d3] p-10 text-center">
+      <span class="material-symbols-outlined msym text-5xl text-[#c8c5d3] block mb-3">explore</span>
+      <h2 class="text-lg font-bold text-[#0b1c30] mb-1">Chưa chọn định hướng nghề</h2>
+      <p class="text-sm text-[#474651] mb-5 max-w-md mx-auto">Bạn cần chọn 1 career path để hệ thống hiển thị skill tree + gap analysis. Hãy làm Quiz Holland hoặc khám phá định hướng.</p>
+      <div class="flex gap-3 justify-center flex-wrap">
+        <a href="career-quiz.html" class="inline-flex items-center gap-1.5 px-5 py-2.5 pri-grad text-white rounded-xl text-sm font-bold shadow hover:opacity-90 transition-all">
+          <span class="material-symbols-outlined msym text-base">quiz</span>Làm Quiz Holland
+        </a>
+        <a href="career-hub.html" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white border border-[#c8c5d3] text-[#0b1c30] rounded-xl text-sm font-semibold hover:bg-[#eef2ff] transition-all">
+          <span class="material-symbols-outlined msym text-base">explore</span>Khám phá định hướng
+        </a>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div id="stContent" class="hidden space-y-5 fade-in">
+
+      <!-- Hero with selector -->
+      <div id="stHero" class="rounded-2xl text-white p-6 shadow-md"></div>
+
+      <!-- Summary stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-emerald-100 p-4 shadow-sm">
+          <p class="text-[10px] uppercase tracking-wider text-[#006c49] font-bold">Đã thành thạo</p>
+          <p class="text-2xl font-extrabold text-emerald-700 mt-1" id="stMastered">—</p>
+          <p class="text-[10px] text-[#777682] mt-0.5">skills</p>
+        </div>
+        <div class="bg-white rounded-xl border border-amber-100 p-4 shadow-sm">
+          <p class="text-[10px] uppercase tracking-wider text-amber-600 font-bold">Đang học</p>
+          <p class="text-2xl font-extrabold text-amber-700 mt-1" id="stLearning">—</p>
+          <p class="text-[10px] text-[#777682] mt-0.5">skills</p>
+        </div>
+        <div class="bg-white rounded-xl border border-rose-100 p-4 shadow-sm">
+          <p class="text-[10px] uppercase tracking-wider text-rose-600 font-bold">Còn thiếu</p>
+          <p class="text-2xl font-extrabold text-rose-700 mt-1" id="stMissing">—</p>
+          <p class="text-[10px] text-[#777682] mt-0.5">cần học</p>
+        </div>
+        <div class="bg-white rounded-xl border border-indigo-100 p-4 shadow-sm">
+          <p class="text-[10px] uppercase tracking-wider text-[#1a146b] font-bold">Tổng phủ</p>
+          <p class="text-2xl font-extrabold text-[#1a146b] mt-1" id="stCoverage">—</p>
+          <p class="text-[10px] text-[#777682] mt-0.5">% career</p>
+        </div>
+      </div>
+
+      <!-- Progress bar overall -->
+      <div class="bg-[#ffffff] rounded-2xl border border-[#c8c5d3] p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-sm font-semibold text-[#0b1c30]">Tiến độ tổng</p>
+          <p class="text-xs font-bold text-[#1a146b]" id="stOverallText">—</p>
+        </div>
+        <div class="h-3 bg-[#e5eeff] rounded-full overflow-hidden flex">
+          <div id="stBarMastered" class="bg-[#dcfce7]0 h-full" style="width:0%"></div>
+          <div id="stBarLearning" class="bg-amber-400 h-full" style="width:0%"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-[#777682] mt-1.5">
+          <span><span class="inline-block w-2 h-2 bg-[#dcfce7]0 rounded-sm align-middle mr-1"></span>Mastered</span>
+          <span><span class="inline-block w-2 h-2 bg-amber-400 rounded-sm align-middle mr-1"></span>Learning</span>
+          <span><span class="inline-block w-2 h-2 bg-[#c8c5d3] rounded-sm align-middle mr-1"></span>Missing</span>
+        </div>
+      </div>
+
+      <!-- Skills grouped by category -->
+      <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+        <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined msym text-violet-500 text-base">category</span>
+            <h3 class="font-semibold text-sm text-[#0b1c30]">Cây kỹ năng</h3>
+          </div>
+          <div class="flex gap-1">
+            <button onclick="_filterSkills('all')" id="stFilterAll" class="px-3 py-1 text-xs font-semibold rounded-lg bg-[#e5eeff] text-[#1a146b]">Tất cả</button>
+            <button onclick="_filterSkills('mastered')" id="stFilterMastered" class="px-3 py-1 text-xs font-semibold rounded-lg bg-[#eff4ff] text-[#474651] hover:bg-emerald-100 hover:text-emerald-700">Đã đạt</button>
+            <button onclick="_filterSkills('missing')" id="stFilterMissing" class="px-3 py-1 text-xs font-semibold rounded-lg bg-[#eff4ff] text-[#474651] hover:bg-rose-100 hover:text-rose-700">Còn thiếu</button>
+          </div>
+        </div>
+        <div id="stSkillsByCategory" class="px-5 py-4 space-y-5"></div>
+      </section>
+
+      <!-- Recommended courses to fill gap -->
+      <section id="stRecCourses" class="hidden bg-[#ffffff] rounded-2xl shadow-sm border border-emerald-100">
+        <div class="px-5 py-4 border-b border-emerald-100 bg-[#dcfce7]/40 flex items-center gap-2">
+          <span class="material-symbols-outlined msym text-[#006c49] text-base">recommend</span>
+          <div>
+            <h3 class="font-semibold text-sm text-[#0b1c30]">Môn học gợi ý lấp gap</h3>
+            <p class="text-[11px] text-[#474651] mt-0.5">Học các môn này để đạt nhanh các skill còn thiếu</p>
+          </div>
+        </div>
+        <div id="stRecCoursesList" class="divide-y divide-[#c8c5d3]"></div>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<script src="floating-chat.js"></script>
+<script>
+const API = window.API_BASE;
+function H(extra = {}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+
+function showToast(msg, type='info', duration=3000) {
+  const cls = { success:'bg-[#dcfce7]0', error:'bg-[#ba1a1a]', warning:'bg-amber-500', info:'bg-[#eef2ff]0' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto px-4 py-2.5 ${cls[type]||cls.info} text-white text-sm font-medium rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+const CAT_LABELS = {
+  programming: 'Lập trình', web: 'Web', mobile: 'Mobile', ai: 'AI/ML',
+  data: 'Data', db: 'Database', network: 'Mạng/Cloud',
+  security: 'An ninh', se: 'Software Eng', business: 'Business',
+  softskill: 'Kỹ năng mềm', other: 'Khác',
+};
+const CAT_COLOR = {
+  programming: 'indigo', web: 'emerald', mobile: 'cyan', ai: 'violet',
+  data: 'blue', db: 'sky', network: 'teal', security: 'red',
+  se: 'amber', business: 'orange', softskill: 'slate', other: 'slate',
+};
+const STATUS_META = {
+  mastered: { label: 'Đã thành thạo', icon: 'verified', color: 'emerald' },
+  learning: { label: 'Đang học', icon: 'autorenew', color: 'amber' },
+  missing:  { label: 'Còn thiếu', icon: 'priority_high', color: 'rose' },
+  extra:    { label: 'Có thêm', icon: 'add_circle', color: 'slate' },
+};
+
+let _data = null;
+let _filter = 'all';
+
+checkAuth();
+
+(async function init() {
+  try {
+    const ur = await fetch(`${API}/auth/me`, { headers: H() });
+    if (ur.ok) {
+      const u = await ur.json();
+      updateTopbarUser(u);
+    }
+  } catch {}
+  // Read career_code from URL ?code=...
+  const params = new URLSearchParams(window.location.search);
+  const careerCode = params.get('code') || params.get('career_code');
+  await loadSkillTree(careerCode);
+})();
+
+async function loadSkillTree(careerCode) {
+  let url = `${API}/me/skill-tree`;
+  if (careerCode) url += `?career_code=${encodeURIComponent(careerCode)}`;
+  try {
+    const res = await fetch(url, { headers: H() });
+    if (!res.ok) {
+      document.getElementById('stLoading').classList.add('hidden');
+      showToast('Lỗi tải skill tree', 'error');
+      return;
+    }
+    _data = await res.json();
+    document.getElementById('stLoading').classList.add('hidden');
+    if (!_data.career_path) {
+      document.getElementById('stNoCareer').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('stContent').classList.remove('hidden');
+    _renderHero();
+    _renderSummary();
+    _renderSkills();
+    _renderRecCourses();
+  } catch (e) {
+    document.getElementById('stLoading').classList.add('hidden');
+    showToast('Lỗi kết nối: ' + e.message, 'error');
+  }
+}
+
+function _renderHero() {
+  const p = _data.career_path;
+  const color = p.color || 'indigo';
+  document.getElementById('stHero').className = `rounded-2xl text-white p-6 shadow-md bg-gradient-to-br from-${color}-500 to-${color}-600`;
+  document.getElementById('stHero').innerHTML = `
+    <div class="flex items-center gap-4 flex-wrap">
+      <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined msym text-3xl text-white" style="font-variation-settings:'FILL' 1">${escHtml(p.icon || 'work')}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-[10px] uppercase tracking-wider text-white/70 font-bold">Lộ trình kỹ năng cho định hướng</p>
+        <h1 class="text-xl lg:text-2xl font-bold mt-1">${escHtml(p.name)}</h1>
+        ${p.short_description ? `<p class="text-sm text-white/85 mt-1">${escHtml(p.short_description)}</p>` : ''}
+      </div>
+      <a href="career-detail.html?code=${encodeURIComponent(p.code)}"
+        class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 transition-colors">
+        <span class="material-symbols-outlined msym text-base">launch</span>Chi tiết nghề
+      </a>
+    </div>`;
+}
+
+function _renderSummary() {
+  const s = _data.summary;
+  document.getElementById('stMastered').textContent = s.mastered;
+  document.getElementById('stLearning').textContent = s.learning;
+  document.getElementById('stMissing').textContent = s.missing;
+  document.getElementById('stCoverage').textContent = s.coverage_percent + '%';
+
+  const mPct = s.total_required > 0 ? (s.mastered / s.total_required * 100) : 0;
+  const lPct = s.total_required > 0 ? (s.learning / s.total_required * 100) : 0;
+  document.getElementById('stBarMastered').style.width = mPct + '%';
+  document.getElementById('stBarLearning').style.width = lPct + '%';
+  document.getElementById('stOverallText').textContent =
+    `${s.mastered} mastered + ${s.learning} learning / ${s.total_required} total · ${s.passed_courses} môn đã pass`;
+}
+
+function _renderSkills() {
+  const skills = _data.skills || [];
+  let filtered = skills;
+  if (_filter === 'mastered') filtered = skills.filter(s => s.status === 'mastered' || s.status === 'learning');
+  else if (_filter === 'missing') filtered = skills.filter(s => s.status === 'missing');
+  // Group by category
+  const byCat = {};
+  for (const s of filtered) {
+    (byCat[s.category] = byCat[s.category] || []).push(s);
+  }
+
+  const container = document.getElementById('stSkillsByCategory');
+  if (!filtered.length) {
+    container.innerHTML = '<p class="text-xs text-[#777682] text-center italic py-6">Không có skill nào.</p>';
+    return;
+  }
+
+  // Order categories by count desc
+  const orderedCats = Object.keys(byCat).sort((a, b) => byCat[b].length - byCat[a].length);
+  container.innerHTML = orderedCats.map(cat => {
+    const list = byCat[cat];
+    const catColor = CAT_COLOR[cat] || 'slate';
+    const catLabel = CAT_LABELS[cat] || cat;
+    return `<div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined msym text-${catColor}-500 text-base">label</span>
+        <p class="text-sm font-bold text-[#0b1c30]">${escHtml(catLabel)}</p>
+        <span class="text-[10px] text-[#777682]">${list.length} skill</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        ${list.map(s => _skillCard(s)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _skillCard(s) {
+  const meta = STATUS_META[s.status] || STATUS_META.missing;
+  const requireBadge = s.required
+    ? (s.importance >= 0.9
+        ? '<span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[9px] font-bold">CORE</span>'
+        : '<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">phụ</span>')
+    : '<span class="bg-[#e5eeff] text-[#474651] px-1.5 py-0.5 rounded text-[9px] font-bold">extra</span>';
+  const ownedPct = Math.round((s.owned || 0) * 100);
+  const barColor = s.status === 'mastered' ? 'bg-[#dcfce7]0'
+                : (s.status === 'learning' ? 'bg-amber-400' : 'bg-[#c8c5d3]');
+  const isMissing = s.status === 'missing';
+  // For missing skills: allow click to scroll + highlight matching courses below
+  const cardCls = isMissing
+    ? `bg-${meta.color}-50 border border-${meta.color}-200 rounded-xl p-3 cursor-pointer hover:border-rose-400 hover:bg-rose-50 transition-colors`
+    : `bg-${meta.color}-50 border border-${meta.color}-200 rounded-xl p-3`;
+  const onClickAttr = isMissing
+    ? `onclick="_scrollToSkillCourses('${escHtml(s.code)}')"`
+    : '';
+  const ctaLine = isMissing
+    ? `<button onclick="event.stopPropagation();_scrollToSkillCourses('${escHtml(s.code)}')"
+        class="mt-1.5 text-[10px] text-rose-700 font-semibold flex items-center gap-0.5 hover:underline">
+        <span class="material-symbols-outlined msym text-[12px]">menu_book</span>Xem môn lấp gap
+      </button>`
+    : '';
+  return `<div class="${cardCls}" ${onClickAttr}>
+    <div class="flex items-start justify-between gap-2 mb-1">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1 flex-wrap">
+          <p class="text-sm font-bold text-[#0b1c30] truncate">${escHtml(s.name)}</p>
+          ${requireBadge}
+        </div>
+        <p class="text-[10px] text-[#777682] font-mono">${escHtml(s.code)}</p>
+      </div>
+      <span class="material-symbols-outlined msym text-${meta.color}-500 text-base flex-shrink-0">${meta.icon}</span>
+    </div>
+    <div class="h-1.5 bg-white rounded-full overflow-hidden mt-2">
+      <div class="h-full ${barColor} rounded-full transition-all" style="width:${ownedPct}%"></div>
+    </div>
+    <div class="flex items-center justify-between text-[10px] text-${meta.color}-700 font-semibold mt-1">
+      <span>${meta.label}</span>
+      <span>${ownedPct}%</span>
+    </div>
+    ${ctaLine}
+  </div>`;
+}
+
+// Scroll to recommended-courses section + highlight courses that cover this skill
+function _scrollToSkillCourses(skillCode) {
+  const sec = document.getElementById('stRecCourses');
+  if (!sec || sec.classList.contains('hidden')) {
+    if (typeof showToast === 'function') showToast('Chưa có môn đề xuất cho skill này', 'info');
+    return;
+  }
+  sec.scrollIntoView({ behavior:'smooth', block:'start' });
+  // Briefly highlight matching courses
+  document.querySelectorAll('#stRecCoursesList a').forEach(a => {
+    a.classList.remove('ring-2','ring-rose-400','bg-rose-50');
+  });
+  setTimeout(() => {
+    const list = (_data.recommended_courses || []);
+    list.forEach(c => {
+      if ((c.matched_skill_codes || []).includes(skillCode)) {
+        const link = document.querySelector(`#stRecCoursesList a[href*="${encodeURIComponent(c.course_code)}"]`);
+        if (link) link.classList.add('ring-2','ring-rose-400','bg-rose-50');
+      }
+    });
+  }, 250);
+}
+
+function _filterSkills(filter) {
+  _filter = filter;
+  for (const k of ['all', 'mastered', 'missing']) {
+    const el = document.getElementById('stFilter' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (!el) continue;
+    if (k === filter) {
+      el.className = 'px-3 py-1 text-xs font-semibold rounded-lg bg-[#e5eeff] text-[#1a146b]';
+    } else {
+      const hover = k === 'mastered' ? 'hover:bg-emerald-100 hover:text-emerald-700'
+                  : k === 'missing' ? 'hover:bg-rose-100 hover:text-rose-700'
+                  : 'hover:bg-[#e5eeff] hover:text-[#1a146b]';
+      el.className = 'px-3 py-1 text-xs font-semibold rounded-lg bg-[#eff4ff] text-[#474651] ' + hover;
+    }
+  }
+  _renderSkills();
+}
+
+function _renderRecCourses() {
+  const list = _data.recommended_courses || [];
+  if (!list.length) {
+    document.getElementById('stRecCourses').classList.add('hidden');
+    return;
+  }
+  document.getElementById('stRecCourses').classList.remove('hidden');
+  document.getElementById('stRecCoursesList').innerHTML = list.map(c => {
+    const skillNames = (c.matched_skill_codes || []).join(', ');
+    return `<a href="course-detail.html?code=${encodeURIComponent(c.course_code)}"
+      class="block px-5 py-3 hover:bg-[#dcfce7] transition-colors flex items-center gap-3">
+      <span class="material-symbols-outlined msym text-emerald-500 text-xl flex-shrink-0">menu_book</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-[#0b1c30] truncate">${escHtml(c.course_name)}</p>
+        <div class="flex items-center gap-2 mt-0.5 text-[11px] text-[#777682] flex-wrap">
+          <span class="font-mono">${escHtml(c.course_code)}</span>
+          ${c.credits ? `<span>· ${c.credits} TC</span>` : ''}
+          ${c.typical_semester ? `<span>· HK ${c.typical_semester}</span>` : ''}
+          <span>· Phủ: ${escHtml(skillNames)}</span>
+        </div>
+      </div>
+      <span class="material-symbols-outlined msym text-[#c8c5d3] text-base flex-shrink-0">chevron_right</span>
+    </a>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
+
+

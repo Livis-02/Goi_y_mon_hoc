@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Trợ lý AI</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration:0.15s; animation-timing-function:ease-out; }
+    #sidebarMount, #sidebarDrawer, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script>
+    tailwind.config = {
+
+      theme: {
+        extend: {
+          colors: {
+            "background": "#f8f9ff",
+            "on-primary": "#ffffff",
+            "secondary-container": "#6cf8bb",
+            "surface-container-low": "#eff4ff",
+            "error-container": "#ffdad6",
+            "surface-dim": "#cbdbf5",
+            "surface-tint": "#5654a8",
+            "outline-variant": "#c8c5d3",
+            "surface-container-highest": "#d3e4fe",
+            "surface-bright": "#f8f9ff",
+            "primary-fixed": "#e2dfff",
+            "on-surface-variant": "#474651",
+            "surface-container": "#e5eeff",
+            "primary": "#1a146b",
+            "secondary": "#006c49",
+            "surface": "#f8f9ff",
+            "on-error": "#ffffff",
+            "error": "#ba1a1a",
+            "on-surface": "#0b1c30",
+            "primary-container": "#312e81",
+            "on-primary-container": "#9c9af4",
+            "on-background": "#0b1c30",
+            "surface-container-high": "#dce9ff",
+            "surface-container-lowest": "#ffffff",
+            "outline": "#777682"
+          },
+          borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+          spacing: { md: "16px", base: "4px", xl: "32px", "2xl": "48px", margin: "32px", sm: "8px", xs: "4px", gutter: "24px", lg: "24px" },
+          fontFamily: { "h1":["Inter"],"h2":["Inter"],"label-sm":["Inter"],"label-md":["Inter"],"body-sm":["Inter"],"body-md":["Inter"],"h3":["Inter"],"body-lg":["Inter"] },
+          fontSize: {
+            "h1": ["36px", { lineHeight:"1.2", letterSpacing:"-0.02em", fontWeight:"700" }],
+            "h2": ["30px", { lineHeight:"1.3", letterSpacing:"-0.01em", fontWeight:"600" }],
+            "label-sm": ["12px", { lineHeight:"1.2", fontWeight:"500" }],
+            "label-md": ["14px", { lineHeight:"1.2", fontWeight:"600" }],
+            "body-sm": ["14px", { lineHeight:"1.5", fontWeight:"400" }],
+            "body-md": ["16px", { lineHeight:"1.5", fontWeight:"400" }],
+            "h3": ["24px", { lineHeight:"1.3", fontWeight:"600" }],
+            "body-lg": ["18px", { lineHeight:"1.6", fontWeight:"400" }]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c8c5d3; border-radius:10px; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .2s ease both; }
+    @keyframes bounce { 0%,80%,100% { transform:translateY(0); } 40% { transform:translateY(-6px); } }
+    .dot-bounce { animation:bounce 1.2s infinite ease-in-out; display:inline-block; width:.45rem; height:.45rem; background:#c8c5d3; border-radius:50%; }
+    .dot-bounce:nth-child(2) { animation-delay:.2s; }
+    .dot-bounce:nth-child(3) { animation-delay:.4s; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .animate-spin { animation:spin .8s linear infinite; display:inline-block; }
+    .thread-item:hover .delete-btn { opacity:1; }
+    .thread-item.active { background:#eef2ff; }
+    .thread-item.active .thread-title { color:#1a146b; font-weight:600; }
+    /* Prose in AI bubbles */
+    .ai-msg p { margin-bottom:.5rem; }
+    .ai-msg p:last-child { margin-bottom:0; }
+    .ai-msg ul { list-style:disc; padding-left:1.2rem; margin-bottom:.5rem; }
+    .ai-msg ol { list-style:decimal; padding-left:1.2rem; margin-bottom:.5rem; }
+    .ai-msg li { margin-bottom:.2rem; }
+    .ai-msg strong { font-weight:600; }
+    .ai-msg code { background:#eff4ff; border-radius:4px; padding:1px 4px; font-size:.8em; font-family:monospace; }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased">
+
+<!-- TOAST -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- SIDEBAR FRAGMENT -->
+<div id="sidebarMount"></div>
+
+<!-- HEADER -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container" aria-label="Menu">
+      <span class="msym material-symbols-outlined text-xl text-on-surface-variant">menu</span>
+    </button>
+    <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+      <span class="msym material-symbols-outlined text-base" style="font-variation-settings:'FILL' 1">smart_toy</span>
+    </div>
+    <div>
+      <h2 class="font-label-md text-label-md text-on-background leading-none">Trợ lý AI</h2>
+      <p class="font-label-sm text-label-sm text-on-surface-variant">Tư vấn học vụ &amp; định hướng</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="lg:ml-60 pt-[60px] h-screen flex flex-col overflow-hidden">
+
+  <!-- Nav tabs: Cố vấn / AI -->
+  <div class="px-4 pt-3 flex-shrink-0">
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-1 flex gap-1">
+      <a href="messaging.html"
+        class="flex-1 py-2 px-3 rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-2 text-on-surface-variant hover:bg-surface-container">
+        <span class="msym material-symbols-outlined text-base">forum</span>Cố vấn &amp; Bạn bè
+      </a>
+      <a href="ai-chat.html"
+        class="flex-1 py-2 px-3 rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-2 bg-primary text-on-primary shadow-sm">
+        <span class="msym material-symbols-outlined text-base" style="font-variation-settings:'FILL' 1">smart_toy</span>Trợ lý AI
+      </a>
+    </div>
+  </div>
+
+  <!-- Chat workspace -->
+  <div class="flex flex-1 overflow-hidden p-4 gap-0">
+    <div class="flex flex-1 rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-sm">
+
+      <!-- THREAD LIST (280px) -->
+      <aside class="w-[280px] flex-shrink-0 border-r border-outline-variant flex flex-col bg-surface">
+
+        <div class="p-md border-b border-outline-variant">
+          <div class="flex items-center justify-between mb-sm">
+            <h2 class="font-label-md text-label-md text-on-background">Lịch sử hội thoại</h2>
+            <span class="font-label-sm text-label-sm text-on-surface-variant" id="threadCountLabel">0/5 đoạn</span>
+          </div>
+          <button onclick="createNewThread()"
+            class="w-full flex items-center justify-center gap-sm bg-primary hover:bg-primary/90 text-on-primary font-label-md text-label-md py-sm rounded-lg transition-colors">
+            <span class="msym material-symbols-outlined text-base">add</span>Chat mới
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-sm space-y-xs" id="threadList">
+          <div class="flex flex-col items-center justify-center h-32 gap-2 text-on-surface-variant">
+            <span class="msym material-symbols-outlined text-2xl animate-pulse">hourglass_empty</span>
+          </div>
+        </div>
+
+        <div id="fullIndicator" class="hidden px-md pb-md">
+          <p class="font-label-sm text-label-sm text-on-surface-variant text-center bg-surface-container rounded-lg p-sm">
+            Đã đầy 5 đoạn chat. Chat mới sẽ xóa cũ nhất.
+          </p>
+        </div>
+      </aside>
+
+      <!-- CHAT AREA -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- Empty state -->
+        <div class="flex-1 flex flex-col items-center justify-center bg-background gap-md" id="emptyChatState">
+          <div class="w-16 h-16 bg-primary-container/20 rounded-2xl flex items-center justify-center">
+            <span class="msym material-symbols-outlined text-primary text-3xl" style="font-variation-settings:'FILL' 1">smart_toy</span>
+          </div>
+          <div class="text-center">
+            <p class="font-label-md text-label-md text-on-surface">AI Tư vấn học tập</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Tạo chat mới hoặc chọn đoạn chat để bắt đầu</p>
+          </div>
+          <div class="flex flex-wrap justify-center gap-sm max-w-sm">
+            <button onclick="quickStart('Gợi ý môn học kỳ sau cho tôi')"
+              class="font-label-md text-label-md text-primary bg-surface-container hover:bg-surface-variant border border-outline-variant rounded-full px-md py-xs transition-colors">
+              💡 Gợi ý môn học kỳ sau
+            </button>
+            <button onclick="quickStart('Tôi còn thiếu bao nhiêu TC để tốt nghiệp?')"
+              class="font-label-md text-label-md text-primary bg-surface-container hover:bg-surface-variant border border-outline-variant rounded-full px-md py-xs transition-colors">
+              🎓 Kiểm tra điều kiện TN
+            </button>
+            <button onclick="quickStart('Lộ trình học tập của tôi như thế nào?')"
+              class="font-label-md text-label-md text-primary bg-surface-container hover:bg-surface-variant border border-outline-variant rounded-full px-md py-xs transition-colors">
+              🗺️ Xem lộ trình học tập
+            </button>
+          </div>
+        </div>
+
+        <!-- Active chat pane -->
+        <div class="flex-1 flex flex-col hidden overflow-hidden" id="activeChatPane">
+
+          <!-- Chat header -->
+          <div class="flex items-center justify-between px-lg py-sm border-b border-outline-variant flex-shrink-0 bg-surface-container-lowest">
+            <div class="flex items-center gap-md">
+              <div class="w-8 h-8 bg-primary-container/20 rounded-xl flex items-center justify-center">
+                <span class="msym material-symbols-outlined text-primary text-base" style="font-variation-settings:'FILL' 1">smart_toy</span>
+              </div>
+              <div>
+                <p class="font-label-md text-label-md text-on-surface" id="chatThreadTitle">AI Tư vấn</p>
+                <p class="font-label-sm text-label-sm text-on-surface-variant">Powered by Gemini · Groq · GPT</p>
+              </div>
+            </div>
+            <button onclick="confirmDeleteActiveThread()" title="Xóa đoạn chat"
+              class="w-8 h-8 rounded-lg hover:bg-error-container flex items-center justify-center text-on-surface-variant hover:text-error transition-colors">
+              <span class="msym material-symbols-outlined text-base">delete</span>
+            </button>
+          </div>
+
+          <!-- Messages -->
+          <div class="flex-1 overflow-y-auto px-lg py-md space-y-md" id="chatMessages"></div>
+
+          <!-- Suggestions bar -->
+          <div id="suggestionsBar" class="hidden px-lg pb-sm flex flex-wrap gap-sm"></div>
+
+          <!-- Input bar -->
+          <div class="px-lg py-md border-t border-outline-variant flex-shrink-0 bg-surface-container-lowest">
+            <div class="relative flex items-end gap-sm bg-surface rounded-xl border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary shadow-sm p-xs transition-all">
+              <textarea autocomplete="off" id="chatInput" placeholder="Nhập câu hỏi của bạn về học vụ..."
+                rows="1"
+                class="flex-1 resize-none bg-transparent border-none focus:ring-0 font-body-md text-body-md text-on-surface p-sm placeholder:text-outline"
+                style="max-height:120px"
+                oninput="autoResizeTextarea(this)"
+                onkeydown="handleChatKey(event)"></textarea>
+              <button id="sendBtn" onclick="sendChatMessage()"
+                class="p-sm bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors mb-xs flex items-center justify-center shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="msym material-symbols-outlined" style="font-variation-settings:'FILL' 1">send</span>
+              </button>
+            </div>
+            <p class="font-label-sm text-label-sm text-on-surface-variant mt-sm text-center">
+              AI có thể mắc lỗi. Vui lòng kiểm tra lại thông tin với cố vấn học tập.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let _me = null;
+let _threads = [];
+let _activeThreadId = null;
+let _messages = [];
+let _isTyping = false;
+const MAX_THREADS = 5;
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const colors = { info:'bg-on-background', success:'bg-secondary', error:'bg-error', warning:'bg-[#f59e0b]' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto ${colors[type]||colors.info} text-on-primary font-body-sm text-body-sm px-md py-sm rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function authH() { return { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' }; }
+async function apiFetch(url, opts = {}) {
+  const r = await fetch(url, { headers: authH(), ...opts });
+  if (!r.ok) { const t = await r.json().catch(() => ({})); throw new Error(t.detail || r.status); }
+  return r.json();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  checkAuth();
+  try {
+    _me = await apiFetch('/auth/me');
+    updateTopbarUser(_me);
+    await loadThreads();
+    if (_threads.length) await selectThread(_threads[0].id);
+  } catch(e) {
+    showToast('Không thể tải dữ liệu: ' + e.message, 'error');
+  }
+}
+
+// ─── Threads ──────────────────────────────────────────────────────────────────
+async function loadThreads() {
+  _threads = await apiFetch('/chat/threads/me');
+  renderThreadList();
+}
+
+function renderThreadList() {
+  const el = document.getElementById('threadList');
+  document.getElementById('threadCountLabel').textContent = `${_threads.length}/5 đoạn`;
+  document.getElementById('fullIndicator').classList.toggle('hidden', _threads.length < MAX_THREADS);
+
+  if (!_threads.length) {
+    el.innerHTML = `<div class="flex flex-col items-center justify-center h-32 gap-sm text-on-surface-variant">
+      <span class="msym material-symbols-outlined text-2xl">chat_bubble_outline</span>
+      <p class="font-body-sm text-body-sm">Chưa có đoạn chat</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = _threads.map(t => {
+    const isActive = t.id === _activeThreadId;
+    const relTime = _relTime(t.updated_at);
+    return `<div class="thread-item group relative flex items-start gap-md p-md rounded-xl cursor-pointer transition-colors hover:bg-surface-container-low ${isActive ? 'active' : ''}"
+         onclick="selectThread('${t.id}')">
+      <div class="w-9 h-9 bg-primary-container/20 rounded-xl flex-shrink-0 flex items-center justify-center mt-xs">
+        <span class="msym material-symbols-outlined text-primary text-sm">chat</span>
+      </div>
+      <div class="flex-1 min-w-0 pr-6">
+        <p class="thread-title font-label-md text-label-md text-on-surface truncate">${escHtml(t.title || 'Đoạn chat')}</p>
+        <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">${relTime}</p>
+      </div>
+      <button onclick="event.stopPropagation();deleteThread('${t.id}')"
+        class="delete-btn opacity-0 absolute right-sm top-sm w-6 h-6 rounded-lg hover:bg-error-container flex items-center justify-center text-on-surface-variant hover:text-error transition-all">
+        <span class="msym material-symbols-outlined text-sm">delete</span>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function _relTime(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return 'vừa xong';
+  if (diff < 3600) return Math.floor(diff / 60) + ' phút trước';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' giờ trước';
+  return d.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit' });
+}
+
+async function selectThread(threadId) {
+  _activeThreadId = threadId;
+  renderThreadList();
+  showActiveChatPane();
+  const t = _threads.find(x => x.id === threadId);
+  document.getElementById('chatThreadTitle').textContent = t ? (t.title || 'Đoạn chat') : 'Đoạn chat';
+  document.getElementById('chatMessages').innerHTML = _loadingSpinner();
+  try {
+    _messages = await apiFetch(`/chat/history/me?thread_id=${encodeURIComponent(threadId)}&limit=50`);
+    renderMessages();
+    scrollToBottom();
+  } catch(e) {
+    document.getElementById('chatMessages').innerHTML = `<p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">${e.message}</p>`;
+  }
+}
+
+function showActiveChatPane() {
+  document.getElementById('emptyChatState').classList.add('hidden');
+  document.getElementById('activeChatPane').classList.remove('hidden');
+}
+
+function showEmptyState() {
+  document.getElementById('emptyChatState').classList.remove('hidden');
+  document.getElementById('activeChatPane').classList.add('hidden');
+}
+
+// ─── Create / Delete ──────────────────────────────────────────────────────────
+async function createNewThread() {
+  if (_threads.length >= MAX_THREADS) {
+    const oldest = _threads[_threads.length - 1];
+    await deleteThread(oldest.id, true);
+  }
+  const newId = 'th_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  _activeThreadId = newId;
+  _messages = [];
+  _threads.unshift({ id: newId, title: 'Đoạn chat mới', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+  renderThreadList();
+  showActiveChatPane();
+  document.getElementById('chatThreadTitle').textContent = 'Đoạn chat mới';
+  document.getElementById('chatMessages').innerHTML = `<div class="flex flex-col items-center justify-center h-full gap-md text-on-surface-variant py-xl">
+    <span class="msym material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1">smart_toy</span>
+    <p class="font-label-md text-label-md text-on-surface">Bắt đầu cuộc trò chuyện mới</p>
+    <p class="font-body-sm text-body-sm">Hỏi về gợi ý môn học, lộ trình, hay điều kiện tốt nghiệp</p>
+  </div>`;
+  document.getElementById('suggestionsBar').classList.add('hidden');
+  document.getElementById('chatInput').focus();
+}
+
+async function deleteThread(threadId, silent = false) {
+  try {
+    await apiFetch(`/chat/threads/${encodeURIComponent(threadId)}/me`, { method: 'DELETE' });
+    _threads = _threads.filter(t => t.id !== threadId);
+    if (_activeThreadId === threadId) {
+      _activeThreadId = null;
+      _messages = [];
+      if (_threads.length) {
+        await selectThread(_threads[0].id);
+      } else {
+        showEmptyState();
+        renderThreadList();
+      }
+    } else {
+      renderThreadList();
+    }
+    if (!silent) showToast('Đã xóa đoạn chat', 'info');
+  } catch(e) {
+    if (!silent) showToast('Không thể xóa: ' + e.message, 'error');
+  }
+}
+
+function confirmDeleteActiveThread() {
+  if (!_activeThreadId) return;
+  if (confirm('Xóa đoạn chat này?')) deleteThread(_activeThreadId);
+}
+
+// ─── Messages rendering ───────────────────────────────────────────────────────
+function renderMessages() {
+  const area = document.getElementById('chatMessages');
+  if (!_messages.length) {
+    area.innerHTML = `<div class="flex flex-col items-center justify-center py-xl gap-md text-on-surface-variant">
+      <span class="msym material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1">smart_toy</span>
+      <p class="font-label-md text-label-md text-on-surface">Bắt đầu đặt câu hỏi</p>
+    </div>`;
+    return;
+  }
+  let html = '';
+  let lastDate = '';
+  _messages.forEach(msg => {
+    const isUser = msg.role === 'user';
+    const d = new Date(msg.created_at);
+    const dateStr = d.toLocaleDateString('vi-VN', { weekday:'long', day:'2-digit', month:'2-digit' });
+    if (dateStr !== lastDate) {
+      html += `<div class="flex justify-center">
+        <span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-md py-xs rounded-full">${dateStr}</span>
+      </div>`;
+      lastDate = dateStr;
+    }
+    const timeStr = d.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
+    if (isUser) {
+      html += `<div class="flex gap-md max-w-3xl self-end flex-row-reverse ml-auto fade-in">
+        <div class="w-10 h-10 rounded-full bg-surface-variant text-primary flex items-center justify-center shrink-0 mt-xs">
+          <span class="msym material-symbols-outlined text-xl">person</span>
+        </div>
+        <div>
+          <div class="bg-primary text-on-primary rounded-2xl rounded-tr-none px-lg py-md shadow-sm">
+            <p class="font-body-md text-body-md whitespace-pre-wrap">${escHtml(msg.message)}</p>
+          </div>
+          <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs text-right mr-xs">${timeStr}</p>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="flex gap-md max-w-3xl fade-in">
+        <div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 mt-xs">
+          <span class="msym material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">smart_toy</span>
+        </div>
+        <div>
+          <div class="bg-surface-container-low border border-outline-variant rounded-2xl rounded-tl-none px-lg py-md shadow-sm">
+            <div class="font-body-md text-body-md text-on-surface ai-msg">${formatAiMessage(msg.message)}</div>
+          </div>
+          <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs ml-xs">${timeStr}</p>
+        </div>
+      </div>`;
+    }
+  });
+  area.innerHTML = html;
+}
+
+function formatAiMessage(text) {
+  return escHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br/>')
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>');
+}
+
+function _loadingSpinner() {
+  return `<div class="flex items-center justify-center py-xl text-on-surface-variant">
+    <span class="msym material-symbols-outlined text-2xl animate-spin">progress_activity</span>
+  </div>`;
+}
+
+function showTypingIndicator() {
+  const area = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.id = 'typingIndicator';
+  el.className = 'flex gap-md fade-in';
+  el.innerHTML = `<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 mt-xs">
+    <span class="msym material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">smart_toy</span>
+  </div>
+  <div class="bg-surface-container-low border border-outline-variant rounded-2xl rounded-tl-none px-lg py-md shadow-sm">
+    <div class="flex gap-xs items-center h-4">
+      <span class="dot-bounce"></span><span class="dot-bounce"></span><span class="dot-bounce"></span>
+    </div>
+  </div>`;
+  area.appendChild(el);
+  scrollToBottom();
+}
+
+function removeTypingIndicator() { document.getElementById('typingIndicator')?.remove(); }
+
+// ─── Send message ─────────────────────────────────────────────────────────────
+async function sendChatMessage() {
+  if (_isTyping) return;
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = '';
+  input.style.height = '';
+  if (!_activeThreadId) await createNewThread();
+
+  const bar = document.getElementById('suggestionsBar');
+  bar.classList.add('hidden');
+  bar.innerHTML = '';
+
+  const now = new Date().toISOString();
+  _messages.push({ id: 'u_' + Date.now(), role: 'user', message, created_at: now });
+  renderMessages();
+  scrollToBottom();
+
+  _isTyping = true;
+  document.getElementById('sendBtn').disabled = true;
+  showTypingIndicator();
+  scrollToBottom();
+
+  try {
+    const res = await apiFetch('/chat/me', {
+      method: 'POST',
+      body: JSON.stringify({ message, thread_id: _activeThreadId, limit: 8, prefer_llm: true }),
+    });
+    removeTypingIndicator();
+    _messages.push({ id: 'a_' + Date.now(), role: 'assistant', message: res.answer, created_at: new Date().toISOString() });
+
+    const t = _threads.find(x => x.id === _activeThreadId);
+    if (t && (t.title === 'Đoạn chat mới' || !t.title)) {
+      t.title = message.slice(0, 30) + (message.length > 30 ? '…' : '');
+      document.getElementById('chatThreadTitle').textContent = t.title;
+      renderThreadList();
+    }
+    if (t) t.updated_at = new Date().toISOString();
+
+    renderMessages();
+    scrollToBottom();
+
+    if (res.suggestions && res.suggestions.length) {
+      bar.innerHTML = res.suggestions.map(s =>
+        `<button onclick="sendSuggestion('${escAttr(s)}')"
+          class="font-label-md text-label-md text-primary bg-surface-container hover:bg-surface-variant border border-outline-variant rounded-full px-md py-xs transition-colors">${escHtml(s)}</button>`
+      ).join('');
+      bar.classList.remove('hidden');
+    }
+  } catch(e) {
+    removeTypingIndicator();
+    _messages.push({ id: 'err_' + Date.now(), role: 'assistant', message: '⚠️ ' + e.message, created_at: new Date().toISOString() });
+    renderMessages();
+    showToast('Lỗi khi gửi tin nhắn', 'error');
+  } finally {
+    _isTyping = false;
+    document.getElementById('sendBtn').disabled = false;
+    scrollToBottom();
+  }
+}
+
+async function sendSuggestion(text) {
+  document.getElementById('chatInput').value = text;
+  await sendChatMessage();
+}
+
+async function quickStart(text) {
+  await createNewThread();
+  document.getElementById('chatInput').value = text;
+  await sendChatMessage();
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+function scrollToBottom() {
+  const area = document.getElementById('chatMessages');
+  requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s) {
+  return String(s).replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

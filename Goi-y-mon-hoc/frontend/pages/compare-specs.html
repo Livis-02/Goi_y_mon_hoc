@@ -1,0 +1,496 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — So sánh chuyên ngành</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.15s; animation-timing-function: ease-out; }
+    #sidebarMount, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+  </style>
+  <script>
+    tailwind.config = { darkMode:'class', theme:{ extend:{ colors:{
+      primary:'#1a146b','on-surface':'#0f172a',outline:'#94a3b8',
+    }}}}
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<!-- Tailwind safelist (dynamic colors used by JS) -->
+<div class="hidden" aria-hidden="true">
+  <span class="bg-[#eef2ff] bg-[#e5eeff] text-[#1a146b] text-[#1a146b] border-indigo-200 from-indigo-500 to-indigo-600"></span>
+  <span class="bg-sky-50 bg-sky-100 text-sky-600 text-sky-700 border-sky-200 from-sky-500 to-sky-600"></span>
+  <span class="bg-[#dcfce7] bg-emerald-100 text-[#006c49] text-emerald-700 border-[#86efac] from-emerald-500 to-emerald-600"></span>
+  <span class="bg-violet-50 bg-violet-100 text-violet-600 text-violet-700 border-violet-200 from-violet-500 to-violet-600"></span>
+  <span class="bg-amber-50 bg-amber-100 text-amber-600 text-amber-700 border-amber-200 from-amber-500 to-amber-600"></span>
+  <span class="bg-teal-50 bg-teal-100 text-teal-600 text-teal-700 border-teal-200 from-teal-500 to-teal-600"></span>
+</div>
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+<div id="sidebarMount"></div>
+
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d] truncate">So sánh chuyên ngành</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-6xl mx-auto space-y-5">
+
+    <!-- Hero -->
+    <div class="bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl text-white p-6 shadow-md">
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined msym text-3xl text-white" style="font-variation-settings:'FILL' 1">schema</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] uppercase tracking-wider text-violet-100 font-bold">Chuẩn bị chọn chuyên ngành</p>
+          <h1 class="text-xl lg:text-2xl font-bold mt-1">6 chuyên ngành CNTT 7480201</h1>
+          <p class="text-sm text-violet-100 mt-1">SV năm 1-2 học chung 117 TC. Đến HK5-HK6 phải chốt 1 trong 6 hướng cho 40 TC còn lại.</p>
+        </div>
+        <div id="hubMyChoice" class="hidden bg-white/15 rounded-xl px-3 py-2 text-right flex-shrink-0">
+          <p class="text-[10px] uppercase tracking-wider text-violet-100 font-bold">Đã chọn</p>
+          <p class="text-sm font-bold" id="hubChoiceName">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="csLoading" class="space-y-3">
+      <div class="bg-[#ffffff] rounded-2xl p-6 border border-[#c8c5d3] animate-pulse h-40"></div>
+      <div class="bg-[#ffffff] rounded-2xl p-6 border border-[#c8c5d3] animate-pulse h-64"></div>
+    </div>
+
+    <!-- Content -->
+    <div id="csContent" class="hidden space-y-5 fade-in">
+
+      <!-- Read-only notice — bỏ misleading CTA "Đặt làm CN" -->
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+        <span class="material-symbols-outlined msym text-amber-500 text-base flex-shrink-0 mt-0.5">info</span>
+        <p class="text-xs text-amber-800">
+          Trang này chỉ để <strong>tham khảo</strong>. Chuyên ngành do nhà trường phân công vào năm 3 dựa trên điểm + nguyện vọng.
+          Click bất kỳ tên môn nào để xem chi tiết môn học.
+        </p>
+      </div>
+
+      <!-- View toggle: Bảng so sánh / Thẻ chi tiết -->
+      <div class="bg-white rounded-xl border border-[#c8c5d3] shadow-sm p-1 inline-flex gap-1">
+        <button data-view="matrix" onclick="_setCsView('matrix')"
+          class="cs-view-btn flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-colors bg-[#1a146b] text-white shadow-sm">
+          <span class="material-symbols-outlined msym text-base">table_view</span>Bảng so sánh
+        </button>
+        <button data-view="cards" onclick="_setCsView('cards')"
+          class="cs-view-btn flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-colors text-[#474651] hover:bg-[#eef2ff]">
+          <span class="material-symbols-outlined msym text-base">view_module</span>Thẻ chi tiết
+        </button>
+      </div>
+
+      <!-- Matrix view (default) -->
+      <div id="csMatrixView" class="overflow-x-auto rounded-2xl border border-[#c8c5d3] bg-white shadow-sm"></div>
+
+      <!-- Cards view (toggle) -->
+      <div id="csCardsView" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+      <!-- Footer note -->
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+        <span class="material-symbols-outlined msym text-amber-500 text-2xl flex-shrink-0 mt-0.5">info</span>
+        <div class="text-sm text-amber-800">
+          <p class="font-semibold mb-1">Việc chọn CN không quyết định bởi SV trên hệ thống này</p>
+          <p class="text-xs">Trang này giúp em <strong>tìm hiểu</strong> 6 hướng. Quyết định CN cuối cùng do nhà trường + cố vấn xét theo điểm năm 1-2 và nguyện vọng.
+            Nếu hệ thống đang hiển thị CN mặc định khác mong muốn, hãy <a class="underline font-semibold" href="messaging.html">trao đổi với cố vấn</a>.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Modal removed (Phase 18.1) — môn click thẳng sang course-detail -->
+
+<script src="floating-chat.js"></script>
+<script>
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:8000' : window.location.origin;
+function H(extra={}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+function escHtml(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+function showToast(msg, type='info') {
+  const cls = { success:'bg-[#dcfce7]0', error:'bg-[#ba1a1a]', warning:'bg-amber-500', info:'bg-[#eef2ff]0' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto px-4 py-2.5 ${cls[type]||cls.info} text-white text-sm font-medium rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+let _data = null;
+let _currentSpec = null;
+let _activeDetailCode = null;
+
+checkAuth();
+
+(async function init() {
+  try {
+    const ur = await fetch(`${API}/auth/me`, { headers: H() });
+    if (ur.ok) {
+      const u = await ur.json();
+      updateTopbarUser(u);
+      const sb = document.getElementById('sidebarUserName');
+      if (sb) sb.textContent = u.full_name || u.username || '';
+    }
+  } catch {}
+
+  await _loadData();
+})();
+
+async function _loadData() {
+  try {
+    const r = await fetch(`${API}/specs/compare`, { headers: H() });
+    if (!r.ok) {
+      showToast('Lỗi tải dữ liệu', 'error');
+      return;
+    }
+    _data = await r.json();
+    _currentSpec = _data.current_spec;
+    document.getElementById('csLoading').classList.add('hidden');
+    document.getElementById('csContent').classList.remove('hidden');
+    if (_currentSpec) {
+      const cur = _data.specs.find(s => s.code === _currentSpec);
+      if (cur) {
+        document.getElementById('hubMyChoice').classList.remove('hidden');
+        document.getElementById('hubChoiceName').textContent = cur.short_name + ' · ' + cur.name;
+      }
+    }
+    _renderMatrix();
+    _renderCards();
+  } catch (e) {
+    showToast('Lỗi: ' + e.message, 'error');
+  }
+}
+
+// ── View toggle: matrix ↔ cards ────────────────────────────────────────────
+let _csView = 'matrix';
+function _setCsView(view) {
+  _csView = view;
+  document.querySelectorAll('.cs-view-btn').forEach(b => {
+    const active = b.dataset.view === view;
+    b.classList.toggle('bg-[#1a146b]', active);
+    b.classList.toggle('text-white', active);
+    b.classList.toggle('shadow-sm', active);
+    b.classList.toggle('text-[#474651]', !active);
+    b.classList.toggle('hover:bg-[#eef2ff]', !active);
+  });
+  document.getElementById('csMatrixView').classList.toggle('hidden', view !== 'matrix');
+  document.getElementById('csCardsView').classList.toggle('hidden', view !== 'cards');
+}
+
+// ── Color mapping (avoid Tailwind dynamic color JIT issue) ─────────────────
+const SPEC_HEX = {
+  indigo:  { soft:'#eef2ff', solid:'#6366f1', dark:'#4338ca', light:'#f8f9ff' },
+  sky:     { soft:'#e0f2fe', solid:'#0ea5e9', dark:'#0369a1', light:'#f8fcff' },
+  emerald: { soft:'#d1fae5', solid:'#10b981', dark:'#047857', light:'#f5fdf8' },
+  violet:  { soft:'#ede9fe', solid:'#8b5cf6', dark:'#6d28d9', light:'#f9f7ff' },
+  amber:   { soft:'#fef3c7', solid:'#f59e0b', dark:'#b45309', light:'#fffdf5' },
+  teal:    { soft:'#ccfbf1', solid:'#14b8a6', dark:'#0f766e', light:'#f5fdfa' },
+};
+function _hex(color) { return SPEC_HEX[color] || SPEC_HEX.indigo; }
+
+// ── Matrix view (table-style 7-col grid) ───────────────────────────────────
+function _renderMatrix() {
+  const wrap = document.getElementById('csMatrixView');
+  const specs = _data.specs || [];
+  if (!specs.length) { wrap.innerHTML = '<p class="p-6 text-center text-sm text-[#777682]">Chưa có dữ liệu</p>'; return; }
+
+  // Compute global salary range for relative bar widths
+  const maxSalary = Math.max(...specs.map(s => s.salary_range?.max || 0)) || 30;
+
+  // Grid: label col 140px + 6 spec cols min 160px
+  const gridStyle = `grid-template-columns: 140px repeat(${specs.length}, minmax(170px, 1fr)); min-width: ${140 + specs.length * 170}px;`;
+
+  // Build header row
+  const headerCells = specs.map(s => {
+    const c = _hex(s.color);
+    const isCur = s.code === _currentSpec;
+    return `<div class="p-3 border-l border-[#e2e8f0] text-center relative" style="background:${isCur ? c.soft : '#fff'}">
+      <div class="absolute top-0 left-0 right-0 h-1" style="background:${c.solid}"></div>
+      <div class="w-10 h-10 mx-auto rounded-xl flex items-center justify-center" style="background:${c.solid}">
+        <span class="material-symbols-outlined msym text-white text-xl" style="font-variation-settings:'FILL' 1">${escHtml(s.icon)}</span>
+      </div>
+      <p class="text-sm font-bold mt-2 leading-tight" style="color:${c.dark}">${escHtml(s.short_name)}</p>
+      <p class="text-[10px] text-[#777682] mt-0.5 line-clamp-2" title="${escHtml(s.name)}">${escHtml(s.name)}</p>
+      ${isCur ? `<span class="inline-block mt-1.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style="background:${c.solid};color:#fff">Đã chọn</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // Row builder: label cell + 6 spec cells
+  const row = (label, cells, opts={}) => {
+    const labelCls = opts.alt ? 'bg-[#f8f9ff]' : 'bg-[#eff4ff]';
+    return `<div class="p-3 border-t border-[#e2e8f0] ${labelCls} text-[11px] font-bold text-[#474651] uppercase tracking-wider flex items-center">
+      ${label}
+    </div>${cells.map((html, i) => {
+      const isCur = specs[i].code === _currentSpec;
+      const bg = isCur ? _hex(specs[i].color).light : (opts.alt ? '#fafbff' : '#fff');
+      return `<div class="p-3 border-t border-l border-[#e2e8f0] text-xs text-[#0b1c30]" style="background:${bg}">${html}</div>`;
+    }).join('')}`;
+  };
+
+  // Row 1: Tagline
+  const taglines = specs.map(s => `<p class="leading-snug">${escHtml(s.tagline || '')}</p>`);
+
+  // Row 2: TC bắt buộc CN
+  const credits = specs.map(s =>
+    `<p class="text-base font-extrabold" style="color:${_hex(s.color).dark}">${s.compulsory_credits || 0} <span class="text-[10px] text-[#777682] font-normal">TC</span></p>`
+  );
+
+  // Row 3: Môn cốt lõi (chips)
+  const coreTopics = specs.map(s => {
+    const tops = (s.core_topics || []).slice(0, 3);
+    if (!tops.length) return '<span class="text-[#c8c5d3] italic text-[10px]">—</span>';
+    return `<div class="flex flex-wrap gap-1">${tops.map(t =>
+      `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#eff4ff] text-[#1a146b] border border-[#c8c5d3] truncate max-w-full" title="${escHtml(t)}">${escHtml(t)}</span>`
+    ).join('')}</div>`;
+  });
+
+  // Row 4: Skill nổi bật (top 3 + mini bars)
+  const skills = specs.map(s => {
+    const tops = (s.top_skills || []).slice(0, 3);
+    const c = _hex(s.color);
+    if (!tops.length) return '<span class="text-[#c8c5d3] italic text-[10px]">—</span>';
+    return `<div class="space-y-1.5">${tops.map(sk => `
+      <div>
+        <div class="flex justify-between items-baseline gap-1 text-[10px]">
+          <span class="truncate" title="${escHtml(sk.name)}">${escHtml(sk.name)}</span>
+          <span class="text-[9px] text-[#777682] flex-shrink-0">${Math.round(sk.percent)}%</span>
+        </div>
+        <div class="h-1 bg-[#e5eeff] rounded-full overflow-hidden mt-0.5">
+          <div class="h-full rounded-full" style="background:${c.solid};width:${sk.percent}%"></div>
+        </div>
+      </div>`).join('')}</div>`;
+  });
+
+  // Row 5: Vai trò nghề (chips)
+  const careers = specs.map(s => {
+    const c = _hex(s.color);
+    const list = (s.fit_keywords || []).slice(0, 3);
+    if (!list.length) return '<span class="text-[#c8c5d3] italic text-[10px]">—</span>';
+    return `<div class="flex flex-wrap gap-1">${list.map(k =>
+      `<span class="text-[10px] px-1.5 py-0.5 rounded-full" style="background:${c.soft};color:${c.dark}">${escHtml(k)}</span>`
+    ).join('')}</div>`;
+  });
+
+  // Row 6: Lương khởi điểm (range + mini bar)
+  const salaries = specs.map(s => {
+    const sr = s.salary_range;
+    const c = _hex(s.color);
+    if (!sr) return '<span class="text-[#c8c5d3] italic text-[10px]">—</span>';
+    const pct = Math.min(100, (sr.max / maxSalary) * 100);
+    return `<div>
+      <p class="text-xs font-bold" style="color:${c.dark}">${sr.min}–${sr.max} <span class="text-[9px] text-[#777682] font-normal">triệu/tháng</span></p>
+      <div class="h-1.5 bg-[#e5eeff] rounded-full overflow-hidden mt-1">
+        <div class="h-full rounded-full" style="background:${c.solid};width:${pct}%"></div>
+      </div>
+    </div>`;
+  });
+
+  // Row 7: Pool tự chọn
+  const pools = specs.map(s =>
+    `<p class="text-[11px]"><span class="font-bold text-violet-700">${(s.elective_b?.courses || []).length}</span> môn nhóm B<br/>
+     <span class="font-bold text-amber-700">${(s.elective_c?.courses || []).length}</span> môn nhóm C</p>`
+  );
+
+  wrap.innerHTML = `
+    <div class="grid" style="${gridStyle}">
+      <!-- Header -->
+      <div class="p-3 bg-[#0b1c30] text-white text-[11px] font-bold uppercase tracking-wider flex items-end">
+        Tiêu chí so sánh
+      </div>
+      ${headerCells}
+      <!-- Body rows -->
+      ${row('Mô tả ngắn', taglines)}
+      ${row('TC bắt buộc', credits, { alt: true })}
+      ${row('Môn cốt lõi', coreTopics)}
+      ${row('Skill nổi bật', skills, { alt: true })}
+      ${row('Vai trò nghề', careers)}
+      ${row('Lương khởi điểm', salaries, { alt: true })}
+      ${row('Tự chọn', pools)}
+    </div>
+  `;
+}
+
+function _renderCards() {
+  const wrap = document.getElementById('csCardsView');
+  wrap.innerHTML = (_data.specs || []).map(s => {
+    const isCurrent = s.code === _currentSpec;
+    const c = s.color;
+    return `<div class="bg-[#ffffff] rounded-2xl border-2 ${isCurrent ? 'border-' + c + '-500' : 'border-[#c8c5d3]'} overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+      <div class="bg-gradient-to-br from-${c}-500 to-${c}-600 text-white p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined msym text-2xl text-white" style="font-variation-settings:'FILL' 1">${escHtml(s.icon)}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[10px] uppercase tracking-wider text-white/80 font-bold">${escHtml(s.short_name)} · ${escHtml(s.code)}</p>
+            <p class="text-base font-bold leading-tight">${escHtml(s.name)}</p>
+            <p class="text-xs text-white/90 mt-1 line-clamp-2">${escHtml(s.tagline || '')}</p>
+          </div>
+          ${isCurrent ? '<span class="material-symbols-outlined msym text-xl flex-shrink-0" style="font-variation-settings:&#39;FILL&#39; 1">check_circle</span>' : ''}
+        </div>
+      </div>
+      <div class="p-5 space-y-3">
+        <!-- Môn cốt lõi (4 BB) -->
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-wider text-[#777682] mb-1.5">Môn cốt lõi (HK7-HK8)</p>
+          <ul class="space-y-1">
+            ${(s.compulsory_courses || []).slice(0, 4).map(co => `
+              <li class="flex items-start gap-1.5 text-xs">
+                <span class="material-symbols-outlined msym text-[14px] text-${c}-500 mt-0.5 flex-shrink-0">check_circle</span>
+                <span class="text-[#0b1c30]">${escHtml(co.course_name)}</span>
+              </li>`).join('') || '<li class="text-xs text-[#777682] italic">—</li>'}
+          </ul>
+        </div>
+
+        <!-- Top skills emphasis (visual bar) -->
+        ${(s.top_skills && s.top_skills.length) ? `
+        <div class="pt-2 border-t border-[#c8c5d3]">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-[#777682] mb-1.5">Skill nổi bật</p>
+          <div class="space-y-1">
+            ${s.top_skills.slice(0, 4).map(sk => `
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] text-[#0b1c30] w-32 truncate flex-shrink-0" title="${escHtml(sk.name)}">${escHtml(sk.name)}</span>
+                <div class="flex-1 h-1.5 bg-[#e5eeff] rounded-full overflow-hidden">
+                  <div class="h-full bg-${c}-500 rounded-full" style="width:${sk.percent}%"></div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+
+        <!-- Hợp nghề -->
+        <div class="pt-2 border-t border-[#c8c5d3]">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-[#777682] mb-1.5">Vai trò công việc</p>
+          <div class="flex flex-wrap gap-1">
+            ${(s.fit_keywords || []).map(k => `<span class="text-[10px] bg-${c}-50 text-${c}-700 border border-${c}-200 rounded-full px-2 py-0.5">${escHtml(k)}</span>`).join('')}
+          </div>
+        </div>
+
+        <!-- Stats footer -->
+        <div class="pt-2 border-t border-[#c8c5d3] flex items-center justify-between text-[11px] text-[#474651]">
+          <span>${s.compulsory_credits} TC bắt buộc</span>
+          <span>+${s.elective_b.courses.length} TC-B / ${s.elective_c.courses.length} TC-C</span>
+        </div>
+
+        <button onclick="_toggleCardExpand('${escHtml(s.code)}', this)"
+          class="w-full mt-1 px-3 py-2 bg-${c}-50 hover:bg-${c}-100 text-${c}-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition-colors">
+          <span class="material-symbols-outlined msym text-base" data-icon>expand_more</span><span data-label>Xem tất cả môn</span>
+        </button>
+
+        <!-- Expanded section: full course list (hidden by default) -->
+        <div id="csExpand-${escHtml(s.code)}" class="hidden mt-2 pt-3 border-t border-[#c8c5d3] space-y-3">
+          <!-- Internship + Thesis -->
+          ${(s.internship || s.thesis) ? `
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-[#006c49] mb-1.5">Tốt nghiệp · 20 TC</p>
+            <div class="space-y-1">
+              ${s.internship ? _csRowCourse(s.internship) : ''}
+              ${s.thesis ? _csRowCourse(s.thesis) : ''}
+            </div>
+          </div>` : ''}
+          <!-- TC-B pool -->
+          ${(s.elective_b.courses || []).length ? `
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-violet-600 mb-1.5">Tự chọn nhóm B (≥9 TC) — ${s.elective_b.courses.length} môn pool</p>
+            <div class="space-y-1">
+              ${s.elective_b.courses.map(_csRowCourse).join('')}
+            </div>
+          </div>` : ''}
+          <!-- TC-C pool -->
+          ${(s.elective_c.courses || []).length ? `
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-1.5">Tự chọn nhóm C (≥9 TC) — ${s.elective_c.courses.length} môn pool</p>
+            <div class="space-y-1">
+              ${s.elective_c.courses.map(_csRowCourse).join('')}
+            </div>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _csRowCourse(co) {
+  return `<a href="course-detail.html?code=${encodeURIComponent(co.course_code)}"
+    class="block px-2 py-1.5 bg-[#eff4ff] hover:bg-[#eef2ff] transition-colors rounded text-xs flex items-center gap-2">
+    <span class="font-mono font-bold text-[#1a146b] flex-shrink-0">${escHtml(co.course_code)}</span>
+    <span class="flex-1 text-[#0b1c30] truncate">${escHtml(co.course_name || '')}</span>
+    <span class="text-[10px] text-[#777682]">${co.credits || '?'} TC</span>
+    ${co.typical_semester ? `<span class="text-[10px] text-[#777682]">HK${co.typical_semester}</span>` : ''}
+  </a>`;
+}
+
+function _toggleCardExpand(code, btn) {
+  const wrap = document.getElementById('csExpand-' + code);
+  if (!wrap) return;
+  const open = !wrap.classList.contains('hidden');
+  wrap.classList.toggle('hidden');
+  const icon = btn.querySelector('[data-icon]');
+  const label = btn.querySelector('[data-label]');
+  if (icon) icon.textContent = open ? 'expand_more' : 'expand_less';
+  if (label) label.textContent = open ? 'Xem tất cả môn' : 'Thu gọn';
+}
+
+// _renderMatrix, _openCsDetail, _closeCsDetail, _csChooseCurrent removed (Phase 18.1)
+
+</script>
+</body>
+</html>
+
+

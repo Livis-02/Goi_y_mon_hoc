@@ -1,0 +1,878 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Mục tiêu & Mô phỏng</title>
+  <style>
+    /* Critical baseline — matches Tailwind bg-[#eff4ff] / text-[#0b1c30] */
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+  </style>
+  
+  <!-- Smooth page transitions (Chrome 111+, Safari 18+) -->
+  <style>
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) {
+      animation-duration: 0.15s;
+      animation-timing-function: ease-out;
+    }
+    /* Keep sidebar + header stable across transitions (no fade on persistent UI) */
+    #sidebarMount, #sidebarDrawer, #adminSidebar, #adminSidebarMount, header {
+      view-transition-name: none;
+    }
+  </style>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <script defer src="floating-chat.js"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
+    .fade-in { animation: fadeIn .25s ease-out both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+    .diff-easy      { background:#ecfdf5; color:#065f46; border-color:#6ee7b7; }
+    .diff-moderate  { background:#eff6ff; color:#1e40af; border-color:#93c5fd; }
+    .diff-hard      { background:#fffbeb; color:#92400e; border-color:#fcd34d; }
+    .diff-very_hard { background:#fef2f2; color:#b91c1c; border-color:#fca5a5; }
+    .diff-impossible{ background:#18181b; color:#fff; border-color:#18181b; }
+    .ring-indigo  { box-shadow: 0 0 0 3px rgba(79,70,229,.15); border-color:#312e81; }
+    .ring-sky     { box-shadow: 0 0 0 3px rgba(14,165,233,.15); border-color:#0ea5e9; }
+    .ring-emerald { box-shadow: 0 0 0 3px rgba(16,185,129,.15); border-color:#10b981; }
+    .ring-purple  { box-shadow: 0 0 0 3px rgba(168,85,247,.15); border-color:#a855f7; }
+    .ring-amber   { box-shadow: 0 0 0 3px rgba(245,158,11,.15); border-color:#f59e0b; }
+    .ring-red     { box-shadow: 0 0 0 3px rgba(239,68,68,.15); border-color:#ef4444; }
+    .ring-teal    { box-shadow: 0 0 0 3px rgba(20,184,166,.15); border-color:#14b8a6; }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{ colors:{
+        primary:'#1a146b','on-surface':'#0f172a','outline-variant':'#e2e8f0',surface:'#f8fafc',outline:'#94a3b8',
+      }}}
+    }
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+<div id="sidebarMount"></div>
+
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d]">Mục tiêu &amp; Mô phỏng</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 space-y-5 max-w-6xl mx-auto">
+
+    <!-- Group nav bar (shared with roadmap.html, readiness.html) -->
+    <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] shadow-sm p-1 flex gap-1 overflow-x-auto">
+      <a href="roadmap.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+        <span class="material-symbols-outlined msym text-base">route</span>Kế hoạch học tập
+      </a>
+      <a href="goals.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 bg-[#1a146b] text-white shadow-sm">
+        <span class="material-symbols-outlined msym text-base">my_location</span>Mục tiêu &amp; Mô phỏng
+      </a>
+      <a href="readiness.html" class="flex-1 min-w-[140px] py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+        <span class="material-symbols-outlined msym text-base">workspace_premium</span>Sẵn sàng tốt nghiệp
+      </a>
+    </div>
+
+    <!-- HERO -->
+    <div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl text-white p-6 shadow-lg">
+      <div class="flex items-start gap-4 flex-wrap">
+        <div class="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined msym text-3xl text-white">my_location</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs uppercase tracking-wider text-indigo-100">Mục tiêu học tập</p>
+          <h1 class="text-xl lg:text-2xl font-bold mt-1">Đặt mục tiêu &amp; Mô phỏng GPA</h1>
+          <p class="text-sm text-indigo-100 mt-1">Biết mình cần đạt gì ở kỳ tới và GPA dự kiến lúc tốt nghiệp.</p>
+        </div>
+        <div id="heroMiniStats" class="flex items-center gap-4 text-right">
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-indigo-200">GPA hiện tại</p>
+            <p class="text-2xl font-extrabold" id="heroCurGpa">—</p>
+          </div>
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-indigo-200">TC tích lũy</p>
+            <p class="text-2xl font-extrabold" id="heroCurTc">—</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB BAR -->
+    <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] shadow-sm p-1 flex gap-1">
+      <button data-tab="target" onclick="switchGoalsTab('target')"
+        class="goals-tab flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+        <span class="material-symbols-outlined msym text-base">flag</span>Mục tiêu GPA
+      </button>
+      <button data-tab="simulator" onclick="switchGoalsTab('simulator')"
+        class="goals-tab flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-[#474651] hover:bg-[#eef2ff]">
+        <span class="material-symbols-outlined msym text-base">science</span>Mô phỏng GPA dự kiến TN
+      </button>
+    </div>
+
+    <!-- TAB 1: TARGET GPA -->
+    <section id="goalsTab-target" class="space-y-4">
+      <div class="bg-[#ffffff] rounded-2xl border border-[#c8c5d3] shadow-sm p-6">
+        <p class="text-sm font-bold text-[#0b1c30] mb-1">Bạn muốn tốt nghiệp với xếp loại nào?</p>
+        <p class="text-xs text-[#474651] mb-4">Chọn target GPA → hệ thống tính điểm TB cần đạt cho các kỳ còn lại.</p>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="targetButtons">
+          <button data-target="3.6" onclick="_pickTarget(this)"
+            class="target-opt border-2 border-[#c8c5d3] rounded-xl p-3 text-left hover:border-[#1a146b] transition-all">
+            <p class="text-[10px] font-bold text-[#777682] uppercase">Xuất sắc</p>
+            <p class="text-xl font-extrabold text-[#0b1c30]">≥ 3.6</p>
+            <p class="text-[10px] text-[#777682] mt-1">GPA hệ 4</p>
+          </button>
+          <button data-target="3.2" onclick="_pickTarget(this)"
+            class="target-opt border-2 border-[#c8c5d3] rounded-xl p-3 text-left hover:border-[#1a146b] transition-all">
+            <p class="text-[10px] font-bold text-[#777682] uppercase">Giỏi</p>
+            <p class="text-xl font-extrabold text-[#0b1c30]">≥ 3.2</p>
+            <p class="text-[10px] text-[#777682] mt-1">GPA hệ 4</p>
+          </button>
+          <button data-target="2.5" onclick="_pickTarget(this)"
+            class="target-opt border-2 border-[#c8c5d3] rounded-xl p-3 text-left hover:border-[#1a146b] transition-all">
+            <p class="text-[10px] font-bold text-[#777682] uppercase">Khá</p>
+            <p class="text-xl font-extrabold text-[#0b1c30]">≥ 2.5</p>
+            <p class="text-[10px] text-[#777682] mt-1">GPA hệ 4</p>
+          </button>
+          <button data-target="2.0" onclick="_pickTarget(this)"
+            class="target-opt border-2 border-[#c8c5d3] rounded-xl p-3 text-left hover:border-[#1a146b] transition-all">
+            <p class="text-[10px] font-bold text-[#777682] uppercase">Đạt</p>
+            <p class="text-xl font-extrabold text-[#0b1c30]">≥ 2.0</p>
+            <p class="text-[10px] text-[#777682] mt-1">GPA hệ 4</p>
+          </button>
+        </div>
+
+        <div class="mt-4 flex items-center gap-3 flex-wrap">
+          <label class="text-xs text-[#474651]">Hoặc nhập GPA tùy chỉnh:</label>
+          <input id="customTargetInput" type="number" min="0" max="4" step="0.1"
+            placeholder="VD: 3.4"
+            class="w-24 border border-[#c8c5d3] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"/>
+          <button onclick="_computeCustomTarget()"
+            class="px-3 py-1.5 bg-[#1a146b] hover:bg-[#312e81] text-white text-xs font-bold rounded-lg transition-colors">
+            Tính toán
+          </button>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div id="targetResult" class="hidden"></div>
+    </section>
+
+    <!-- TAB 2: SIMULATOR -->
+    <section id="goalsTab-simulator" class="hidden">
+      <div class="grid lg:grid-cols-3 gap-4 lg:gap-5">
+
+        <!-- LEFT: Form (col-span-2) -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="bg-[#ffffff] rounded-2xl border border-[#c8c5d3] shadow-sm p-5 lg:p-6">
+            <div class="flex items-start justify-between gap-3 flex-wrap mb-4">
+              <div>
+                <p class="text-sm font-bold text-[#0b1c30] mb-1">Mô phỏng điểm các kỳ tới</p>
+                <p class="text-xs text-[#474651]">Kéo thanh trượt hoặc gõ điểm dự kiến → xem GPA tích lũy & xếp loại TN dự kiến.</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] text-[#777682]" id="simSourceLabel">Nguồn: lộ trình</p>
+                <p class="text-sm font-bold text-[#1a146b]"><span id="simTermsCount">0</span> kỳ · <span id="simAllCredits">0</span> TC</p>
+              </div>
+            </div>
+
+            <!-- Scope selector -->
+            <div class="bg-[#eff4ff] rounded-xl p-3 mb-4 flex items-center gap-3 flex-wrap">
+              <span class="text-[11px] font-bold text-[#474651] uppercase tracking-wider">Phạm vi mô phỏng:</span>
+              <div class="flex gap-1 flex-wrap" id="simScopeButtons">
+                <button data-scope="1" onclick="_simSetScope(1)"
+                  class="sim-scope-btn px-3 py-1.5 bg-[#1a146b] text-white rounded-lg text-xs font-semibold">Kỳ tới</button>
+                <button data-scope="2" onclick="_simSetScope(2)"
+                  class="sim-scope-btn px-3 py-1.5 bg-white border border-[#c8c5d3] text-[#474651] rounded-lg text-xs font-semibold hover:bg-[#eef2ff]">2 kỳ tới</button>
+                <button data-scope="3" onclick="_simSetScope(3)"
+                  class="sim-scope-btn px-3 py-1.5 bg-white border border-[#c8c5d3] text-[#474651] rounded-lg text-xs font-semibold hover:bg-[#eef2ff]">3 kỳ tới</button>
+                <button data-scope="all" onclick="_simSetScope('all')"
+                  class="sim-scope-btn px-3 py-1.5 bg-white border border-[#c8c5d3] text-[#474651] rounded-lg text-xs font-semibold hover:bg-[#eef2ff]">Đến lúc TN</button>
+              </div>
+            </div>
+
+            <div id="simCoursesWrap" class="space-y-3">
+              <div class="flex items-center gap-2 text-sm text-[#777682] py-8 justify-center">
+                <span class="material-symbols-outlined msym spin">progress_activity</span>
+                Đang tải danh sách môn...
+              </div>
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-[#c8c5d3] flex items-center gap-2 flex-wrap">
+              <span class="text-[11px] font-bold text-[#474651] uppercase tracking-wider mr-1">Đặt nhanh:</span>
+              <button onclick="_simFillAll(7.0)" class="px-2.5 py-1 bg-[#e5eeff] text-[#474651] rounded text-xs hover:bg-[#c8c5d3]">7.0 (tất cả)</button>
+              <button onclick="_simFillAll(8.0)" class="px-2.5 py-1 bg-[#e5eeff] text-[#474651] rounded text-xs hover:bg-[#c8c5d3]">8.0</button>
+              <button onclick="_simFillAll(9.0)" class="px-2.5 py-1 bg-[#e5eeff] text-[#474651] rounded text-xs hover:bg-[#c8c5d3]">9.0</button>
+              <button onclick="_simFillAll(null)" class="px-2.5 py-1 bg-[#e5eeff] text-[#474651] rounded text-xs hover:bg-[#c8c5d3]">Xóa hết</button>
+              <div class="ml-auto text-xs text-[#777682]">
+                <span id="simCompletedCount">0</span> / <span id="simTotalCount">0</span> môn đã nhập điểm
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Sticky results panel -->
+        <aside class="lg:col-span-1">
+          <div class="lg:sticky lg:top-[76px] space-y-3">
+            <div id="simResult" class="hidden"></div>
+            <div id="simPlaceholder" class="bg-[#ffffff] rounded-2xl border-2 border-dashed border-[#c8c5d3] p-6 text-center">
+              <div class="w-14 h-14 rounded-full bg-[#eef2ff] flex items-center justify-center mx-auto mb-3">
+                <span class="material-symbols-outlined msym text-3xl text-[#1a146b]">science</span>
+              </div>
+              <p class="text-sm font-bold text-[#0b1c30] mb-1">Kết quả mô phỏng</p>
+              <p class="text-xs text-[#474651] leading-relaxed">Điều chỉnh điểm các môn để xem GPA dự kiến, xếp loại tốt nghiệp và tác động lên TC tích lũy.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:8000' : window.location.origin;
+
+function auth() { return { Authorization: `Bearer ${localStorage.getItem('access_token')}` }; }
+async function api(path, opts = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...opts,
+      headers: { 'Content-Type':'application/json', ...auth(), ...(opts.headers || {}) },
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) { return { ok: false, status: 0, data: { detail: e.message } }; }
+}
+function escHtml(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+function toast(msg, type='info') {
+  const c = { info:'bg-slate-800', success:'bg-emerald-600', error:'bg-red-600', warn:'bg-amber-500' };
+  const el = document.createElement('div');
+  el.className = `${c[type]||c.info} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg pointer-events-auto fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+let _snapshot = null;
+let _simGrades = {};  // course_code → score10
+let _activeTab = 'target';
+let _allRemainingTerms = [];  // full list of upcoming terms from backend
+let _simScope = 1;  // 1 | 2 | 3 | 'all' — number of upcoming terms to render
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  // Legacy URL ?tab=career or #career → redirect to career-hub.html (career direction moved there)
+  if (location.hash === '#career') { window.location.replace('career-hub.html'); return; }
+  const user = await (await fetch(`${API_BASE}/auth/me`, { headers: auth() })).json().catch(() => null);
+  if (!user) { window.location.replace('index.html'); return; }
+  if (user.role !== 'student') {
+    window.location.replace(user.role === 'admin' ? 'admin.html' : 'advisor.html');
+    return;
+  }
+  updateTopbarUser(user);
+  const sb = document.getElementById('sidebarUserName');
+  if (sb) sb.textContent = user.full_name || user.username;
+  const spec = document.getElementById('sidebarSpec');
+  if (spec) spec.textContent = user.specialization || 'CNTT';
+
+  await loadSnapshot();
+  switchGoalsTab('target');
+})();
+
+async function loadSnapshot() {
+  // Fetch progress + roadmap in parallel — same sources roadmap.html uses, guarantees consistency.
+  const [progRes, rmRes, customRes] = await Promise.all([
+    api('/progress/me'),
+    api('/roadmap/me'),
+    api('/roadmap/custom/me'),
+  ]);
+
+  if (progRes.ok) {
+    const p = progRes.data || {};
+    document.getElementById('heroCurGpa').textContent = (p.avg_score4 != null && p.avg_score4 > 0) ? Number(p.avg_score4).toFixed(2) : '—';
+    const tc = p.earned_credits ?? p.total_credits;
+    document.getElementById('heroCurTc').textContent = tc != null ? tc : '—';
+    _snapshot = { current: { avg_score4: p.avg_score4, earned_credits: tc, graduation_threshold: p.graduation_threshold || 153, remaining_credits: Math.max(0, (p.graduation_threshold || 153) - (tc || 0)) } };
+  } else {
+    toast('Không tải được dữ liệu hiện tại', 'error');
+    _snapshot = { current: {} };
+  }
+
+  if (!rmRes.ok) {
+    toast('Không tải được lộ trình', 'error');
+    _allRemainingTerms = [];
+    document.getElementById('simSourceLabel').textContent = 'Nguồn: lỗi tải lộ trình';
+    _simSetScope(1);
+    return;
+  }
+
+  // Build remaining_terms from roadmap.semesters (future) — skip __ELECTIVE placeholders
+  const rmData = rmRes.data || {};
+  const futureSems = (rmData.semesters || []);
+  // If user has saved a custom drag-drop plan, prefer that — match roadmap.html behavior
+  let usedCustom = false;
+  if (customRes.ok && customRes.data?.saved && (customRes.data.semesters || []).length) {
+    const custom = customRes.data.semesters || [];
+    // Need course details (name, credits) — pull from rmRes future + completed maps
+    const courseInfo = {};
+    [...(rmData.completed_semesters || []), ...futureSems].forEach(s => {
+      (s.courses || []).forEach(c => {
+        if (c.course_code && !String(c.course_code).startsWith('__')) {
+          courseInfo[c.course_code] = { course_name: c.course_name, credits: c.credits };
+        }
+      });
+    });
+    _allRemainingTerms = custom
+      // Skip kho sentinel — môn ở kho chưa xếp HK, không thuộc simulator
+      .filter(sem => sem.semester_label !== '__KHO__')
+      .map(sem => {
+        const tc = (sem.course_codes || [])
+          .filter(code => !String(code).startsWith('__'))
+          .map(code => ({
+            course_code: code,
+            course_name: courseInfo[code]?.course_name || code,
+            credits: courseInfo[code]?.credits || 0,
+          }));
+        return {
+          term_label: sem.semester_label || '',
+          courses: tc,
+          total_credits: tc.reduce((s, c) => s + (c.credits || 0), 0),
+        };
+      }).filter(t => t.courses.length > 0);
+    usedCustom = _allRemainingTerms.length > 0;
+  }
+
+  if (!usedCustom) {
+    _allRemainingTerms = futureSems.map(sem => {
+      const tc = (sem.courses || [])
+        .filter(c => !String(c.course_code || '').startsWith('__'))
+        .map(c => ({
+          course_code: c.course_code,
+          course_name: c.course_name || c.course_code,
+          credits: Number(c.credits) || 0,
+        }));
+      return {
+        term_label: sem.semester_label || `HK ${sem.semester_number || ''}`,
+        courses: tc,
+        total_credits: Number((tc.reduce((s, c) => s + (c.credits || 0), 0)).toFixed(1)),
+      };
+    }).filter(t => t.courses.length > 0);
+  }
+
+  document.getElementById('simSourceLabel').textContent = usedCustom ? 'Nguồn: lộ trình tự sắp xếp' : 'Nguồn: lộ trình mặc định';
+  _simSetScope(1);
+}
+
+function switchGoalsTab(tab) {
+  // Legacy hash #career → redirect to career-hub.html (the page where career direction now lives)
+  if (tab === 'career') {
+    window.location.replace('career-hub.html');
+    return;
+  }
+  _activeTab = tab;
+  // Toggle classes individually — không rebuild className để tránh flash
+  document.querySelectorAll('.goals-tab').forEach(b => {
+    const active = b.dataset.tab === tab;
+    b.classList.toggle('bg-indigo-600', active);
+    b.classList.toggle('text-white', active);
+    b.classList.toggle('shadow-sm', active);
+    b.classList.toggle('text-[#474651]', !active);
+    b.classList.toggle('hover:bg-[#eef2ff]', !active);
+  });
+  ['target','simulator'].forEach(t => {
+    document.getElementById(`goalsTab-${t}`)?.classList.toggle('hidden', t !== tab);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  TAB 1: TARGET GPA
+// ══════════════════════════════════════════════════════════════════════════
+function _pickTarget(btn) {
+  document.querySelectorAll('.target-opt').forEach(b => {
+    b.classList.remove('border-indigo-500','ring-indigo','bg-[#eef2ff]/40');
+  });
+  btn.classList.add('border-indigo-500','ring-indigo','bg-[#eef2ff]/40');
+  _computeTarget(parseFloat(btn.dataset.target));
+}
+
+async function _computeCustomTarget() {
+  const v = parseFloat(document.getElementById('customTargetInput').value);
+  if (!v || v < 0 || v > 4) { toast('GPA phải trong [0, 4]', 'warn'); return; }
+  document.querySelectorAll('.target-opt').forEach(b => b.classList.remove('border-indigo-500','ring-indigo','bg-[#eef2ff]/40'));
+  await _computeTarget(v);
+}
+
+async function _computeTarget(targetGpa4) {
+  const box = document.getElementById('targetResult');
+  box.classList.remove('hidden');
+  box.innerHTML = `<div class="bg-[#ffffff] rounded-2xl border border-[#c8c5d3] shadow-sm p-6 text-center text-[#777682]">
+    <span class="material-symbols-outlined msym spin">progress_activity</span>
+    <p class="text-sm mt-2">Đang tính toán...</p>
+  </div>`;
+  const r = await api('/simulator/target-gpa', { method:'POST', body: JSON.stringify({ target_gpa4: targetGpa4 }) });
+  if (!r.ok) {
+    box.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-[#ba1a1a]">${escHtml(r.data?.detail || 'Lỗi tính toán')}</div>`;
+    return;
+  }
+  const d = r.data;
+  const diffCls = 'diff-' + d.difficulty;
+  const diffLabel = {
+    easy: 'Dễ đạt', moderate: 'Vừa sức', hard: 'Cần nỗ lực cao',
+    very_hard: 'Rất khó', impossible: 'Không thể đạt', not_applicable: 'Đã đủ TC',
+  }[d.difficulty] || d.difficulty;
+  const diffIcon = {
+    easy: 'task_alt', moderate: 'trending_up', hard: 'fitness_center',
+    very_hard: 'priority_high', impossible: 'block', not_applicable: 'check_circle',
+  }[d.difficulty] || 'info';
+
+  let alreadyBanner = '';
+  if (d.already_met) {
+    alreadyBanner = `<div class="bg-[#dcfce7] border border-[#86efac] rounded-xl p-3 mb-4 flex items-center gap-2 text-sm text-emerald-700">
+      <span class="material-symbols-outlined msym">check_circle</span>
+      GPA hiện tại (${d.current_gpa4}) đã đạt target ${d.target_gpa4}! Tiếp tục duy trì.
+    </div>`;
+  }
+
+  box.innerHTML = `
+    <div class="bg-[#ffffff] rounded-2xl border border-[#c8c5d3] shadow-sm p-6">
+      ${alreadyBanner}
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="text-xs uppercase text-[#777682] font-bold tracking-wider">Target</p>
+          <p class="text-3xl font-extrabold text-[#0b1c30]">GPA ${d.target_gpa4}</p>
+        </div>
+        <div class="inline-flex items-center gap-2 px-3 py-2 border rounded-xl ${diffCls} font-bold">
+          <span class="material-symbols-outlined msym">${diffIcon}</span>
+          ${diffLabel}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="bg-[#eff4ff] rounded-xl p-3">
+          <p class="text-[10px] uppercase text-[#777682] font-bold">Hiện tại</p>
+          <p class="text-xl font-extrabold text-[#0b1c30]">${d.current_gpa4}</p>
+          <p class="text-[10px] text-[#777682]">GPA hệ 4</p>
+        </div>
+        <div class="bg-[#eff4ff] rounded-xl p-3">
+          <p class="text-[10px] uppercase text-[#777682] font-bold">TC còn lại</p>
+          <p class="text-xl font-extrabold text-[#0b1c30]">${d.remaining_credits}</p>
+          <p class="text-[10px] text-[#777682]">để TN</p>
+        </div>
+        <div class="bg-[#eef2ff] rounded-xl p-3">
+          <p class="text-[10px] uppercase text-[#312e81] font-bold">TB cần đạt</p>
+          <p class="text-xl font-extrabold text-[#1a146b]">${d.required_avg_score4 ?? '—'}</p>
+          <p class="text-[10px] text-indigo-400">GPA hệ 4</p>
+        </div>
+        <div class="bg-[#eef2ff] rounded-xl p-3">
+          <p class="text-[10px] uppercase text-[#312e81] font-bold">TB cần đạt</p>
+          <p class="text-xl font-extrabold text-[#1a146b]">${d.required_avg_score10 ?? '—'}</p>
+          <p class="text-[10px] text-indigo-400">điểm hệ 10</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-50/80 rounded-xl p-4 text-sm text-[#0b1c30] flex items-start gap-2">
+        <span class="material-symbols-outlined msym text-[#312e81] mt-0.5">lightbulb</span>
+        <span>${escHtml(d.message)}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  TAB 2: SIMULATOR (multi-term)
+// ══════════════════════════════════════════════════════════════════════════
+function _simSetScope(scope) {
+  _simScope = scope;
+  // Toggle scope button styles
+  document.querySelectorAll('.sim-scope-btn').forEach(b => {
+    const active = String(b.dataset.scope) === String(scope);
+    b.classList.toggle('bg-indigo-600', active);
+    b.classList.toggle('text-white', active);
+    b.classList.toggle('bg-white', !active);
+    b.classList.toggle('border', !active);
+    b.classList.toggle('border-[#c8c5d3]', !active);
+    b.classList.toggle('text-[#474651]', !active);
+    b.classList.toggle('hover:bg-[#eef2ff]', !active);
+  });
+  _renderSimMultiTerms();
+}
+
+function _visibleTerms() {
+  if (_simScope === 'all') return _allRemainingTerms;
+  const n = parseInt(_simScope) || 1;
+  return _allRemainingTerms.slice(0, n);
+}
+
+function _renderSimMultiTerms() {
+  const wrap = document.getElementById('simCoursesWrap');
+  const terms = _visibleTerms();
+  // Clear grades that are no longer visible (so re-render keeps consistent state)
+  const visibleCodes = new Set();
+  terms.forEach(t => (t.courses || []).forEach(c => visibleCodes.add(c.course_code)));
+  Object.keys(_simGrades).forEach(code => { if (!visibleCodes.has(code)) delete _simGrades[code]; });
+
+  const totalCourses = terms.reduce((s, t) => s + (t.courses?.length || 0), 0);
+  const totalCredits = terms.reduce((s, t) => s + (t.total_credits || 0), 0);
+  document.getElementById('simTotalCount').textContent = totalCourses;
+  document.getElementById('simTermsCount').textContent = terms.length;
+  document.getElementById('simAllCredits').textContent = totalCredits.toFixed(1);
+
+  if (!terms.length) {
+    wrap.innerHTML = `<div class="text-center py-10 text-sm text-[#777682]">
+      <span class="material-symbols-outlined msym text-3xl text-[#c8c5d3]">event_busy</span>
+      <p class="mt-2">Chưa có môn nào trong lộ trình. Vào <a class="text-[#1a146b] underline" href="roadmap.html">Lộ trình</a> để thêm môn.</p>
+    </div>`;
+    return;
+  }
+
+  wrap.innerHTML = terms.map((t, idx) => {
+    const courses = t.courses || [];
+    const courseRows = courses.map(c => {
+      const safe = escHtml(c.course_code);
+      const cur = _simGrades[c.course_code];
+      const valAttr = cur != null ? ` value="${cur.toFixed(1)}"` : '';
+      const sliderVal = cur != null ? cur : 0;
+      const letter = cur != null ? _score10ToLetter(cur) : null;
+      const letterColor = letter ? _letterColor(letter) : 'text-[#777682]';
+      const letterText = cur != null ? `${letter} · ${_score10ToScore4(cur).toFixed(1)} hệ 4` : 'Chưa nhập';
+      return `<div class="border border-[#c8c5d3] rounded-lg p-3 hover:border-[#1a146b]/40 transition-colors bg-white">
+        <div class="flex items-start justify-between gap-3 mb-2.5">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-[#0b1c30] truncate">${escHtml(c.course_name)}</p>
+            <p class="text-[11px] text-[#777682]">${safe} · ${c.credits} TC</p>
+          </div>
+          <p class="text-[11px] font-bold whitespace-nowrap ${letterColor}" data-letter-for="${safe}">${letterText}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <input type="range" min="0" max="10" step="0.5" value="${sliderVal}"
+            data-code="${safe}" data-credits="${c.credits}"
+            oninput="_simSliderChange(this)"
+            class="sim-slider flex-1 cursor-pointer accent-[#1a146b]"
+            aria-label="Điểm dự kiến ${escHtml(c.course_name)}"/>
+          <input type="number" min="0" max="10" step="0.1" placeholder="—"${valAttr}
+            data-code="${safe}" data-credits="${c.credits}"
+            onchange="_simOnChange(this)"
+            class="sim-input w-16 border border-[#c8c5d3] rounded-lg px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-300"/>
+          <span class="text-[10px] text-[#777682] flex-shrink-0">/10</span>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="border border-[#c8c5d3] rounded-xl overflow-hidden">
+      <div class="bg-[#eff4ff] px-4 py-2.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-[#1a146b] text-white text-xs font-extrabold flex items-center justify-center">${idx+1}</span>
+          <p class="text-sm font-bold text-[#0b1c30]">${escHtml(t.term_label || 'Kỳ ' + (idx+1))}</p>
+        </div>
+        <div class="text-[11px] text-[#474651] flex items-center gap-3">
+          <span>${courses.length} môn</span>
+          <span class="font-bold text-[#1a146b]">${(t.total_credits||0).toFixed(1)} TC</span>
+          <button onclick="_simFillTerm(${idx}, 8.0)"
+            class="text-[10px] text-[#1a146b] hover:text-[#1a146b] underline">Đặt 8.0 cả kỳ</button>
+        </div>
+      </div>
+      <div class="p-3 space-y-2">${courseRows}</div>
+    </div>`;
+  }).join('');
+  // Recompute simulation if user already had grades entered
+  _simRunIfReady();
+}
+
+function _simFillTerm(termIdx, v) {
+  const terms = _visibleTerms();
+  const t = terms[termIdx];
+  if (!t) return;
+  (t.courses || []).forEach(c => { _simGrades[c.course_code] = v; });
+  _renderSimMultiTerms();
+}
+
+// ── Score-10 → Score-4 / Letter conversion (đồng bộ với CLAUDE.md §5.4) ──
+function _score10ToScore4(s) {
+  if (s >= 9.0) return 4.0;
+  if (s >= 8.5) return 3.7;
+  if (s >= 8.0) return 3.5;
+  if (s >= 7.0) return 3.0;
+  if (s >= 6.5) return 2.5;
+  if (s >= 5.5) return 2.0;
+  if (s >= 5.0) return 1.5;
+  if (s >= 4.0) return 1.0;
+  return 0;
+}
+function _score10ToLetter(s) {
+  if (s >= 9.0) return 'A+';
+  if (s >= 8.5) return 'A';
+  if (s >= 8.0) return 'B+';
+  if (s >= 7.0) return 'B';
+  if (s >= 6.5) return 'C+';
+  if (s >= 5.5) return 'C';
+  if (s >= 5.0) return 'D+';
+  if (s >= 4.0) return 'D';
+  return 'F';
+}
+function _letterColor(letter) {
+  if (letter === 'F') return 'text-[#ba1a1a]';
+  if (letter === 'D' || letter === 'D+') return 'text-amber-600';
+  if (letter === 'C' || letter === 'C+') return 'text-[#1e40af]';
+  return 'text-[#006c49]';
+}
+
+function _simUpdateLetterUI(code, score) {
+  const letterEl = document.querySelector(`[data-letter-for="${code}"]`);
+  if (!letterEl) return;
+  if (score == null || isNaN(score)) {
+    letterEl.textContent = 'Chưa nhập';
+    letterEl.className = 'text-[11px] font-bold whitespace-nowrap text-[#777682]';
+  } else {
+    const letter = _score10ToLetter(score);
+    const score4 = _score10ToScore4(score);
+    letterEl.textContent = `${letter} · ${score4.toFixed(1)} hệ 4`;
+    letterEl.className = `text-[11px] font-bold whitespace-nowrap ${_letterColor(letter)}`;
+  }
+}
+
+function _simSliderChange(slider) {
+  const code = slider.dataset.code;
+  const v = parseFloat(slider.value);
+  _simGrades[code] = v;
+  // Sync number input
+  const numInput = document.querySelector(`.sim-input[data-code="${code}"]`);
+  if (numInput) numInput.value = v.toFixed(1);
+  _simUpdateLetterUI(code, v);
+  _simRunIfReady();
+}
+
+function _simOnChange(input) {
+  const code = input.dataset.code;
+  const raw = parseFloat(input.value);
+  const slider = document.querySelector(`.sim-slider[data-code="${code}"]`);
+  if (isNaN(raw)) {
+    delete _simGrades[code];
+    if (slider) slider.value = 0;
+    _simUpdateLetterUI(code, null);
+  } else {
+    const v = Math.max(0, Math.min(10, raw));
+    _simGrades[code] = v;
+    if (slider) slider.value = v;
+    _simUpdateLetterUI(code, v);
+  }
+  _simRunIfReady();
+}
+
+function _simFillAll(v) {
+  if (v === null) {
+    Object.keys(_simGrades).forEach(k => delete _simGrades[k]);
+  } else {
+    document.querySelectorAll('.sim-input').forEach(inp => {
+      _simGrades[inp.dataset.code] = v;
+    });
+  }
+  _renderSimMultiTerms();
+}
+
+let _simDebounce = null;
+function _simRunIfReady() {
+  const count = Object.keys(_simGrades).length;
+  document.getElementById('simCompletedCount').textContent = count;
+  clearTimeout(_simDebounce);
+  const result = document.getElementById('simResult');
+  const placeholder = document.getElementById('simPlaceholder');
+  if (count === 0) {
+    if (result) result.classList.add('hidden');
+    if (placeholder) placeholder.classList.remove('hidden');
+    return;
+  }
+  if (placeholder) placeholder.classList.add('hidden');
+  _simDebounce = setTimeout(_simRun, 400);
+}
+
+async function _simRun() {
+  const payload = {
+    grades: Object.entries(_simGrades).map(([code, score10]) => ({ course_code: code, score10 })),
+  };
+  if (!payload.grades.length) return;
+
+  const r = await api('/simulator/what-if', { method: 'POST', body: JSON.stringify(payload) });
+  if (!r.ok) {
+    document.getElementById('simResult').classList.remove('hidden');
+    document.getElementById('simResult').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-[#ba1a1a]">${escHtml(r.data?.detail || 'Lỗi')}</div>`;
+    return;
+  }
+  const d = r.data;
+  const cum = d.cumulative;
+  const term = d.term;
+  const arrowIcon = cum.direction === 'up' ? 'trending_up' : cum.direction === 'down' ? 'trending_down' : 'trending_flat';
+  const arrowCls  = cum.direction === 'up' ? 'text-[#006c49]' : cum.direction === 'down' ? 'text-[#ba1a1a]' : 'text-[#474651]';
+  const deltaSign = cum.delta > 0 ? '+' : '';
+
+  let failBanner = '';
+  if (term.failed_count > 0) {
+    failBanner = `<div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-start gap-2 text-sm text-[#ba1a1a]">
+      <span class="material-symbols-outlined msym">warning</span>
+      <div>
+        <p class="font-bold">${term.failed_count} môn dưới 4.0 → sẽ phải học lại:</p>
+        <p class="text-xs mt-1">${term.failed_course_names.map(escHtml).join(' · ')}</p>
+      </div>
+    </div>`;
+  }
+
+  const classChanged = cum.classification_before !== cum.classification_after;
+  let classBanner = '';
+  if (classChanged && cum.before_gpa4 > 0) {
+    classBanner = `<div class="bg-[#eef2ff] border border-indigo-200 rounded-xl p-3 mt-3 text-sm flex items-center gap-2 text-[#1a146b]">
+      <span class="material-symbols-outlined msym">workspace_premium</span>
+      Xếp loại thay đổi: <strong>${escHtml(cum.classification_before)}</strong> → <strong>${escHtml(cum.classification_after)}</strong>
+    </div>`;
+  }
+
+  // Multi-term context labels
+  const isMultiTerm = _simScope === 'all' || (parseInt(_simScope) || 1) > 1;
+  const scopeLabel = _simScope === 'all' ? 'đến TN' : `${_simScope} kỳ tới`;
+  const termBoxLabel = isMultiTerm ? `GPA ${scopeLabel}` : 'GPA kỳ này';
+  const cumBoxLabel  = isMultiTerm ? 'Sau khi mô phỏng' : 'Sau kỳ tới';
+
+  // Graduation forecast banner (only for multi-term scope='all')
+  let gradBanner = '';
+  if (_simScope === 'all') {
+    const classCls = ({
+      'Xuất sắc':'bg-violet-50 border-violet-200 text-violet-700',
+      'Giỏi':'bg-[#dcfce7] border-[#86efac] text-emerald-700',
+      'Khá':'bg-sky-50 border-sky-200 text-sky-700',
+      'Trung bình':'bg-amber-50 border-amber-200 text-amber-700',
+      'Yếu':'bg-rose-50 border-rose-200 text-rose-700',
+    })[cum.classification_after] || 'bg-[#eff4ff] border-[#c8c5d3] text-[#0b1c30]';
+    gradBanner = `<div class="rounded-2xl border ${classCls} p-4 mb-4 flex items-center gap-3">
+      <span class="material-symbols-outlined msym text-3xl">workspace_premium</span>
+      <div class="flex-1">
+        <p class="text-[10px] uppercase tracking-wider font-bold opacity-70">Xếp loại TN dự kiến</p>
+        <p class="text-xl font-extrabold leading-tight">${escHtml(cum.classification_after)}</p>
+      </div>
+      <div class="text-right">
+        <p class="text-[10px] uppercase tracking-wider font-bold opacity-70">GPA cuối</p>
+        <p class="text-2xl font-extrabold">${cum.after_gpa4.toFixed(2)}</p>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('simResult').classList.remove('hidden');
+  document.getElementById('simResult').innerHTML = `
+    <div class="bg-[#ffffff] rounded-2xl border border-[#c8c5d3] shadow-sm p-4 lg:p-5 max-h-[calc(100vh-100px)] overflow-y-auto">
+      <p class="text-[10px] uppercase tracking-wider font-bold text-[#1a146b] mb-3 flex items-center gap-1.5">
+        <span class="material-symbols-outlined msym text-sm">science</span>Kết quả mô phỏng
+      </p>
+      ${gradBanner}
+      ${failBanner}
+
+      <!-- Hero: GPA before → after -->
+      <div class="bg-gradient-to-br from-[#eef2ff] to-[#dce9ff] rounded-xl p-4 mb-3">
+        <p class="text-[10px] uppercase text-[#312e81] font-bold mb-2 tracking-wider">${cumBoxLabel}</p>
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-center flex-1">
+            <p class="text-[10px] text-[#777682]">Trước</p>
+            <p class="text-2xl font-extrabold text-[#474651] leading-none">${cum.before_gpa4.toFixed(2)}</p>
+          </div>
+          <span class="material-symbols-outlined msym text-2xl ${arrowCls}">${arrowIcon}</span>
+          <div class="text-center flex-1">
+            <p class="text-[10px] text-[#1a146b] font-semibold">Sau</p>
+            <p class="text-2xl font-extrabold text-[#1a146b] leading-none">${cum.after_gpa4.toFixed(2)}</p>
+          </div>
+        </div>
+        <div class="text-center mt-3 pt-3 border-t border-white/60">
+          <p class="text-[10px] text-[#777682]">Thay đổi</p>
+          <p class="text-lg font-extrabold ${arrowCls}">${deltaSign}${cum.delta.toFixed(2)}</p>
+        </div>
+      </div>
+
+      <!-- Term + credits stack -->
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <div class="bg-[#eff4ff] rounded-lg p-3">
+          <p class="text-[10px] uppercase text-[#777682] font-bold mb-1 tracking-wider">${termBoxLabel}</p>
+          <p class="text-xl font-extrabold text-[#0b1c30] leading-none">${term.gpa4.toFixed(2)}</p>
+          <p class="text-[10px] text-[#474651] mt-1.5">${escHtml(term.classification)}</p>
+        </div>
+        <div class="bg-[#eff4ff] rounded-lg p-3">
+          <p class="text-[10px] uppercase text-[#777682] font-bold mb-1 tracking-wider">TC qua kỳ</p>
+          <p class="text-xl font-extrabold text-[#0b1c30] leading-none">${term.credits_passed}<span class="text-sm text-[#777682]">/${term.credits_total}</span></p>
+          <p class="text-[10px] text-[#474651] mt-1.5">TC mới: ${cum.after_credits}</p>
+        </div>
+      </div>
+
+      ${classBanner}
+
+      <details class="mt-3 group">
+        <summary class="cursor-pointer text-xs font-bold uppercase text-[#777682] tracking-wider flex items-center justify-between px-1 py-1.5 hover:text-[#1a146b]">
+          <span>Chi tiết ${d.per_course.length} môn</span>
+          <span class="material-symbols-outlined msym text-base group-open:rotate-180 transition-transform">expand_more</span>
+        </summary>
+        <div class="divide-y divide-[#c8c5d3] mt-2 max-h-72 overflow-y-auto">
+          ${d.per_course.map(p => `
+            <div class="flex items-center gap-2 py-1.5">
+              <span class="material-symbols-outlined msym text-sm ${p.passed ? 'text-emerald-500' : 'text-[#ba1a1a]'}">${p.passed ? 'check_circle' : 'cancel'}</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-medium text-[#0b1c30] truncate">${escHtml(p.course_name)}</p>
+                <p class="text-[10px] text-[#777682]">${p.credits} TC · ${p.score10.toFixed(1)}/10</p>
+              </div>
+              <span class="text-[11px] font-bold font-mono ${p.passed ? 'text-[#0b1c30]' : 'text-[#ba1a1a]'}">${p.letter}</span>
+              <span class="text-[10px] font-mono text-[#474651] w-7 text-right">${p.score4.toFixed(1)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </details>
+    </div>`;
+}
+
+// (Career direction tab removed in Phase 12.3 — moved to career-hub.html. Hash #career on this page redirects there.)
+</script>
+
+</body>
+</html>
+
+

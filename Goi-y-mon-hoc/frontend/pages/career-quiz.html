@@ -1,0 +1,518 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Quiz hướng nghiệp</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.15s; animation-timing-function: ease-out; }
+    #sidebarMount, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+
+    /* Likert button states */
+    .likert-btn {
+      transition: all .15s ease;
+    }
+    .likert-btn.selected {
+      background: linear-gradient(135deg,#1a146b 0%,#312e81 100%);
+      color: #fff;
+      transform: scale(1.05);
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{ colors:{
+        primary:'#1a146b','primary-fixed':'#eef2ff','primary-container':'#312e81',
+        'on-primary':'#ffffff','on-surface':'#0f172a',
+        outline:'#94a3b8',
+      }}}
+    }
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<!-- Tailwind safelist (dynamic colors) -->
+<div class="hidden" aria-hidden="true">
+  <span class="bg-amber-100 bg-amber-500 text-amber-500 text-amber-600 ring-amber"></span>
+  <span class="bg-[#e5eeff] bg-[#eef2ff]0 bg-[#eef2ff] text-[#312e81] text-[#1a146b] ring-indigo"></span>
+  <span class="bg-violet-100 bg-violet-500 bg-violet-50 text-violet-500 text-violet-600 ring-violet"></span>
+  <span class="bg-emerald-100 bg-[#dcfce7]0 bg-[#dcfce7] text-emerald-500 text-[#006c49] ring-emerald"></span>
+  <span class="bg-rose-100 bg-rose-500 bg-rose-50 text-rose-500 text-rose-600 ring-rose"></span>
+  <span class="bg-cyan-100 bg-cyan-500 bg-cyan-50 text-cyan-500 text-cyan-600 ring-cyan"></span>
+</div>
+
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+<div id="sidebarMount"></div>
+
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <button onclick="history.length > 1 ? history.back() : (window.location.href='goals.html')"
+      class="flex items-center gap-1 px-2 py-1 rounded-lg text-[#474651] hover:bg-[#eef2ff] transition-colors text-sm">
+      <span class="material-symbols-outlined msym text-base">arrow_back</span>
+      <span class="hidden sm:inline">Quay lại</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d] truncate">Quiz hướng nghiệp Holland</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-3xl mx-auto">
+
+    <!-- Loading -->
+    <div id="qzLoading" class="bg-[#ffffff] rounded-2xl p-10 text-center">
+      <span class="material-symbols-outlined msym text-3xl text-[#c8c5d3] spin">progress_activity</span>
+      <p class="text-sm text-[#777682] mt-2">Đang tải câu hỏi...</p>
+    </div>
+
+    <!-- ── INTRO screen ─────────────────────────────────────────────── -->
+    <div id="qzIntro" class="hidden bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden fade-in">
+      <div class="px-6 py-5 pri-grad text-white">
+        <p class="text-[10px] uppercase tracking-wider text-indigo-200 font-bold">Quiz Holland-lite</p>
+        <h1 class="text-2xl font-bold mt-1">Khám phá hướng đi nghề nghiệp của em</h1>
+        <p class="text-sm text-indigo-100 mt-2 leading-relaxed">12 câu hỏi nhanh dựa trên mô hình RIASEC giúp xác định em phù hợp với nhóm nghề CNTT nào nhất — từ đó gợi ý lộ trình học và môn tự chọn phù hợp.</p>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="qzTypePreview">
+          <!-- Hiển thị 6 RIASEC types -->
+        </div>
+        <div class="border-t border-[#c8c5d3] pt-4 flex items-center justify-between gap-3 flex-wrap">
+          <div class="text-xs text-[#474651] flex items-center gap-1.5">
+            <span class="material-symbols-outlined msym text-base text-[#777682]">schedule</span>
+            <span>~3 phút · 12 câu hỏi · 5 mức độ Likert</span>
+          </div>
+          <button onclick="_startQuiz()"
+            class="pri-grad text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow hover:opacity-90 transition-all flex items-center gap-2">
+            <span class="material-symbols-outlined msym">arrow_forward</span>Bắt đầu
+          </button>
+        </div>
+        <!-- Existing result preview -->
+        <div id="qzExistingResult" class="hidden bg-[#dcfce7] border border-[#86efac] rounded-xl px-4 py-3 text-sm">
+          <div class="flex items-start gap-2">
+            <span class="material-symbols-outlined msym text-[#006c49] text-base mt-0.5">history</span>
+            <div class="flex-1">
+              <p class="font-semibold text-emerald-800">Em đã làm quiz này trước đó</p>
+              <p class="text-xs text-emerald-700 mt-0.5" id="qzExistingDate">—</p>
+              <button onclick="_showExistingResult()" class="text-xs text-emerald-700 hover:underline font-semibold mt-1">Xem kết quả gần nhất →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── QUESTIONS screen ─────────────────────────────────────────── -->
+    <div id="qzQuestions" class="hidden bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden fade-in">
+      <!-- Progress bar -->
+      <div class="h-1.5 bg-[#e5eeff] relative">
+        <div id="qzProgressBar" class="h-full pri-grad transition-all" style="width:0%"></div>
+      </div>
+      <div class="px-6 py-5">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-[#777682]">Câu <span id="qzCurrentNum">1</span> / 12</p>
+          <p class="text-[11px] text-[#777682]" id="qzAnsweredCount">0 đã trả lời</p>
+        </div>
+        <p id="qzQuestionText" class="text-base lg:text-lg font-semibold text-[#0b1c30] leading-relaxed mt-3 mb-5">—</p>
+
+        <!-- Likert scale buttons -->
+        <div class="grid grid-cols-5 gap-2" id="qzLikertOptions"></div>
+
+        <!-- Navigation -->
+        <div class="flex items-center justify-between mt-6">
+          <button onclick="_prevQuestion()" id="qzPrevBtn"
+            class="px-4 py-2 text-sm text-[#474651] hover:bg-[#eef2ff] rounded-lg transition-colors flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed" disabled>
+            <span class="material-symbols-outlined msym text-base">arrow_back</span>Trước
+          </button>
+          <button onclick="_nextQuestion()" id="qzNextBtn"
+            class="pri-grad text-white px-5 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <span>Tiếp →</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RESULT screen ───────────────────────────────────────────── -->
+    <div id="qzResult" class="hidden space-y-5 fade-in">
+
+      <!-- Hero result -->
+      <div class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+        <div class="px-6 py-5 pri-grad text-white">
+          <p class="text-[10px] uppercase tracking-wider text-indigo-200 font-bold">Kết quả của em</p>
+          <h1 class="text-2xl font-bold mt-1">Em phù hợp nhất với nhóm:</h1>
+          <div id="qzPrimaryType" class="mt-3 flex items-center gap-3"></div>
+        </div>
+        <div class="px-6 py-5">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-[#777682] mb-3">Phổ RIASEC</p>
+          <div id="qzScoreBars" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Suggested careers -->
+      <div class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+        <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+          <span class="material-symbols-outlined msym text-[#312e81] text-base">work</span>
+          <div>
+            <h3 class="font-semibold text-sm text-[#0b1c30]">Hướng nghề phù hợp</h3>
+            <p class="text-[11px] text-[#777682] mt-0.5">Top hướng đi gợi ý dựa trên 3 nhóm tính cách mạnh nhất</p>
+          </div>
+        </div>
+        <div id="qzSuggestedPaths" class="divide-y divide-[#c8c5d3]">
+          <p class="px-5 py-6 text-xs text-[#777682] text-center italic">Đang tải gợi ý...</p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+        <div class="text-xs text-[#474651]">
+          <span class="material-symbols-outlined msym text-base text-[#777682] align-middle">info</span>
+          <span class="align-middle">Em có thể làm lại quiz bất cứ lúc nào để cập nhật kết quả</span>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="_retakeQuiz()" class="px-4 py-2 text-sm text-[#474651] border border-[#c8c5d3] rounded-lg hover:bg-[#eef2ff] transition-colors flex items-center gap-1">
+            <span class="material-symbols-outlined msym text-base">refresh</span>Làm lại
+          </button>
+          <a href="career-hub.html" class="pri-grad text-white px-5 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition-all flex items-center gap-1">
+            <span class="material-symbols-outlined msym text-base">explore</span>Khám phá định hướng
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
+<script src="floating-chat.js"></script>
+<script>
+const API = window.API_BASE;
+function H(extra = {}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+
+function showToast(msg, type='info', duration=3000) {
+  const cls = { success:'bg-[#dcfce7]0', error:'bg-[#ba1a1a]', warning:'bg-amber-500', info:'bg-[#eef2ff]0' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto px-4 py-2.5 ${cls[type]||cls.info} text-white text-sm font-medium rounded-xl shadow-lg fade-in`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+let _questions = [];
+let _scale = [];
+let _typeLabels = {};
+let _answers = {};       // { q_id: a_value }
+let _currentIdx = 0;
+let _existingResult = null;
+
+checkAuth();
+
+(async function init() {
+  try {
+    const ur = await fetch(`${API}/auth/me`, { headers: H() });
+    if (ur.ok) {
+      const u = await ur.json();
+      updateTopbarUser(u);
+    }
+  } catch {}
+
+  // Load questions + existing result in parallel
+  const [qRes, mRes] = await Promise.all([
+    fetch(`${API}/quiz/holland/questions`),
+    fetch(`${API}/quiz/holland/me`, { headers: H() }),
+  ]);
+  if (!qRes.ok) {
+    document.getElementById('qzLoading').innerHTML = '<p class="text-sm text-[#ba1a1a]">Lỗi tải câu hỏi.</p>';
+    return;
+  }
+  const data = await qRes.json();
+  _questions = data.questions;
+  _scale = data.scale;
+  _typeLabels = data.type_labels;
+
+  if (mRes.ok) {
+    const m = await mRes.json();
+    if (m.taken) {
+      _existingResult = m;
+    }
+  }
+
+  document.getElementById('qzLoading').classList.add('hidden');
+  _showIntro();
+})();
+
+function _showIntro() {
+  document.getElementById('qzIntro').classList.remove('hidden');
+  document.getElementById('qzQuestions').classList.add('hidden');
+  document.getElementById('qzResult').classList.add('hidden');
+
+  // Render type previews
+  document.getElementById('qzTypePreview').innerHTML = Object.entries(_typeLabels).map(([code, info]) => `
+    <div class="bg-[#eff4ff] border border-[#c8c5d3] rounded-xl px-3 py-2.5 flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-${info.color}-100 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined msym text-${info.color}-600 text-sm">${info.icon}</span>
+      </div>
+      <div class="min-w-0">
+        <p class="text-[10px] font-bold uppercase text-[#777682]">${code}</p>
+        <p class="text-xs font-semibold text-[#0b1c30] truncate">${info.name}</p>
+      </div>
+    </div>`).join('');
+
+  // Show existing result banner
+  if (_existingResult) {
+    const dt = _existingResult.taken_at ? new Date(_existingResult.taken_at) : null;
+    document.getElementById('qzExistingDate').textContent = dt
+      ? `Lần làm gần nhất: ${dt.toLocaleString('vi-VN')}`
+      : '';
+    document.getElementById('qzExistingResult').classList.remove('hidden');
+  }
+}
+
+function _showExistingResult() {
+  if (!_existingResult) return;
+  _renderResult(_existingResult);
+}
+
+function _startQuiz() {
+  _answers = {};
+  _currentIdx = 0;
+  document.getElementById('qzIntro').classList.add('hidden');
+  document.getElementById('qzResult').classList.add('hidden');
+  document.getElementById('qzQuestions').classList.remove('hidden');
+  _renderQuestion();
+}
+
+function _renderQuestion() {
+  const q = _questions[_currentIdx];
+  if (!q) return;
+  document.getElementById('qzCurrentNum').textContent = (_currentIdx + 1);
+  document.getElementById('qzQuestionText').textContent = q.text;
+  document.getElementById('qzProgressBar').style.width = ((_currentIdx + 1) / 12 * 100) + '%';
+  document.getElementById('qzAnsweredCount').textContent = `${Object.keys(_answers).length} đã trả lời`;
+
+  const selected = _answers[q.id];
+  document.getElementById('qzLikertOptions').innerHTML = _scale.map(opt => `
+    <button onclick="_pickAnswer(${q.id}, ${opt.value})"
+      class="likert-btn ${selected === opt.value ? 'selected' : 'bg-[#e5eeff] hover:bg-[#c8c5d3] text-[#0b1c30]'} rounded-xl py-3 px-2 text-center">
+      <p class="text-xl font-extrabold">${opt.value}</p>
+      <p class="text-[9px] uppercase mt-1 opacity-75">${opt.label}</p>
+    </button>`).join('');
+
+  document.getElementById('qzPrevBtn').disabled = _currentIdx === 0;
+  const nextBtn = document.getElementById('qzNextBtn');
+  nextBtn.disabled = !selected;
+  if (_currentIdx === 11) {
+    nextBtn.innerHTML = '<span class="material-symbols-outlined msym text-base">check</span>Hoàn tất';
+  } else {
+    nextBtn.innerHTML = '<span>Tiếp →</span>';
+  }
+}
+
+function _pickAnswer(qId, value) {
+  _answers[qId] = value;
+  _renderQuestion();
+  // Auto-advance to next question after 250ms (UX nicety)
+  if (_currentIdx < 11) {
+    setTimeout(() => { if (_answers[qId] === value) _nextQuestion(); }, 250);
+  }
+}
+
+function _nextQuestion() {
+  if (_currentIdx === 11) return _submitQuiz();
+  if (_currentIdx < 11) _currentIdx++;
+  _renderQuestion();
+}
+
+function _prevQuestion() {
+  if (_currentIdx > 0) _currentIdx--;
+  _renderQuestion();
+}
+
+async function _submitQuiz() {
+  if (Object.keys(_answers).length !== 12) {
+    showToast('Vui lòng trả lời đủ 12 câu', 'warning');
+    return;
+  }
+  const nextBtn = document.getElementById('qzNextBtn');
+  nextBtn.disabled = true;
+  nextBtn.innerHTML = '<span class="material-symbols-outlined msym text-base spin">progress_activity</span>Đang tính...';
+
+  const answers = Object.entries(_answers).map(([q, a]) => ({ q: parseInt(q), a }));
+  const res = await fetch(`${API}/quiz/holland/submit`, {
+    method: 'POST', headers: H({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ answers }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    showToast(err.detail || 'Lỗi submit quiz', 'error');
+    nextBtn.disabled = false;
+    nextBtn.innerHTML = '<span class="material-symbols-outlined msym text-base">check</span>Hoàn tất';
+    return;
+  }
+  const data = await res.json();
+  _renderResult(data);
+}
+
+function _renderResult(data) {
+  document.getElementById('qzIntro').classList.add('hidden');
+  document.getElementById('qzQuestions').classList.add('hidden');
+  document.getElementById('qzResult').classList.remove('hidden');
+
+  // Primary type
+  const primary = data.primary_codes[0];
+  const primaryInfo = _typeLabels[primary] || {};
+  document.getElementById('qzPrimaryType').innerHTML = `
+    <div class="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0">
+      <span class="material-symbols-outlined msym text-white text-3xl" style="font-variation-settings:'FILL' 1">${escHtml(primaryInfo.icon || 'star')}</span>
+    </div>
+    <div>
+      <p class="text-3xl font-extrabold tracking-wide">${escHtml(primaryInfo.name || primary)}</p>
+      <p class="text-xs text-indigo-100 mt-0.5">RIASEC code: ${data.primary_codes.join(' · ')}</p>
+    </div>`;
+
+  // Score bars
+  const max = data.max_score_per_type || 10;
+  const sorted = Object.entries(data.riasec_scores).sort((a, b) => b[1] - a[1]);
+  document.getElementById('qzScoreBars').innerHTML = sorted.map(([code, score]) => {
+    const info = _typeLabels[code] || {};
+    const pct = Math.round(score / max * 100);
+    return `<div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 w-32 flex-shrink-0">
+        <span class="material-symbols-outlined msym text-${info.color}-500 text-sm">${info.icon || 'circle'}</span>
+        <span class="text-xs font-bold text-[#0b1c30]">${escHtml(info.name || code)}</span>
+        <span class="text-[10px] font-mono text-[#777682]">${code}</span>
+      </div>
+      <div class="flex-1 h-2 bg-[#e5eeff] rounded-full overflow-hidden">
+        <div class="h-full bg-${info.color}-500 rounded-full transition-all" style="width:${pct}%"></div>
+      </div>
+      <span class="text-xs font-bold text-[#474651] w-12 text-right">${score}/${max}</span>
+    </div>`;
+  }).join('');
+
+  // Suggested paths
+  const paths = data.suggested_paths || [];
+  const listEl = document.getElementById('qzSuggestedPaths');
+  if (paths.length === 0) {
+    listEl.innerHTML = `<p class="px-5 py-6 text-xs text-[#777682] text-center italic">Chưa có dữ liệu nghề cho RIASEC này. Liên hệ quản trị để cập nhật danh mục nghề.</p>`;
+    return;
+  }
+  // Top suggestion gets a "Đặt làm hướng chính" CTA — others stay as plain links
+  const top = paths[0];
+  const topCard = `
+    <div class="m-4 p-4 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-200 flex items-center gap-3">
+      <div class="w-12 h-12 rounded-xl bg-${top.color || 'indigo'}-100 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined msym text-${top.color || 'indigo'}-600 text-2xl" style="font-variation-settings:'FILL' 1">${escHtml(top.icon || 'work')}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-[10px] font-bold text-[#312e81] uppercase tracking-wider">Đề xuất hàng đầu</p>
+        <p class="text-base font-bold text-[#0b1c30] leading-tight">${escHtml(top.name)}</p>
+        <p class="text-[11px] text-[#474651] mt-0.5 line-clamp-2">${escHtml(top.short_description || '')}</p>
+      </div>
+      <button onclick="_setAsPrimary('${escHtml(top.code)}', '${escHtml(top.name)}')"
+        id="qzSetPrimaryBtn"
+        class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-[#1a146b] hover:bg-[#312e81] text-white text-xs font-bold rounded-lg shadow">
+        <span class="material-symbols-outlined msym text-base">rocket_launch</span>Đặt làm hướng chính
+      </button>
+    </div>`;
+  const restList = paths.slice(1).map((p, i) => `
+    <a href="career-detail.html?code=${encodeURIComponent(p.code)}" class="block px-5 py-3 hover:bg-[#eef2ff] transition-colors flex items-center gap-3 border-t border-[#c8c5d3]">
+      <div class="w-10 h-10 rounded-xl bg-${p.color || 'indigo'}-50 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined msym text-${p.color || 'indigo'}-600">${escHtml(p.icon || 'work')}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-bold text-[#777682] uppercase">#${i+2}</span>
+          <p class="text-sm font-semibold text-[#0b1c30] truncate">${escHtml(p.name)}</p>
+        </div>
+        <p class="text-[11px] text-[#474651] mt-0.5 line-clamp-1">${escHtml(p.short_description || '—')}</p>
+      </div>
+      <span class="material-symbols-outlined msym text-[#c8c5d3] text-base flex-shrink-0">chevron_right</span>
+    </a>`).join('');
+  listEl.innerHTML = topCard + restList;
+}
+
+async function _setAsPrimary(code, name) {
+  const btn = document.getElementById('qzSetPrimaryBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined msym text-base spin">progress_activity</span>Đang lưu...'; }
+  try {
+    const res = await fetch(`${API}/careers/me/choose`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ code, slot: 'primary' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Lỗi đặt hướng chính');
+    }
+    if (typeof showToast === 'function') showToast(`Đã đặt "${name}" làm hướng chính`, 'success');
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.remove('bg-indigo-600','hover:bg-[#312e81]');
+      btn.classList.add('bg-emerald-100','text-emerald-700','cursor-default');
+      btn.innerHTML = '<span class="material-symbols-outlined msym text-base">check_circle</span>Đã đặt';
+    }
+  } catch (e) {
+    if (typeof showToast === 'function') showToast(e.message || 'Lỗi', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined msym text-base">rocket_launch</span>Đặt làm hướng chính'; }
+  }
+}
+
+function _retakeQuiz() {
+  _answers = {};
+  _currentIdx = 0;
+  _showIntro();
+}
+</script>
+</body>
+</html>
+
+

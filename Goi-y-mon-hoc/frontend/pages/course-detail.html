@@ -1,0 +1,773 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Chi tiết môn học</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.15s; animation-timing-function: ease-out; }
+    #sidebarMount, header { view-transition-name: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{ colors:{
+        primary:'#1a146b','primary-fixed':'#eef2ff','primary-container':'#312e81',
+        'on-primary':'#ffffff','on-surface':'#0f172a','on-surface-variant':'#475569',
+        'outline-variant':'#e2e8f0',surface:'#f8fafc','surface-container':'#f1f5f9',
+        'surface-container-low':'#f8fafc','surface-container-lowest':'#ffffff',
+        outline:'#94a3b8',error:'#dc2626',
+      }}}
+    }
+  </script>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased">
+
+<!-- ── TOAST ─────────────────────────────────────────────────────────────── -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ── SIDEBAR ───────────────────────────────────────────────────────────── -->
+<div id="sidebarMount"></div>
+
+<!-- ── HEADER ────────────────────────────────────────────────────────────── -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white border-b border-[#c8c5d3] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <button onclick="history.length > 1 ? history.back() : (window.location.href='home.html')"
+      class="flex items-center gap-1 px-2 py-1 rounded-lg text-[#474651] hover:bg-[#eef2ff] transition-colors text-sm">
+      <span class="material-symbols-outlined msym text-base">arrow_back</span>
+      <span class="hidden sm:inline">Quay lại</span>
+    </button>
+    <h2 class="text-base font-bold text-[#191c1d] truncate">Chi tiết môn học</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── MAIN ──────────────────────────────────────────────────────────────── -->
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-5xl mx-auto">
+
+    <!-- Loading -->
+    <div id="cdLoading" class="space-y-4">
+      <div class="bg-[#ffffff] rounded-2xl p-6 border border-[#c8c5d3] animate-pulse h-32"></div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl p-5 border border-[#c8c5d3] animate-pulse h-40 lg:col-span-2"></div>
+        <div class="bg-white rounded-xl p-5 border border-[#c8c5d3] animate-pulse h-40"></div>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="cdError" class="hidden bg-[#ffffff] rounded-2xl border border-red-200 p-10 text-center">
+      <span class="material-symbols-outlined msym text-5xl text-red-300 block mb-3">error</span>
+      <h2 class="text-lg font-bold text-[#0b1c30] mb-1">Không tìm thấy môn học</h2>
+      <p class="text-sm text-[#474651] mb-5" id="cdErrorMsg">—</p>
+      <a href="home.html" class="inline-flex items-center gap-1.5 px-4 py-2 pri-grad text-white text-sm font-semibold rounded-xl shadow hover:opacity-90 transition-all">
+        <span class="material-symbols-outlined msym text-base">home</span>Quay về trang chủ
+      </a>
+    </div>
+
+    <!-- Content -->
+    <div id="cdContent" class="hidden space-y-5 fade-in">
+
+      <!-- ── Hero header card ───────────────────────────────────────────── -->
+      <div class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+        <div class="px-6 py-5 flex items-start gap-5 flex-wrap">
+          <!-- Code badge -->
+          <div class="w-16 h-16 rounded-2xl pri-grad flex items-center justify-center text-white shadow-md flex-shrink-0">
+            <span class="material-symbols-outlined msym text-3xl" style="font-variation-settings:'FILL' 1">menu_book</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-mono text-xs font-bold text-[#1a146b] mb-1" id="cdCode">—</p>
+            <h1 class="text-xl lg:text-2xl font-bold text-[#0b1c30] leading-tight" id="cdName">—</h1>
+            <div class="flex items-center gap-3 mt-2 flex-wrap text-sm text-[#474651]">
+              <span id="cdCredits" class="inline-flex items-center gap-1"><span class="material-symbols-outlined msym text-base">credit_score</span><span>—</span></span>
+              <span id="cdSemester" class="inline-flex items-center gap-1"><span class="material-symbols-outlined msym text-base">calendar_month</span><span>—</span></span>
+              <span id="cdSpec" class="hidden inline-flex items-center gap-1"><span class="material-symbols-outlined msym text-base">school</span><span>—</span></span>
+              <span id="cdNotCount" class="hidden inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-semibold rounded-full">Không tính TC</span>
+            </div>
+          </div>
+          <!-- Status badge -->
+          <div id="cdStatusBadge" class="hidden flex-shrink-0"></div>
+        </div>
+      </div>
+
+      <!-- ── 2-column grid: left = description+skills+prereq+downstream | right = rating ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        <!-- LEFT — main content -->
+        <div class="lg:col-span-2 space-y-5">
+
+          <!-- Description + Skills -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3]">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+              <span class="material-symbols-outlined msym text-[#312e81] text-base">description</span>
+              <h3 class="font-semibold text-sm text-[#0b1c30]">Nội dung môn học</h3>
+            </div>
+            <div class="px-5 py-4">
+              <p id="cdDescription" class="text-sm text-[#0b1c30] leading-relaxed">—</p>
+              <div id="cdSkillsBlock" class="hidden mt-4 pt-4 border-t border-[#c8c5d3]">
+                <p class="text-[11px] font-bold uppercase tracking-wider text-[#777682] mb-2">Kỹ năng nhận được</p>
+                <div id="cdSkillsList" class="flex flex-wrap gap-1.5"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Prerequisites -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3]">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined msym text-amber-500 text-base">lock</span>
+                <h3 class="font-semibold text-sm text-[#0b1c30]">Tiên quyết</h3>
+              </div>
+              <span id="cdPrereqCount" class="text-xs text-[#777682]">—</span>
+            </div>
+            <div id="cdPrereqList" class="divide-y divide-[#c8c5d3]">
+              <p class="px-5 py-6 text-xs text-[#777682] text-center italic">Đang tải...</p>
+            </div>
+            <div id="cdReadyBanner" class="hidden px-5 py-3 border-t border-[#c8c5d3]"></div>
+          </section>
+
+          <!-- Downstream -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3]">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined msym text-emerald-500 text-base">lock_open</span>
+                <h3 class="font-semibold text-sm text-[#0b1c30]">Mở khóa môn nào sau đó?</h3>
+              </div>
+              <span id="cdDownCount" class="text-xs text-[#777682]">—</span>
+            </div>
+            <div id="cdDownList" class="divide-y divide-[#c8c5d3]">
+              <p class="px-5 py-6 text-xs text-[#777682] text-center italic">Đang tải...</p>
+            </div>
+          </section>
+
+          <!-- Reviews -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3]">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined msym text-amber-500 text-base">rate_review</span>
+                <h3 class="font-semibold text-sm text-[#0b1c30]">Đánh giá từ sinh viên trước</h3>
+              </div>
+              <select id="cdReviewSort" onchange="_loadReviews()"
+                class="border border-[#c8c5d3] rounded-lg px-2 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                <option value="recent">Mới nhất</option>
+                <option value="rating_desc">Sao cao đến thấp</option>
+                <option value="rating_asc">Sao thấp đến cao</option>
+              </select>
+            </div>
+            <div id="cdReviewsList" class="divide-y divide-[#c8c5d3]">
+              <p class="px-5 py-6 text-xs text-[#777682] text-center italic">Đang tải...</p>
+            </div>
+            <div id="cdReviewsLoadMoreWrap" class="hidden px-5 py-3 border-t border-[#c8c5d3] text-center">
+              <button onclick="_loadMoreReviews()" id="cdLoadMoreBtn"
+                class="text-xs text-[#1a146b] hover:underline font-semibold">Tải thêm</button>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- RIGHT — sidebar: rating + actions -->
+        <aside class="space-y-5 lg:sticky lg:top-20 self-start">
+
+          <!-- Rating summary + my rate -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+              <span class="material-symbols-outlined msym text-amber-500 text-base">grade</span>
+              <h3 class="font-semibold text-sm text-[#0b1c30]">Đánh giá môn</h3>
+            </div>
+            <div class="px-5 py-4">
+              <div class="flex items-baseline gap-2">
+                <p id="cdAvgRating" class="text-3xl font-extrabold text-amber-500">—</p>
+                <p class="text-sm text-[#777682]">/ 5</p>
+              </div>
+              <div id="cdAvgStars" class="flex gap-0.5 mt-1"></div>
+              <p id="cdRatingCount" class="text-xs text-[#777682] mt-1">— sinh viên đánh giá</p>
+
+              <!-- Distribution -->
+              <div id="cdDistBlock" class="mt-4 space-y-1.5"></div>
+
+              <!-- My rate -->
+              <div id="cdMyRateBlock" class="hidden mt-4 pt-4 border-t border-[#c8c5d3]">
+                <p class="text-[11px] font-bold uppercase tracking-wider text-[#777682] mb-2">Đánh giá của bạn</p>
+                <div id="cdMyStars" class="flex gap-1 mb-2"></div>
+                <textarea id="cdMyReview" placeholder="Chia sẻ trải nghiệm với SV khác (tùy chọn)..."
+                  class="w-full text-sm border border-[#c8c5d3] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" rows="3"></textarea>
+                <div class="flex gap-1.5 mt-2">
+                  <button onclick="_submitReview()" id="cdSubmitReview"
+                    class="hidden flex-1 pri-grad text-white text-xs font-bold py-2 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined msym text-sm">save</span>Lưu đánh giá
+                  </button>
+                  <button onclick="_deleteMyReview()" id="cdDeleteReview"
+                    class="hidden bg-red-50 text-[#ba1a1a] border border-red-100 hover:bg-red-100 text-xs font-bold py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1"
+                    title="Xóa đánh giá của bạn">
+                    <span class="material-symbols-outlined msym text-sm">delete</span>
+                  </button>
+                </div>
+                <p id="cdReviewMsg" class="hidden mt-2 text-xs"></p>
+              </div>
+              <div id="cdCannotRateBlock" class="hidden mt-4 pt-4 border-t border-[#c8c5d3]">
+                <p class="text-xs text-[#474651] italic flex items-center gap-1.5">
+                  <span class="material-symbols-outlined msym text-base text-[#777682]">info</span>
+                  <span id="cdCannotRateMsg">Bạn cần pass môn này mới đánh giá được.</span>
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Quick actions -->
+          <section class="bg-[#ffffff] rounded-2xl shadow-sm border border-[#c8c5d3] overflow-hidden">
+            <div class="px-5 py-4 border-b border-[#c8c5d3] flex items-center gap-2">
+              <span class="material-symbols-outlined msym text-[#312e81] text-base">support_agent</span>
+              <h3 class="font-semibold text-sm text-[#0b1c30]">Cần hỗ trợ thêm?</h3>
+            </div>
+            <div class="px-5 py-4 space-y-2">
+              <button onclick="_askAdvisor()"
+                class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#eef2ff] text-[#1a146b] text-xs font-bold rounded-lg hover:bg-[#e5eeff] transition-colors border border-indigo-100">
+                <span class="material-symbols-outlined msym text-sm">forum</span>Hỏi cố vấn về môn này
+              </button>
+              <a href="ai-chat.html" class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-violet-50 text-violet-700 text-xs font-bold rounded-lg hover:bg-violet-100 transition-colors border border-violet-100">
+                <span class="material-symbols-outlined msym text-sm">smart_toy</span>Hỏi AI assistant
+              </a>
+              <a id="cdRoadmapLink" href="roadmap.html"
+                class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#eff4ff] text-[#0b1c30] text-xs font-bold rounded-lg hover:bg-[#eef2ff] transition-colors border border-[#c8c5d3]">
+                <span class="material-symbols-outlined msym text-sm">route</span>Xem trong lộ trình
+              </a>
+            </div>
+          </section>
+
+        </aside>
+
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
+<script src="floating-chat.js"></script>
+<script>
+// ── Page initialization ──────────────────────────────────────────────────────
+const API = window.API_BASE;
+function H(extra = {}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+
+let _courseData = null;
+let _reviewsOffset = 0;
+let _reviewsTotal = 0;
+
+function getCourseCodeFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return (params.get('code') || '').trim().toUpperCase();
+}
+
+function showToast(msg, type = 'info', duration = 3000) {
+  const cls = { success:'bg-[#dcfce7]0', error:'bg-[#ba1a1a]', warning:'bg-amber-500', info:'bg-[#eef2ff]0' };
+  const icon = { success:'check_circle', error:'error', warning:'warning', info:'info' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto flex items-center gap-2 px-4 py-2.5 ${cls[type]||cls.info} text-white text-sm font-medium rounded-xl shadow-lg fade-in`;
+  el.innerHTML = `<span class="material-symbols-outlined msym text-base">${icon[type]||'info'}</span>${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+checkAuth();
+
+(async function init() {
+  const code = getCourseCodeFromUrl();
+  if (!code) {
+    document.getElementById('cdLoading').classList.add('hidden');
+    document.getElementById('cdError').classList.remove('hidden');
+    document.getElementById('cdErrorMsg').textContent = 'Thiếu mã môn trong URL (?code=...)';
+    return;
+  }
+
+  // Load user info into topbar
+  try {
+    const ur = await fetch(`${API}/auth/me`, { headers: H() });
+    if (ur.ok) {
+      const u = await ur.json();
+      updateTopbarUser(u);
+    }
+  } catch {}
+
+  await loadCourseDetail(code);
+})();
+
+async function loadCourseDetail(code) {
+  try {
+    const res = await fetch(`${API}/courses/${encodeURIComponent(code)}/details`, { headers: H() });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      document.getElementById('cdLoading').classList.add('hidden');
+      document.getElementById('cdError').classList.remove('hidden');
+      document.getElementById('cdErrorMsg').textContent = err.detail || `Lỗi ${res.status}`;
+      return;
+    }
+    _courseData = await res.json();
+    document.getElementById('cdLoading').classList.add('hidden');
+    document.getElementById('cdContent').classList.remove('hidden');
+    _renderHeader();
+    _renderDescription();
+    _renderPrereqs();
+    _renderDownstream();
+    _renderRating();
+    _loadReviews();
+  } catch (e) {
+    document.getElementById('cdLoading').classList.add('hidden');
+    document.getElementById('cdError').classList.remove('hidden');
+    document.getElementById('cdErrorMsg').textContent = 'Lỗi kết nối: ' + (e.message || e);
+  }
+}
+
+// ── Render header ─────────────────────────────────────────────────────────
+function _renderHeader() {
+  const d = _courseData;
+  if (!d) return;
+  document.getElementById('cdCode').textContent = d.course_code;
+  document.getElementById('cdName').textContent = d.course_name;
+  document.title = `${d.course_code} · ${d.course_name} — EduGuide`;
+
+  const credEl = document.getElementById('cdCredits');
+  credEl.querySelector('span:last-child').textContent = (d.credits != null ? d.credits + ' TC' : '—');
+
+  const semEl = document.getElementById('cdSemester');
+  semEl.querySelector('span:last-child').textContent = d.typical_semester ? `Học kỳ ${d.typical_semester}` : 'Chưa xếp HK';
+
+  const specEl = document.getElementById('cdSpec');
+  if (d.specialization_label) {
+    specEl.classList.remove('hidden');
+    specEl.querySelector('span:last-child').textContent = d.specialization_label;
+  } else {
+    specEl.classList.add('hidden');
+  }
+
+  if (!d.count_toward_credits) {
+    document.getElementById('cdNotCount').classList.remove('hidden');
+  }
+
+  // Status badge
+  _renderStatusBadge(d.student_status);
+
+  // Roadmap link with course param
+  const rmLink = document.getElementById('cdRoadmapLink');
+  if (rmLink) rmLink.href = `roadmap.html#${encodeURIComponent(d.course_code)}`;
+}
+
+function _renderStatusBadge(s) {
+  const el = document.getElementById('cdStatusBadge');
+  if (!el || !s) return;
+  const status = s.status;
+  const config = {
+    passed:    { icon:'task_alt',     bg:'bg-[#dcfce7]', border:'border-[#86efac]', text:'text-emerald-700', label:'Đã hoàn thành' },
+    failed:    { icon:'error',        bg:'bg-red-50',     border:'border-red-200',     text:'text-red-700',     label:'Trượt — cần học lại' },
+    not_taken: { icon:'pending',      bg:'bg-slate-50',   border:'border-[#c8c5d3]',   text:'text-[#474651]',   label:'Chưa học' },
+  };
+  const c = config[status] || config.not_taken;
+  let scoreLabel = '';
+  if (status === 'passed' && s.score10 != null) {
+    scoreLabel = `<p class="text-[11px] text-[#474651] mt-0.5 text-center">Điểm: <strong class="text-[#0b1c30]">${s.score10.toFixed(1)}/10</strong> · ${escHtml(s.letter || '')}</p>`;
+  } else if (status === 'failed' && s.score10 != null) {
+    scoreLabel = `<p class="text-[11px] text-[#ba1a1a] mt-0.5 text-center">Điểm: ${s.score10.toFixed(1)}/10</p>`;
+  }
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <div class="${c.bg} ${c.border} border rounded-xl px-4 py-2.5 inline-flex flex-col items-center gap-0.5">
+      <span class="material-symbols-outlined msym ${c.text} text-xl" style="font-variation-settings:'FILL' 1">${c.icon}</span>
+      <p class="text-xs font-bold ${c.text}">${c.label}</p>
+      ${scoreLabel}
+    </div>`;
+}
+// ── Skill category color map ─────────────────────────────────────────────
+const SKILL_CAT_BADGE = {
+  programming: { bg:'bg-[#e5eeff]',  text:'text-[#1a146b]',  label:'Lập trình' },
+  web:         { bg:'bg-emerald-100', text:'text-emerald-700', label:'Web' },
+  mobile:      { bg:'bg-cyan-100',    text:'text-cyan-700',    label:'Mobile' },
+  ai:          { bg:'bg-violet-100',  text:'text-violet-700',  label:'AI/ML' },
+  data:        { bg:'bg-blue-100',    text:'text-blue-700',    label:'Data' },
+  db:          { bg:'bg-sky-100',     text:'text-sky-700',     label:'Database' },
+  network:     { bg:'bg-teal-100',    text:'text-teal-700',    label:'Mạng/Cloud' },
+  security:    { bg:'bg-red-100',     text:'text-red-700',     label:'An ninh' },
+  se:          { bg:'bg-amber-100',   text:'text-amber-700',   label:'Software Eng' },
+  business:    { bg:'bg-orange-100',  text:'text-orange-700',  label:'Business' },
+  softskill:   { bg:'bg-[#e5eeff]',   text:'text-[#0b1c30]',   label:'Kỹ năng mềm' },
+};
+
+function _renderDescription() {
+  const d = _courseData;
+  if (!d) return;
+
+  // Description
+  const descEl = document.getElementById('cdDescription');
+  if (d.description && d.description.trim()) {
+    descEl.textContent = d.description;
+    descEl.className = 'text-sm text-[#0b1c30] leading-relaxed';
+  } else {
+    descEl.innerHTML = '<em class="text-[#777682]">Quản trị chưa cập nhật mô tả cho môn này.</em>';
+  }
+
+  // Skills
+  const block = document.getElementById('cdSkillsBlock');
+  const list = document.getElementById('cdSkillsList');
+  if (!d.skills || d.skills.length === 0) {
+    block.classList.add('hidden');
+    return;
+  }
+  block.classList.remove('hidden');
+  list.innerHTML = d.skills.map(s => {
+    const cat = SKILL_CAT_BADGE[s.category] || { bg:'bg-[#e5eeff]', text:'text-[#0b1c30]', label:s.category };
+    const opacity = s.weight < 0.7 ? 'opacity-60' : '';
+    const weightLabel = s.weight >= 0.9 ? 'Chính' : (s.weight >= 0.6 ? 'Quan trọng' : 'Phụ');
+    return `<div class="${cat.bg} ${cat.text} ${opacity} px-2.5 py-1 rounded-lg text-xs font-semibold inline-flex items-center gap-1"
+       title="${escHtml(s.description || '')}\nTrọng số: ${s.weight.toFixed(1)} (${weightLabel})">
+      <span>${escHtml(s.skill_name)}</span>
+      <span class="text-[9px] opacity-70">${weightLabel}</span>
+    </div>`;
+  }).join('');
+}
+function _renderPrereqs() {
+  const d = _courseData;
+  const list = d?.prereqs || [];
+  document.getElementById('cdPrereqCount').textContent = list.length === 0 ? 'Không có' : `${list.length} môn`;
+
+  const listEl = document.getElementById('cdPrereqList');
+  if (list.length === 0) {
+    listEl.innerHTML = `<p class="px-5 py-6 text-xs text-[#777682] text-center italic">Môn này không có tiên quyết — bạn có thể học bất cứ lúc nào.</p>`;
+    document.getElementById('cdReadyBanner').classList.add('hidden');
+    return;
+  }
+
+  listEl.innerHTML = list.map(p => {
+    const status = p.status;
+    const isPassed = status === 'passed';
+    const isFailed = status === 'failed';
+    let badge, iconCls, scoreText = '';
+    if (isPassed) {
+      badge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full"><span class="material-symbols-outlined msym text-xs" style="font-variation-settings:'FILL' 1">check_circle</span>Đã pass</span>`;
+      iconCls = 'text-emerald-500';
+      if (p.score10 != null) scoreText = ` · ${p.score10.toFixed(1)}/10`;
+    } else if (isFailed) {
+      badge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full"><span class="material-symbols-outlined msym text-xs">error</span>Trượt</span>`;
+      iconCls = 'text-[#ba1a1a]';
+      if (p.score10 != null) scoreText = ` · ${p.score10.toFixed(1)}/10`;
+    } else {
+      badge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full"><span class="material-symbols-outlined msym text-xs">pending</span>Chưa học</span>`;
+      iconCls = 'text-amber-500';
+    }
+    return `<a href="course-detail.html?code=${encodeURIComponent(p.course_code)}"
+      class="block px-5 py-3 hover:bg-[#eef2ff] transition-colors flex items-center gap-3">
+      <span class="material-symbols-outlined msym ${iconCls} text-xl flex-shrink-0">link</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-[#0b1c30] truncate">${escHtml(p.course_name)}</p>
+        <p class="text-[11px] text-[#777682] mt-0.5"><span class="font-mono">${escHtml(p.course_code)}</span> · ${p.credits != null ? p.credits + ' TC' : '—'}${scoreText}</p>
+      </div>
+      ${badge}
+      <span class="material-symbols-outlined msym text-[#c8c5d3] text-base flex-shrink-0">chevron_right</span>
+    </a>`;
+  }).join('');
+
+  // Ready banner
+  const passedCount = list.filter(p => p.status === 'passed').length;
+  const failedCount = list.filter(p => p.status === 'failed').length;
+  const banner = document.getElementById('cdReadyBanner');
+  if (list.length > 0) {
+    banner.classList.remove('hidden');
+    if (passedCount === list.length) {
+      banner.className = 'px-5 py-3 border-t border-[#c8c5d3] bg-[#dcfce7] flex items-center gap-2 text-xs';
+      banner.innerHTML = `<span class="material-symbols-outlined msym text-[#006c49] text-base" style="font-variation-settings:'FILL' 1">verified</span>
+        <span class="text-emerald-800 font-medium">Bạn đã hoàn thành tất cả tiên quyết — sẵn sàng học môn này.</span>`;
+    } else if (failedCount > 0) {
+      banner.className = 'px-5 py-3 border-t border-[#c8c5d3] bg-red-50 flex items-center gap-2 text-xs';
+      banner.innerHTML = `<span class="material-symbols-outlined msym text-[#ba1a1a] text-base">error</span>
+        <span class="text-red-800 font-medium">Bạn đang nợ ${failedCount} môn tiên quyết — cần học lại trước.</span>`;
+    } else {
+      const remaining = list.length - passedCount;
+      banner.className = 'px-5 py-3 border-t border-[#c8c5d3] bg-amber-50 flex items-center gap-2 text-xs';
+      banner.innerHTML = `<span class="material-symbols-outlined msym text-amber-600 text-base">pending</span>
+        <span class="text-amber-800 font-medium">Còn ${remaining}/${list.length} môn tiên quyết chưa học.</span>`;
+    }
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+function _renderDownstream() {
+  const d = _courseData;
+  const list = d?.downstream || [];
+  document.getElementById('cdDownCount').textContent = list.length === 0 ? 'Không có' : `${list.length} môn`;
+
+  const listEl = document.getElementById('cdDownList');
+  if (list.length === 0) {
+    listEl.innerHTML = `<p class="px-5 py-6 text-xs text-[#777682] text-center italic">Môn này không phải tiên quyết của môn nào khác.</p>`;
+    return;
+  }
+  listEl.innerHTML = list.map(c => `<a href="course-detail.html?code=${encodeURIComponent(c.course_code)}"
+    class="block px-5 py-3 hover:bg-[#eef2ff] transition-colors flex items-center gap-3">
+    <span class="material-symbols-outlined msym text-emerald-500 text-xl flex-shrink-0">arrow_forward</span>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-[#0b1c30] truncate">${escHtml(c.course_name)}</p>
+      <p class="text-[11px] text-[#777682] mt-0.5"><span class="font-mono">${escHtml(c.course_code)}</span> · ${c.credits != null ? c.credits + ' TC' : '—'}</p>
+    </div>
+    <span class="material-symbols-outlined msym text-[#c8c5d3] text-base flex-shrink-0">chevron_right</span>
+  </a>`).join('');
+}
+// ── Render rating panel ─────────────────────────────────────────────────
+let _myStarsSelected = 0;
+
+function _renderRating() {
+  const d = _courseData;
+  const r = d?.rating || {};
+  // Average
+  document.getElementById('cdAvgRating').textContent = r.avg != null ? r.avg.toFixed(1) : '—';
+  document.getElementById('cdAvgStars').innerHTML = _starsHtml(r.avg || 0, 'static');
+  document.getElementById('cdRatingCount').textContent = r.count > 0 ? `${r.count} sinh viên đánh giá` : 'Chưa có đánh giá';
+
+  // Distribution
+  const distEl = document.getElementById('cdDistBlock');
+  if (r.count > 0) {
+    distEl.innerHTML = [5,4,3,2,1].map(i => {
+      const cnt = r.distribution?.[String(i)] || 0;
+      const pct = r.count > 0 ? Math.round(cnt / r.count * 100) : 0;
+      return `<div class="flex items-center gap-1.5 text-[10px]">
+        <span class="text-[#474651] w-6">${i}★</span>
+        <div class="flex-1 h-1.5 bg-[#e5eeff] rounded-full overflow-hidden">
+          <div class="h-full bg-amber-400 rounded-full" style="width:${pct}%"></div>
+        </div>
+        <span class="text-[#777682] w-8 text-right">${cnt}</span>
+      </div>`;
+    }).join('');
+  } else {
+    distEl.innerHTML = '';
+  }
+
+  // My rate or cannot rate
+  if (d.can_rate) {
+    document.getElementById('cdMyRateBlock').classList.remove('hidden');
+    document.getElementById('cdCannotRateBlock').classList.add('hidden');
+    _myStarsSelected = r.my_rating || 0;
+    document.getElementById('cdMyStars').innerHTML = _starsHtml(_myStarsSelected, 'interactive');
+    document.getElementById('cdMyReview').value = r.my_review || '';
+    _updateSubmitBtnVisibility();
+  } else {
+    document.getElementById('cdMyRateBlock').classList.add('hidden');
+    document.getElementById('cdCannotRateBlock').classList.remove('hidden');
+    const msg = document.getElementById('cdCannotRateMsg');
+    const status = d.student_status?.status;
+    if (status === 'failed') msg.textContent = 'Bạn cần pass môn này mới đánh giá được.';
+    else if (status === 'not_taken') msg.textContent = 'Bạn cần học và pass môn này trước khi đánh giá.';
+    else msg.textContent = 'Chỉ sinh viên đã pass mới được đánh giá môn.';
+  }
+}
+
+function _starsHtml(val, mode) {
+  // mode: 'static' | 'interactive'
+  const filled = Math.round(val);
+  return [1,2,3,4,5].map(i => {
+    const isFilled = i <= filled;
+    const cls = isFilled ? 'text-amber-400' : 'text-[#c8c5d3]';
+    if (mode === 'interactive') {
+      return `<button type="button" onclick="_pickMyStar(${i})"
+        class="text-xl ${cls} hover:text-amber-500 hover:scale-110 transition-transform" title="${i} sao">★</button>`;
+    }
+    return `<span class="text-base ${cls}">★</span>`;
+  }).join('');
+}
+
+function _pickMyStar(i) {
+  _myStarsSelected = i;
+  document.getElementById('cdMyStars').innerHTML = _starsHtml(i, 'interactive');
+  _updateSubmitBtnVisibility();
+}
+
+function _updateSubmitBtnVisibility() {
+  const btn = document.getElementById('cdSubmitReview');
+  if (!btn) return;
+  if (_myStarsSelected > 0) btn.classList.remove('hidden');
+  else btn.classList.add('hidden');
+  // Delete button hiển thị khi user đã có rating
+  const delBtn = document.getElementById('cdDeleteReview');
+  if (delBtn) {
+    const hasExisting = _courseData?.rating?.my_rating;
+    if (hasExisting) delBtn.classList.remove('hidden');
+    else delBtn.classList.add('hidden');
+  }
+}
+
+async function _deleteMyReview() {
+  if (!_courseData) return;
+  if (!confirm('Xóa đánh giá của bạn cho môn này? Sao + comment sẽ bị xóa hoàn toàn.')) return;
+  const code = _courseData.course_code;
+  const res = await fetch(`${API}/courses/${encodeURIComponent(code)}/rate`, {
+    method: 'DELETE', headers: H(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    showToast(err.detail || 'Lỗi xóa đánh giá', 'error');
+    return;
+  }
+  showToast('Đã xóa đánh giá', 'success');
+  // Reset state + reload
+  _myStarsSelected = 0;
+  await loadCourseDetail(code);
+}
+
+async function _submitReview() {
+  if (_myStarsSelected === 0) return;
+  const review = (document.getElementById('cdMyReview').value || '').trim();
+  const btn = document.getElementById('cdSubmitReview');
+  btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined msym text-sm spin">progress_activity</span>Đang lưu...';
+
+  let url = `${API}/courses/${encodeURIComponent(_courseData.course_code)}/rate?rating=${_myStarsSelected}`;
+  if (review) url += `&review=${encodeURIComponent(review)}`;
+  const res = await fetch(url, { method: 'POST', headers: H() });
+  btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined msym text-sm">save</span>Lưu đánh giá';
+
+  const msgEl = document.getElementById('cdReviewMsg');
+  msgEl.classList.remove('hidden');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    msgEl.className = 'mt-2 text-xs text-[#ba1a1a]';
+    msgEl.textContent = err.detail || 'Lỗi lưu đánh giá';
+    return;
+  }
+  msgEl.className = 'mt-2 text-xs text-[#006c49]';
+  msgEl.textContent = '✓ Đã lưu đánh giá. Cảm ơn bạn!';
+  showToast('Đã lưu đánh giá', 'success');
+  setTimeout(() => msgEl.classList.add('hidden'), 3000);
+  // Reload rating + reviews
+  await loadCourseDetail(_courseData.course_code);
+}
+
+// ── Load reviews list ────────────────────────────────────────────────────
+async function _loadReviews() {
+  if (!_courseData) return;
+  _reviewsOffset = 0;
+  await _fetchReviews(true);
+}
+
+async function _loadMoreReviews() {
+  await _fetchReviews(false);
+}
+
+async function _fetchReviews(reset) {
+  const sort = document.getElementById('cdReviewSort')?.value || 'recent';
+  const url = `${API}/courses/${encodeURIComponent(_courseData.course_code)}/reviews?sort=${sort}&limit=10&offset=${_reviewsOffset}`;
+  const listEl = document.getElementById('cdReviewsList');
+  const wrap = document.getElementById('cdReviewsLoadMoreWrap');
+  if (reset) listEl.innerHTML = '<p class="px-5 py-6 text-xs text-[#777682] text-center italic">Đang tải...</p>';
+  try {
+    const res = await fetch(url, { headers: H() });
+    if (!res.ok) {
+      if (reset) listEl.innerHTML = '<p class="px-5 py-6 text-xs text-[#ba1a1a] text-center">Lỗi tải đánh giá.</p>';
+      return;
+    }
+    const data = await res.json();
+    _reviewsTotal = data.total || 0;
+    if (reset && data.items.length === 0) {
+      listEl.innerHTML = '<p class="px-5 py-6 text-xs text-[#777682] text-center italic">Chưa có đánh giá nào có nội dung.</p>';
+      wrap.classList.add('hidden');
+      return;
+    }
+    const html = data.items.map(it => {
+      const stars = [1,2,3,4,5].map(i => `<span class="text-sm ${i <= it.rating ? 'text-amber-400' : 'text-slate-200'}">★</span>`).join('');
+      const cohortBadge = it.cohort ? `<span class="text-[10px] text-[#777682]">· ${escHtml(it.cohort)}</span>` : '';
+      const mineBadge = it.is_mine ? '<span class="ml-1 text-[10px] bg-[#e5eeff] text-[#1a146b] px-1.5 py-0.5 rounded-full font-bold">Bạn</span>' : '';
+      return `<div class="px-5 py-4">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="flex">${stars}</div>
+          <p class="text-xs font-semibold text-[#0b1c30]">${escHtml(it.display_name)}</p>${cohortBadge}${mineBadge}
+        </div>
+        <p class="text-sm text-[#0b1c30] leading-relaxed whitespace-pre-line">${escHtml(it.review)}</p>
+      </div>`;
+    }).join('');
+    if (reset) listEl.innerHTML = html;
+    else listEl.insertAdjacentHTML('beforeend', html);
+    _reviewsOffset += data.items.length;
+    // Show/hide load more
+    if (_reviewsOffset < _reviewsTotal) {
+      wrap.classList.remove('hidden');
+      document.getElementById('cdLoadMoreBtn').textContent = `Tải thêm (còn ${_reviewsTotal - _reviewsOffset})`;
+    } else {
+      wrap.classList.add('hidden');
+    }
+  } catch (e) {
+    if (reset) listEl.innerHTML = '<p class="px-5 py-6 text-xs text-[#ba1a1a] text-center">Lỗi kết nối.</p>';
+  }
+}
+function _askAdvisor() {
+  if (!_courseData) return;
+  const code = _courseData.course_code;
+  const name = _courseData.course_name;
+  const message = `Em muốn hỏi về môn ${code} — ${name}.\n\n[Câu hỏi của em ở đây]`;
+  // Lưu prefill cho messaging.html nếu hỗ trợ
+  try {
+    sessionStorage.setItem('_msg_prefill', JSON.stringify({
+      title: `Hỏi về môn ${code} — ${name}`,
+      body: message,
+      course_code: code,
+    }));
+  } catch {}
+  // Copy vào clipboard để SV paste nếu cần
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(message).catch(() => {});
+  }
+  showToast('Đã copy mẫu câu hỏi — paste vào ô tin nhắn', 'info', 4000);
+  setTimeout(() => { window.location.href = 'messaging.html'; }, 800);
+}
+</script>
+</body>
+</html>
+
+

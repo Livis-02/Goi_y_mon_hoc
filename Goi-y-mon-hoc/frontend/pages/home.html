@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Trang chủ</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration:0.15s; animation-timing-function:ease-out; }
+    #sidebarMount, header { view-transition-name:none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=2"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+
+      theme: { extend: { colors: {
+        "secondary-container": "#6cf8bb", "surface-container": "#e5eeff",
+        "secondary-fixed": "#6ffbbe", "primary-fixed": "#e2dfff",
+        "on-secondary-fixed": "#002113", "surface-variant": "#d3e4fe",
+        "inverse-surface": "#213145", "on-surface-variant": "#474651",
+        "background": "#f8f9ff", "surface": "#f8f9ff",
+        "error": "#ba1a1a", "surface-container-low": "#eff4ff",
+        "surface-container-highest": "#d3e4fe", "surface-container-high": "#dce9ff",
+        "on-secondary-container": "#00714d", "on-error-container": "#93000a",
+        "surface-bright": "#f8f9ff", "inverse-primary": "#c3c0ff",
+        "on-background": "#0b1c30", "error-container": "#ffdad6",
+        "outline-variant": "#c8c5d3", "on-secondary": "#ffffff",
+        "surface-tint": "#5654a8", "inverse-on-surface": "#eaf1ff",
+        "surface-container-lowest": "#ffffff", "outline": "#777682",
+        "primary-fixed-dim": "#c3c0ff", "secondary": "#006c49",
+        "on-primary-container": "#9c9af4", "surface-dim": "#cbdbf5",
+        "primary": "#1a146b", "tertiary": "#0a0086",
+        "tertiary-container": "#1e19b2", "primary-container": "#312e81",
+        "on-surface": "#0b1c30", "on-error": "#ffffff",
+        "on-primary": "#ffffff", "tertiary-fixed": "#e1e0ff",
+        "on-primary-fixed": "#100563",
+      }}}
+    }
+  </script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+    input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus,
+    textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+      -webkit-text-fill-color: inherit !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen">
+
+<!-- Toast -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Sidebar fragment -->
+<div id="sidebarMount"></div>
+
+<!-- Header -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest/95 backdrop-blur border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-on-surface-variant">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-on-surface">Trang chủ</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Bell -->
+    <div class="relative">
+      <button id="bellBtn" onclick="toggleNotifDropdown()" aria-label="Thông báo"
+        class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container transition-colors relative">
+        <span class="material-symbols-outlined msym text-xl">notifications</span>
+        <span id="notifBubble" class="hidden absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-error text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">0</span>
+      </button>
+      <div id="notifDropdown" class="hidden absolute right-0 top-11 w-80 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50 flex flex-col max-h-[420px]">
+        <div class="px-4 py-3 border-b border-outline-variant flex items-center justify-between flex-shrink-0">
+          <span class="text-sm font-bold text-on-surface">Thông báo</span>
+          <button onclick="markAllNotifsRead()" class="text-[11px] text-primary hover:underline">Đánh dấu tất cả đã đọc</button>
+        </div>
+        <div id="notifDropdownList" class="overflow-y-auto flex-1 divide-y divide-surface-container">
+          <p class="px-4 py-6 text-xs text-outline text-center">Đang tải…</p>
+        </div>
+        <a href="notifications.html" class="px-4 py-2.5 border-t border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low text-center transition-colors flex items-center justify-center gap-1">
+          Xem tất cả thông báo
+          <span class="material-symbols-outlined msym text-sm">arrow_forward</span>
+        </a>
+      </div>
+    </div>
+    <!-- Urgent modal -->
+    <div id="urgentModal" class="hidden fixed inset-0 bg-black/60 z-[9000] flex items-center justify-center p-4">
+      <div class="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="px-6 py-4 bg-error-container border-b border-outline-variant rounded-t-2xl">
+          <p class="text-sm font-extrabold text-on-error-container flex items-center gap-2">
+            <span class="material-symbols-outlined msym text-xl">priority_high</span>Thông báo khẩn cấp
+          </p>
+        </div>
+        <div id="urgentModalList" class="px-6 py-4 space-y-4 max-h-72 overflow-y-auto"></div>
+        <div class="px-6 pb-5 flex justify-end gap-2">
+          <button onclick="_dismissUrgent(false)" class="px-4 py-2 text-sm text-on-surface border border-outline-variant rounded-lg hover:bg-surface-container transition-colors">Xem sau</button>
+          <button onclick="_dismissUrgent(true)" class="px-4 py-2 text-sm font-bold bg-error text-on-error rounded-lg hover:opacity-90 transition-colors">Đã đọc</button>
+        </div>
+      </div>
+    </div>
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Main content -->
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-6 max-w-7xl mx-auto">
+
+    <!-- Loading skeleton -->
+    <div id="dashLoading" class="space-y-6 animate-pulse">
+      <div class="h-36 bg-surface-container rounded-xl"></div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-surface-container rounded-xl h-28"></div>
+        <div class="bg-surface-container rounded-xl h-28"></div>
+        <div class="bg-surface-container rounded-xl h-28"></div>
+        <div class="bg-surface-container rounded-xl h-28"></div>
+      </div>
+      <div class="bg-surface-container rounded-xl h-48"></div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="dashEmpty" class="hidden py-16 px-4 max-w-xl mx-auto text-center">
+      <div class="w-20 h-20 bg-surface-container rounded-3xl flex items-center justify-center mb-5 mx-auto">
+        <span class="material-symbols-outlined msym text-on-surface-variant text-5xl" style="font-variation-settings:'FILL' 1">school</span>
+      </div>
+      <h2 class="text-xl font-extrabold mb-2 text-on-surface">Chưa có dữ liệu học tập</h2>
+      <p class="text-sm text-on-surface-variant mb-2">Hệ thống chưa nhận được bảng điểm của bạn.</p>
+      <p class="text-xs text-outline mb-6">Bảng điểm được cập nhật bởi cố vấn học tập hoặc quản trị viên sau mỗi kỳ học.</p>
+      <div class="flex flex-wrap gap-3 justify-center">
+        <a href="messaging.html" class="pri-grad text-on-primary px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:opacity-90 transition-all inline-flex items-center gap-2">
+          <span class="material-symbols-outlined msym">forum</span>Liên hệ cố vấn
+        </a>
+        <a href="ctdt.html" class="bg-surface-container-lowest border border-outline-variant text-on-surface px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-surface-container transition-all inline-flex items-center gap-2 shadow-sm">
+          <span class="material-symbols-outlined msym">account_tree</span>Xem sơ đồ CTĐT
+        </a>
+      </div>
+    </div>
+
+    <!-- Dashboard data -->
+    <div id="dashData" class="hidden space-y-6 fade-in">
+
+      <!-- Spec-pending banner -->
+      <div id="specPendingBanner" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-xl p-4 flex items-start gap-3">
+        <span class="material-symbols-outlined msym text-amber-500 text-2xl flex-shrink-0 mt-0.5" style="font-variation-settings:'FILL' 1">schema</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-bold text-amber-900" id="specPendingTitle">Bạn chưa có chuyên ngành chính thức</p>
+          <p class="text-xs text-amber-800 mt-1" id="specPendingMsg">SV năm 1-2 học chung. Đến HK5-HK6 sẽ chốt 1 trong 6 hướng cho 40 TC còn lại.</p>
+        </div>
+        <a href="compare-specs.html" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">
+          <span class="material-symbols-outlined msym text-base">compare</span>So sánh 6 CN
+        </a>
+      </div>
+
+      <!-- Alert banners -->
+      <div id="dashAlerts" class="hidden space-y-2"></div>
+
+      <!-- 1. Greeting Hero -->
+      <section class="rounded-xl overflow-hidden shadow-sm relative" style="background:linear-gradient(135deg,#1a146b 0%,#312e81 100%)">
+        <div class="absolute inset-0 opacity-[0.07]" style="background-image:url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"></div>
+        <div class="relative z-10 flex items-start justify-between gap-4 px-6 py-6 flex-wrap">
+          <div>
+            <h1 class="text-2xl font-bold text-white">Xin chào, <span id="dashGreetingName">bạn</span> 👋</h1>
+            <p class="text-sm text-primary-fixed mt-1" id="dashGreetingSub">—</p>
+          </div>
+          <button onclick="loadDashboard(true)"
+            class="flex items-center gap-1.5 text-xs text-primary-fixed border border-white/30 bg-white/10 rounded-lg px-3 py-2 hover:bg-white/20 transition-colors">
+            <span class="material-symbols-outlined msym text-sm">refresh</span>Làm mới
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. Stats grid -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- TC tích lũy -->
+        <div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm flex flex-col gap-2 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+          <div class="flex items-center gap-2 text-on-surface-variant">
+            <span class="material-symbols-outlined msym text-primary text-xl" style="font-variation-settings:'FILL' 1">school</span>
+            <span class="text-xs font-semibold uppercase tracking-wide">TC tích lũy</span>
+          </div>
+          <div class="flex items-end gap-1">
+            <span class="text-3xl font-bold text-on-surface leading-none" id="dCredits">—</span>
+            <span class="text-sm text-outline mb-0.5">/ <span id="dTotalCredits">—</span></span>
+          </div>
+          <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+            <div class="bg-secondary h-full rounded-full transition-all duration-700" id="dProgressBar" style="width:0%"></div>
+          </div>
+          <p class="text-[10px] text-outline text-right" id="dProgressLabel">—</p>
+        </div>
+        <!-- GPA -->
+        <div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm flex flex-col gap-2 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary-container"></div>
+          <div class="flex items-center gap-2 text-on-surface-variant">
+            <span class="material-symbols-outlined msym text-primary text-xl" style="font-variation-settings:'FILL' 1">grade</span>
+            <span class="text-xs font-semibold uppercase tracking-wide">GPA tích lũy</span>
+          </div>
+          <div class="flex items-end gap-1">
+            <span class="text-3xl font-bold text-on-surface leading-none" id="dGpa4">—</span>
+          </div>
+          <p class="text-xs text-outline">Hệ 10: <span id="dGpa10">—</span></p>
+          <p class="text-xs font-semibold" id="dGpaClassify">—</p>
+        </div>
+        <!-- Hoàn thành -->
+        <div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm flex flex-col gap-2 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+          <div class="flex items-center gap-2 text-on-surface-variant">
+            <span class="material-symbols-outlined msym text-primary text-xl" style="font-variation-settings:'FILL' 1">fact_check</span>
+            <span class="text-xs font-semibold uppercase tracking-wide">Hoàn thành</span>
+          </div>
+          <div class="flex items-end gap-1">
+            <span class="text-3xl font-bold text-on-surface leading-none" id="dPercent">—</span>
+          </div>
+          <p class="text-xs text-outline" id="dProgressSub">—</p>
+        </div>
+        <!-- Dự kiến TN -->
+        <div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm flex flex-col gap-2 relative overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-outline"></div>
+          <div class="flex items-center gap-2 text-on-surface-variant">
+            <span class="material-symbols-outlined msym text-primary text-xl" style="font-variation-settings:'FILL' 1">event</span>
+            <span class="text-xs font-semibold uppercase tracking-wide">Dự kiến TN</span>
+          </div>
+          <div class="flex items-end gap-1">
+            <span class="text-2xl font-bold text-on-surface leading-none" id="dGradEst">—</span>
+          </div>
+          <p class="text-xs text-outline" id="dGradEstSub">—</p>
+        </div>
+      </section>
+
+      <!-- Status chips -->
+      <div class="flex flex-wrap gap-2" id="dStatusChips"></div>
+
+      <!-- Quick actions -->
+      <section class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <a href="roadmap.html" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 hover:shadow-md hover:border-primary/40 transition-all group flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined msym text-primary">route</span>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-on-surface leading-tight">Lộ trình kỳ tới</p>
+            <p class="text-xs text-on-surface-variant">Sắp xếp kế hoạch cá nhân</p>
+          </div>
+        </a>
+        <a href="career-quiz.html" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 hover:shadow-md hover:border-primary/40 transition-all group flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined msym text-primary">quiz</span>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-on-surface leading-tight">Quiz hướng nghiệp</p>
+            <p class="text-xs text-on-surface-variant">12 câu Holland — 3 phút</p>
+          </div>
+        </a>
+        <a href="readiness.html" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 hover:shadow-md hover:border-primary/40 transition-all group flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined msym text-primary">workspace_premium</span>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-on-surface leading-tight">Sẵn sàng tốt nghiệp</p>
+            <p class="text-xs text-on-surface-variant">3 mốc: TN · TT DN · ĐATN</p>
+          </div>
+        </a>
+      </section>
+
+      <!-- 3. AI Recommendations -->
+      <section class="flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold flex items-center gap-2 text-on-surface">
+            <span class="material-symbols-outlined msym text-primary" style="font-variation-settings:'FILL' 1">smart_toy</span>
+            Gợi ý môn học kỳ tới
+          </h2>
+          <a href="roadmap.html" class="text-xs font-semibold text-primary hover:text-primary-container transition-colors flex items-center gap-1">
+            Lập kế hoạch <span class="material-symbols-outlined msym text-sm">arrow_forward</span>
+          </a>
+        </div>
+        <div id="dRecPreview" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="col-span-full flex items-center gap-2 py-8 text-outline justify-center">
+            <span class="material-symbols-outlined msym spin">progress_activity</span>
+            <p class="text-sm">Đang tải...</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- 4. Tra cứu môn học -->
+        <section class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-outline-variant flex items-center gap-2">
+            <span class="material-symbols-outlined msym text-primary">help</span>
+            <div>
+              <h3 class="font-semibold text-sm text-on-surface">Tra cứu môn học</h3>
+              <p class="text-xs text-on-surface-variant mt-0.5">Kiểm tra vì sao 1 môn được/không được gợi ý cho bạn</p>
+            </div>
+          </div>
+          <div class="px-5 py-4">
+            <div class="relative">
+              <div class="flex gap-2">
+                <input autocomplete="off" id="whyNotInput" type="text"
+                  placeholder="Gõ mã hoặc tên môn (VD: 7080116)"
+                  class="flex-1 border border-outline-variant rounded-lg px-3 py-2 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  oninput="_whyNotSuggest()" onkeydown="if(event.key==='Enter'){ _whyNotHideSuggest(); _checkWhyNot(); }"/>
+                <button onclick="_whyNotHideSuggest(); _checkWhyNot()"
+                  class="px-4 py-2 bg-primary text-on-primary text-sm font-semibold rounded-lg hover:bg-primary-container transition-colors">
+                  Tra cứu
+                </button>
+              </div>
+              <div id="whyNotSuggest" class="hidden absolute left-0 right-24 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-60 overflow-y-auto z-20"></div>
+            </div>
+            <div id="whyNotResult" class="hidden mt-3"></div>
+          </div>
+        </section>
+
+        <!-- 5. Kỹ năng -->
+        <section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
+          <div class="px-5 py-4 border-b border-outline-variant flex items-start justify-between gap-3">
+            <div class="flex items-start gap-2 flex-1 min-w-0">
+              <span class="material-symbols-outlined msym text-primary mt-0.5" style="font-variation-settings:'FILL' 1">psychology</span>
+              <div>
+                <h3 class="font-semibold text-sm text-on-surface">Kỹ năng tôi quan tâm</h3>
+                <p class="text-xs text-on-surface-variant mt-0.5">Chọn 3-5 kỹ năng để cá nhân hóa gợi ý.</p>
+              </div>
+            </div>
+            <button onclick="_saveMyCareerSkills()" id="careerSkillsSaveBtn"
+              class="hidden items-center gap-1 px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary-container transition-colors flex-shrink-0">
+              <span class="material-symbols-outlined msym text-sm">save</span>Lưu
+            </button>
+          </div>
+          <div class="px-5 py-4 flex-1">
+            <div id="careerSkillsArea" class="text-sm text-outline italic">Đang tải...</div>
+            <div id="careerSkillsImpact" class="hidden mt-4 pt-4 border-t border-outline-variant">
+              <p class="text-[11px] font-bold text-secondary uppercase tracking-wider mb-2 flex items-center gap-1">
+                <span class="material-symbols-outlined msym text-[14px]">auto_awesome</span>Đã áp dụng
+              </p>
+              <p class="text-xs text-on-surface-variant" id="careerSkillsImpactText">—</p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <a href="skill-tree.html" class="text-[11px] text-primary hover:underline font-semibold">→ Skill tree</a>
+                <button onclick="loadDashboard(true);document.getElementById('careerSkillsImpact').classList.add('hidden')" class="text-[11px] text-primary hover:underline font-semibold">↻ Refresh gợi ý</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Hidden elements required by JS -->
+      <div class="hidden" aria-hidden="true">
+        <p id="dOfficialCreditsNote"></p>
+        <div id="dQuickActions"></div>
+        <div id="dTargetGpaCard"><p id="dTargetGpaHint"></p><span id="dTargetGpaBadge"></span></div>
+        <p id="dProgressHint"></p>
+        <div id="dashTimeline"><div id="dashTimelineInner"></div></div>
+        <p id="dRecTrack"></p>
+        <div id="dGroupProgressDash"></div>
+        <p id="dGradEstDetail"></p><p id="dGradEstDetailSub"></p>
+        <div id="dElectiveCard"><div id="dElectiveGroups"></div></div>
+        <div id="dBenchmarkCard">
+          <span id="dBenchmarkBadge"></span>
+          <div id="dBenchmarkBar" style="width:0%"></div>
+          <div id="dBenchmarkTicks"></div>
+          <div id="dBenchmarkYears"></div>
+          <p id="dBenchmarkHint"></p>
+        </div>
+        <span id="dRemainingCount"></span>
+        <span id="dRemainingChevron"></span>
+        <div id="dRemainingBody"><table><tbody id="dRemainingTbody"></tbody></table></div>
+        <div id="dashCoursesAccordion">
+          <button id="dashCoursesToggle"></button>
+          <span id="dashCoursesTriggerLabel"></span>
+          <span id="dashCoursesChevron"></span>
+          <div id="dashCoursesBody"><div id="dashCoursesContent"></div></div>
+        </div>
+        <div id="onboardingCard">
+          <button id="onbDismissBtn"></button>
+          <div id="onbStep1"><div id="onbBadge1"></div><p id="onbTitle1"></p><button id="onbBtn1"></button></div>
+          <div id="onbStep2"><div id="onbBadge2"></div><p id="onbTitle2"></p><button id="onbBtn2"></button></div>
+          <div id="onbStep3"><div id="onbBadge3"></div><p id="onbTitle3"></p><button id="onbBtn3"></button></div>
+        </div>
+        <span class="text-emerald-600 text-amber-600 text-slate-600 text-rose-600"></span>
+      </div>
+
+    </div><!-- /dashData -->
+  </div>
+</main>
+
+<!-- Floating chat -->
+<script src="floating-chat.js"></script>
+
+<script>
+const API_BASE = window.API_BASE;
+
+function showToast(msg, type = 'info', duration = 3000) {
+  const icons = { success:'check_circle', error:'error', warning:'warning', info:'info' };
+  const cls   = { success:'bg-emerald-500', error:'bg-error', warning:'bg-amber-500', info:'bg-primary' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto flex items-center gap-2 px-4 py-2.5 ${cls[type]||cls.info} text-white text-sm font-medium rounded-xl shadow-lg fade-in`;
+  el.innerHTML = `<span class="material-symbols-outlined msym text-base">${icons[type]||'info'}</span>${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+async function callApi(path, opts = {}, timeoutMs = 30000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { signal: ctrl.signal, ...opts });
+    clearTimeout(timer);
+    if (res.status === 401) { localStorage.removeItem('access_token'); window.location.replace('index.html'); return { ok:false, status:401, data:{} }; }
+    let data; try { data = await res.json(); } catch { data = {}; }
+    return { ok: res.ok, status: res.status, data };
+  } catch (err) {
+    clearTimeout(timer);
+    return { ok: false, status: 0, data: { detail: err?.name === 'AbortError' ? 'Timeout.' : 'Không thể kết nối server.' } };
+  }
+}
+function auth(extra = {}) { return { Authorization: `Bearer ${getToken()}`, ...extra }; }
+
+async function _injectSidebar() {
+  if (!document.getElementById('sidebarDrawer') && typeof renderSidebar === 'function') {
+    renderSidebar();
+  }
+}
+
+let _dashLoaded = false;
+
+async function loadDashboard(force = false) {
+  if (_dashLoaded && !force) return;
+  _dashLoaded = true;
+
+  const [userRes, progressRes, recRes] = await Promise.all([
+    callApi('/auth/me', { headers: auth() }),
+    callApi('/progress/me', { headers: auth() }),
+    callApi('/recommendations/me?limit=3', { headers: auth() }),
+  ]);
+
+  if (userRes.ok) {
+    const u = userRes.data;
+    const name = u.full_name || u.email || 'Bạn';
+    const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('dashGreetingName').textContent = name.split(' ').pop();
+    document.getElementById('topbarUserName').textContent = name;
+    updateTopbarUser({full_name: name, role: 'student'});
+    document.getElementById('sidebarUserName') && (document.getElementById('sidebarUserName').textContent = name);
+    document.getElementById('avatarCircle') && (document.getElementById('avatarCircle').textContent = initials);
+    const spec = u.specialization ? `Chuyên ngành: ${u.specialization}` : 'CNTT 7480201 · chưa chọn CN';
+    document.getElementById('sidebarSpec') && (document.getElementById('sidebarSpec').textContent = spec);
+
+    if (!u.specialization && progressRes.ok) {
+      const terms = progressRes.data.terms_studied || 0;
+      const banner = document.getElementById('specPendingBanner');
+      const titleEl = document.getElementById('specPendingTitle');
+      const msgEl = document.getElementById('specPendingMsg');
+      if (banner) {
+        banner.classList.remove('hidden');
+        if (terms >= 4) {
+          banner.className = 'bg-gradient-to-r from-rose-50 to-red-50 border border-rose-300 rounded-xl p-4 flex items-start gap-3';
+          if (titleEl) titleEl.textContent = `Đã đến lúc chốt chuyên ngành (đã học ${terms} HK)`;
+          if (msgEl) msgEl.textContent = 'Bạn đã qua HK4 — cần chốt 1 trong 6 hướng để hệ thống lập lộ trình.';
+        } else if (terms >= 2) {
+          if (titleEl) titleEl.textContent = `Sắp đến lúc chọn chuyên ngành (đã học ${terms} HK)`;
+        }
+      }
+    }
+  }
+
+  if (progressRes.ok) {
+    const p = progressRes.data;
+    document.getElementById('dashLoading').classList.add('hidden');
+
+    const hasGrades = (p.earned_credits || 0) > 0 || (p.completed_courses || 0) > 0 || (p.terms_studied || 0) > 0;
+    if (!hasGrades) {
+      document.getElementById('dashEmpty').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('dashData').classList.remove('hidden');
+
+    const earned = p.earned_credits || 0;
+    const total  = p.graduation_threshold || 153;
+    const pct    = total > 0 ? Math.min(100, (earned / total * 100)) : 0;
+
+    document.getElementById('dCredits').textContent      = earned;
+    document.getElementById('dTotalCredits').textContent = total;
+    document.getElementById('dProgressBar').style.width  = pct.toFixed(1) + '%';
+    document.getElementById('dProgressLabel').textContent = pct.toFixed(1) + '%';
+
+    const gpa4 = p.avg_score4 ?? p.gpa4 ?? null;
+    const gpa10 = p.avg_score10 ?? p.gpa10 ?? null;
+    document.getElementById('dGpa4').textContent  = gpa4  !== null ? Number(gpa4).toFixed(2)  : '—';
+    document.getElementById('dGpa10').textContent = gpa10 !== null ? Number(gpa10).toFixed(2) : '—';
+
+    const gpaColors = [[3.6,'text-emerald-600','Xuất sắc'],[3.2,'text-teal-600','Giỏi'],[2.5,'text-primary','Khá'],[2.0,'text-amber-600','Trung bình'],[0,'text-error','Yếu']];
+    const gpaInfo = gpaColors.find(([t]) => (gpa4||0) >= t) || gpaColors[4];
+    const gpaEl = document.getElementById('dGpaClassify');
+    gpaEl.className = `text-xs font-semibold ${gpaInfo[1]}`;
+    gpaEl.textContent = gpaInfo[2];
+
+    document.getElementById('dPercent').textContent   = pct.toFixed(1) + '%';
+    document.getElementById('dProgressSub').textContent = `${earned} / ${total} TC`;
+    document.getElementById('dGradEst').textContent    = p.estimated_graduation || '—';
+    document.getElementById('dGradEstSub').textContent = p.estimated_graduation_detail || (p.estimated_graduation ? 'Dự kiến tốt nghiệp' : 'Chưa đủ dữ liệu');
+
+    const wrap = document.getElementById('sidebarProgressWrap');
+    if (wrap) {
+      wrap.classList.remove('hidden');
+      document.getElementById('sidebarProgressBar').style.width = pct.toFixed(1) + '%';
+      document.getElementById('sidebarProgressLabel').textContent = pct.toFixed(1) + '%';
+    }
+
+    const alerts = [];
+    if (p.graduation_ready)    alerts.push({ type:'emerald', icon:'check_circle', text:'Bạn đã đủ điều kiện tốt nghiệp!' });
+    if (p.internship_eligible) alerts.push({ type:'secondary', icon:'work', text:'Bạn đủ điều kiện đăng ký thực tập tốt nghiệp.' });
+    if (p.thesis_eligible)     alerts.push({ type:'secondary', icon:'menu_book', text:'Bạn đủ điều kiện đăng ký đồ án tốt nghiệp.' });
+    if (gpa4 !== null && gpa4 < 2.0) alerts.push({ type:'red', icon:'warning', text:`GPA hệ 4 (${Number(gpa4).toFixed(2)}) dưới ngưỡng tốt nghiệp 2.0 — cần cải thiện.` });
+
+    const alertsEl = document.getElementById('dashAlerts');
+    if (alerts.length) {
+      alertsEl.classList.remove('hidden');
+      const colorMap = {
+        emerald:'bg-emerald-50 border-emerald-200 text-emerald-800',
+        secondary:'bg-emerald-50 border-emerald-200 text-emerald-800',
+        red:'bg-red-50 border-red-200 text-red-800'
+      };
+      alertsEl.innerHTML = alerts.map(a => `
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl border ${colorMap[a.type]||colorMap.emerald} text-sm">
+          <span class="material-symbols-outlined msym text-base flex-shrink-0" style="font-variation-settings:'FILL' 1">${a.icon}</span>
+          ${a.text}
+        </div>`).join('');
+    }
+
+    const specNames = {
+      '7480201_07':'Khoa học máy tính','7480201_06':'Mạng máy tính',
+      '7480201_05':'Công nghệ phần mềm','7480201_09':'Hệ thống thông tin',
+      '7480201_04':'Tin học kinh tế','7480201_08':'CNTT Địa học',
+    };
+    const chips = [];
+    if (p.specialization) chips.push({ cls:'bg-primary-fixed text-primary border border-primary/20', label: specNames[p.specialization] || p.specialization });
+    if (p.terms_studied)  chips.push({ cls:'bg-surface-container text-on-surface-variant border border-outline-variant', label: `Đã học ${p.terms_studied} kỳ` });
+    document.getElementById('dStatusChips').innerHTML = chips.map(c =>
+      `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${c.cls}">${c.label}</span>`
+    ).join('');
+
+    document.getElementById('dashGreetingSub').textContent = `Đã tích lũy ${earned}/${total} TC · GPA: ${gpa4 !== null ? Number(gpa4).toFixed(2) : '—'}/4.0`;
+
+  } else {
+    document.getElementById('dashLoading').classList.add('hidden');
+    document.getElementById('dashEmpty').classList.remove('hidden');
+  }
+
+  if (recRes.ok && recRes.data.recommendations?.length) {
+    const recs = recRes.data.recommendations.slice(0, 3);
+    window._dashRecsCache = recs;
+    document.getElementById('dRecPreview').innerHTML = recs.map(r => {
+      const fitScore = r.recommendation_score != null ? Number(r.recommendation_score).toFixed(0) : null;
+      const fitColor = fitScore >= 70 ? 'text-secondary' : (fitScore >= 50 ? 'text-amber-600' : 'text-outline');
+      const mlBadge = r.ml_probability != null
+        ? `<span class="inline-flex items-center gap-0.5 text-[9px] font-bold bg-primary-fixed text-primary border border-primary/20 rounded px-1.5 py-0.5">
+            <span class="material-symbols-outlined msym text-[10px]">smart_toy</span>ML ${(r.ml_probability * 100).toFixed(0)}%
+          </span>` : '';
+      const aiBadge = r.ai_ranked
+        ? `<span class="inline-flex items-center gap-0.5 text-[9px] font-bold bg-primary-fixed text-primary border border-primary/20 rounded px-1.5 py-0.5">
+            <span class="material-symbols-outlined msym text-[10px]">auto_awesome</span>AI
+          </span>` : '';
+      const predBadge = r.predicted_score != null
+        ? `<span class="inline-flex items-center gap-0.5 text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded px-1.5 py-0.5">
+            <span class="material-symbols-outlined msym text-[10px]">trending_up</span>${Number(r.predicted_score).toFixed(1)}/10
+          </span>` : '';
+      return `
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col hover:border-primary/40 hover:shadow-md transition-all cursor-pointer relative overflow-hidden"
+           onclick="window.location.href='course-detail.html?code=${encodeURIComponent(r.course_code)}'">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+        <div class="flex items-start justify-between gap-2 mb-1">
+          <span class="text-xs font-mono text-outline">${r.course_code || ''}</span>
+          ${fitScore != null ? `<span class="text-[10px] font-extrabold ${fitColor}">${fitScore}%</span>` : ''}
+        </div>
+        <p class="text-sm font-semibold text-on-surface leading-snug mb-2">${r.course_name || ''}</p>
+        <div class="flex flex-wrap gap-1 mb-2">${mlBadge}${aiBadge}${predBadge}</div>
+        <p class="text-xs text-outline mb-2">${r.credits || 0} TC${r.category === 'required' ? ' · Bắt buộc' : (r.category === 'elective' ? ' · Tự chọn' : '')}</p>
+        <div id="rec-skills-${r.course_code}" class="flex flex-wrap gap-1 mb-2"></div>
+        <div id="stars-${r.course_code}" class="text-xs text-outline mb-2"><span class="animate-pulse">...</span></div>
+        <button onclick="event.stopPropagation();openWhyModal('${r.course_code}')"
+          class="mt-auto w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold rounded-lg bg-surface-container text-primary hover:bg-primary-fixed transition-colors border border-outline-variant">
+          <span class="material-symbols-outlined msym text-xs">lightbulb</span>Vì sao gợi ý?
+        </button>
+      </div>`;
+    }).join('');
+    recs.forEach(r => {
+      _loadCourseRating(r.course_code);
+      _loadCourseSkillsBadges(r.course_code);
+    });
+  } else {
+    document.getElementById('dRecPreview').innerHTML = '<div class="col-span-full text-center text-sm text-outline py-8">Chưa có gợi ý. Hãy upload bảng điểm.</div>';
+  }
+}
+
+const _SKILL_CAT_BADGE = {
+  programming:'bg-primary-fixed text-primary', web:'bg-emerald-100 text-emerald-700',
+  mobile:'bg-cyan-100 text-cyan-700', ai:'bg-violet-100 text-violet-700',
+  data:'bg-blue-100 text-blue-700', db:'bg-sky-100 text-sky-700',
+  network:'bg-teal-100 text-teal-700', security:'bg-red-100 text-red-700',
+  se:'bg-amber-100 text-amber-700', business:'bg-orange-100 text-orange-700',
+  softskill:'bg-surface-container text-on-surface-variant',
+};
+
+let _allSkillsCache = null;
+let _mySkillsSelected = new Set();
+let _mySkillsOriginal = '';
+
+const _SKILL_CAT_LABEL = {
+  programming:'Lập trình', web:'Web', mobile:'Mobile', ai:'AI/ML',
+  data:'Data Science', db:'Database', network:'Mạng / Cloud',
+  security:'An ninh', se:'Software Eng', business:'Business',
+  softskill:'Kỹ năng mềm', other:'Khác',
+};
+
+async function _loadCareerSkillsPicker() {
+  const area = document.getElementById('careerSkillsArea');
+  if (!area) return;
+  try {
+    const [allRes, myRes] = await Promise.all([
+      callApi('/skills', { headers: auth() }),
+      callApi('/me/career-skills', { headers: auth() }),
+    ]);
+    if (!allRes.ok || !Array.isArray(allRes.data)) { area.textContent = 'Không tải được skills.'; return; }
+    _allSkillsCache = allRes.data;
+    _mySkillsSelected = new Set(myRes.ok ? (myRes.data.career_skills || []) : []);
+    _mySkillsOriginal = JSON.stringify([..._mySkillsSelected].sort());
+    _renderCareerSkillsPicker();
+  } catch { area.textContent = 'Lỗi tải skills.'; }
+}
+
+function _renderCareerSkillsPicker() {
+  const area = document.getElementById('careerSkillsArea');
+  if (!area || !_allSkillsCache) return;
+  const byCat = {};
+  _allSkillsCache.forEach(s => { (byCat[s.category] = byCat[s.category] || []).push(s); });
+  const html = Object.entries(byCat).map(([cat, skills]) => {
+    const label = _SKILL_CAT_LABEL[cat] || cat;
+    const cls = _SKILL_CAT_BADGE[cat] || 'bg-surface-container text-on-surface-variant';
+    return `<div class="mb-2.5">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-outline mb-1">${label}</p>
+      <div class="flex flex-wrap gap-1.5">
+        ${skills.map(s => {
+          const sel = _mySkillsSelected.has(s.code);
+          return `<button type="button" onclick="_toggleMySkill('${s.code}')"
+            class="px-2 py-1 rounded text-xs font-medium border transition-all ${sel ? cls + ' border-2' : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:border-primary/40'}">
+            ${sel ? '✓ ' : ''}${s.name}
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  area.innerHTML = `${html}<p class="text-xs text-outline mt-2">Đã chọn <strong class="text-primary">${_mySkillsSelected.size}</strong> skill</p>`;
+  const cur = JSON.stringify([..._mySkillsSelected].sort());
+  const btn = document.getElementById('careerSkillsSaveBtn');
+  if (btn) { btn.classList.toggle('hidden', cur === _mySkillsOriginal); btn.classList.toggle('flex', cur !== _mySkillsOriginal); }
+}
+
+function _toggleMySkill(code) {
+  if (_mySkillsSelected.has(code)) _mySkillsSelected.delete(code);
+  else _mySkillsSelected.add(code);
+  _renderCareerSkillsPicker();
+}
+
+async function _saveMyCareerSkills() {
+  const btn = document.getElementById('careerSkillsSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Đang lưu...'; }
+  const res = await callApi('/me/career-skills', {
+    method: 'PUT', headers: auth({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ career_skills: [..._mySkillsSelected] }),
+  });
+  if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined msym text-sm">save</span>Lưu'; }
+  if (!res.ok) { showToast(res.data?.detail || 'Lỗi lưu', 'error'); return; }
+  showToast(`Đã lưu ${_mySkillsSelected.size} skills`, 'success');
+  _mySkillsOriginal = JSON.stringify([..._mySkillsSelected].sort());
+  document.getElementById('careerSkillsSaveBtn')?.classList.add('hidden');
+  const selected = [..._mySkillsSelected];
+  const impactBox = document.getElementById('careerSkillsImpact');
+  const impactTxt = document.getElementById('careerSkillsImpactText');
+  if (impactBox && impactTxt) {
+    if (selected.length === 0) {
+      impactTxt.textContent = 'Đã bỏ chọn tất cả. Recommendation kỳ tới sẽ không tính skill match.';
+    } else {
+      const byCode = {}; (_allSkillsCache || []).forEach(s => { byCode[s.code] = s; });
+      const skillNames = selected.slice(0, 3).map(c => byCode[c]?.name || c).join(', ');
+      const more = selected.length > 3 ? `, +${selected.length - 3}` : '';
+      impactTxt.innerHTML = `<strong>${selected.length} skill</strong> (${skillNames}${more}) sẽ boost gợi ý môn kỳ tới.`;
+    }
+    impactBox.classList.remove('hidden');
+  }
+}
+
+async function _loadCourseSkillsBadges(code) {
+  const el = document.getElementById('rec-skills-' + code);
+  if (!el) return;
+  try {
+    const res = await callApi(`/courses/${encodeURIComponent(code)}/skills`, { headers: auth() });
+    if (!res.ok || !Array.isArray(res.data) || res.data.length === 0) { el.innerHTML = ''; return; }
+    const top = res.data.slice().sort((a, b) => b.weight - a.weight).slice(0, 4);
+    el.innerHTML = top.map(s => {
+      const cls = _SKILL_CAT_BADGE[s.category] || 'bg-surface-container text-on-surface-variant';
+      const opacity = s.weight < 0.7 ? 'opacity-70' : '';
+      return `<span class="${cls} ${opacity} text-[10px] px-1.5 py-0.5 rounded font-semibold">${s.skill_name}</span>`;
+    }).join('');
+  } catch { el.innerHTML = ''; }
+}
+
+// Notifications
+let _notifData = [];
+let _urgentPendingIds = [];
+
+async function loadNotifications() {
+  const res = await callApi('/notifications/me', { headers: auth() });
+  if (!res.ok) return;
+  _notifData = res.data || [];
+  const unread = _notifData.filter(n => !n.is_read).length;
+  const bubble = document.getElementById('notifBubble');
+  if (bubble) {
+    if (unread > 0) { bubble.textContent = unread > 99 ? '99+' : String(unread); bubble.classList.remove('hidden'); }
+    else { bubble.classList.add('hidden'); }
+  }
+  _urgentPendingIds = _notifData.filter(n => n.severity === 'urgent' && !n.is_read).map(n => n.id);
+  if (_urgentPendingIds.length > 0) _showUrgentModal(_urgentPendingIds);
+}
+
+function toggleNotifDropdown() {
+  const dd = document.getElementById('notifDropdown');
+  if (!dd) return;
+  const isHidden = dd.classList.contains('hidden');
+  dd.classList.toggle('hidden');
+  if (isHidden) _renderNotifDropdown();
+}
+
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('notifDropdown');
+  const btn = document.getElementById('bellBtn');
+  if (dd && !dd.classList.contains('hidden') && !dd.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+    dd.classList.add('hidden');
+  }
+});
+
+function _severityIcon(s) { return s === 'urgent' ? '🔴' : s === 'warning' ? '🟡' : '🔵'; }
+function _timeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return 'Vừa xong';
+  if (diff < 3600) return Math.floor(diff/60) + ' phút trước';
+  if (diff < 86400) return Math.floor(diff/3600) + ' giờ trước';
+  return Math.floor(diff/86400) + ' ngày trước';
+}
+
+function _renderNotifDropdown() {
+  const list = document.getElementById('notifDropdownList');
+  if (!list) return;
+  if (!_notifData.length) { list.innerHTML = '<p class="px-4 py-6 text-xs text-outline text-center">Không có thông báo nào.</p>'; return; }
+  list.innerHTML = _notifData.map(n => `
+    <button onclick="openNotifItem(${n.id})"
+      class="w-full text-left px-4 py-3 hover:bg-surface-container transition-colors flex items-start gap-3 ${n.is_read ? '' : 'bg-primary-fixed/40'}">
+      <span class="text-base flex-shrink-0 mt-0.5">${_severityIcon(n.severity)}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-on-surface leading-snug truncate">${n.title}</p>
+        <p class="text-[11px] text-on-surface-variant mt-0.5 line-clamp-2">${n.body}</p>
+        <p class="text-[10px] text-outline mt-0.5">${_timeAgo(n.created_at)}</p>
+      </div>
+      ${!n.is_read ? '<span class="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5"></span>' : ''}
+    </button>`).join('');
+}
+
+async function openNotifItem(id) {
+  const n = _notifData.find(x => x.id === id);
+  if (!n) return;
+  document.getElementById('notifDropdown')?.classList.add('hidden');
+  if (!n.is_read) {
+    n.is_read = true;
+    callApi(`/notifications/${id}/mark-read`, { method: 'POST', headers: auth() });
+    const unread = _notifData.filter(x => !x.is_read).length;
+    const bubble = document.getElementById('notifBubble');
+    if (bubble) { if (unread > 0) { bubble.textContent = unread > 99 ? '99+' : String(unread); } else { bubble.classList.add('hidden'); } }
+  }
+  const icon = _severityIcon(n.severity);
+  const date = new Date(n.created_at).toLocaleString('vi-VN');
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/50 z-[8000] flex items-center justify-center p-4';
+  overlay.innerHTML = `<div class="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="px-6 py-4 border-b border-outline-variant flex items-center gap-2">
+      <span class="text-xl">${icon}</span>
+      <h3 class="font-bold text-on-surface flex-1">${n.title}</h3>
+    </div>
+    <div class="px-6 py-4">
+      <p class="text-sm text-on-surface-variant whitespace-pre-wrap">${n.body}</p>
+      <p class="text-xs text-outline mt-3">${date}</p>
+    </div>
+    <div class="px-6 pb-4 flex justify-end">
+      <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-surface-container text-on-surface text-sm font-semibold rounded-lg hover:bg-surface-container-high transition-colors">Đóng</button>
+    </div>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function markAllNotifsRead() {
+  document.getElementById('notifDropdown')?.classList.add('hidden');
+  await callApi('/notifications/mark-all-read', { method: 'POST', headers: auth() });
+  _notifData.forEach(n => n.is_read = true);
+  document.getElementById('notifBubble')?.classList.add('hidden');
+}
+
+function _showUrgentModal(ids) {
+  const items = _notifData.filter(n => ids.includes(n.id));
+  if (!items.length) return;
+  const listEl = document.getElementById('urgentModalList');
+  if (!listEl) return;
+  listEl.innerHTML = items.map(n => `
+    <div class="border border-error/20 rounded-xl p-3 bg-error-container/30">
+      <p class="text-sm font-bold text-error">🔴 ${n.title}</p>
+      <p class="text-xs text-on-surface-variant mt-1 whitespace-pre-wrap">${n.body}</p>
+      <p class="text-[10px] text-outline mt-1">${new Date(n.created_at).toLocaleString('vi-VN')}</p>
+    </div>`).join('');
+  document.getElementById('urgentModal')?.classList.remove('hidden');
+}
+
+async function _dismissUrgent(markRead) {
+  document.getElementById('urgentModal')?.classList.add('hidden');
+  if (markRead && _urgentPendingIds.length) {
+    await Promise.all(_urgentPendingIds.map(id =>
+      callApi(`/notifications/${id}/mark-read`, { method: 'POST', headers: auth() })
+    ));
+    _urgentPendingIds.forEach(id => { const n = _notifData.find(x => x.id === id); if (n) n.is_read = true; });
+    _urgentPendingIds = [];
+    const unread = _notifData.filter(n => !n.is_read).length;
+    const bubble = document.getElementById('notifBubble');
+    if (bubble) { if (unread > 0) { bubble.textContent = unread > 99 ? '99+' : String(unread); bubble.classList.remove('hidden'); } else { bubble.classList.add('hidden'); } }
+  }
+}
+
+(async function init() {
+  await _injectSidebar();
+  const user = await getCurrentUser();
+  if (!user) return;
+  if (user.role === 'admin') { window.location.replace('admin.html'); return; }
+  if (user.role === 'advisor') { window.location.replace('advisor.html'); return; }
+  loadDashboard();
+  _loadCareerSkillsPicker();
+  loadNotifications();
+  setInterval(() => { if (document.visibilityState === 'visible') loadNotifications(); }, 60000);
+})();
+
+async function _loadCourseRating(code) {
+  const el = document.getElementById('stars-' + code);
+  if (!el) return;
+  try {
+    const res = await callApi(`/courses/${encodeURIComponent(code)}/rating`, { headers: auth() });
+    if (!res.ok) { el.innerHTML = ''; return; }
+    const d = res.data;
+    const avg = d.avg_rating, count = d.count, myRating = d.my_rating;
+    const readOnlyStars = (val) => [1,2,3,4,5].map(i =>
+      `<span class="text-base ${i <= Math.round(val||0) ? 'text-amber-400' : 'text-outline-variant'}">★</span>`
+    ).join('');
+    const interactiveStars = (val) => [1,2,3,4,5].map(i =>
+      `<span class="cursor-pointer text-base transition-transform hover:scale-110 ${i <= (val||0) ? 'text-amber-400' : 'text-outline-variant'}"
+        onclick="_submitRating('${code}',${i})" title="${i} sao">★</span>`
+    ).join('');
+    if (!avg && !myRating) { el.innerHTML = '<span class="text-outline italic text-xs">Chưa có đánh giá</span>'; return; }
+    el.innerHTML = `
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <div class="flex gap-0.5">${myRating ? interactiveStars(myRating) : readOnlyStars(avg)}</div>
+        ${avg ? `<span class="text-amber-500 font-semibold text-xs">${avg}</span><span class="text-outline text-xs">(${count})</span>` : ''}
+      </div>
+      ${myRating ? '<p class="text-xs text-secondary mt-0.5">Đánh giá của bạn · click để sửa</p>' : ''}`;
+  } catch { el.innerHTML = ''; }
+}
+
+async function _submitRating(code, stars) {
+  const el = document.getElementById('stars-' + code);
+  if (el) el.innerHTML = '<span class="text-outline text-xs">Đang lưu...</span>';
+  try {
+    const res = await callApi(`/courses/${encodeURIComponent(code)}/rate?rating=${stars}`, { method: 'POST', headers: auth() });
+    if (res.ok) { _loadCourseRating(code); }
+    else {
+      const msg = res.data?.detail || 'Không thể đánh giá môn này.';
+      if (el) el.innerHTML = `<span class="text-error text-xs">${msg}</span>`;
+      setTimeout(() => _loadCourseRating(code), 2000);
+    }
+  } catch {
+    if (el) el.innerHTML = '<span class="text-error text-xs">Lỗi kết nối.</span>';
+    setTimeout(() => _loadCourseRating(code), 2000);
+  }
+}
+
+const _VERDICT_STYLE = {
+  recommended:           { label:'Được gợi ý', icon:'thumb_up', bg:'bg-emerald-50', text:'text-emerald-700', border:'border-emerald-200' },
+  eligible_low_priority: { label:'Đủ điều kiện', icon:'low_priority', bg:'bg-primary-fixed', text:'text-primary', border:'border-primary/20' },
+  blocked:               { label:'Chưa đủ điều kiện', icon:'block', bg:'bg-error-container', text:'text-on-error-container', border:'border-error/20' },
+  completed:             { label:'Đã hoàn thành', icon:'task_alt', bg:'bg-emerald-50', text:'text-emerald-700', border:'border-emerald-200' },
+  studying:              { label:'Đang học', icon:'schedule', bg:'bg-surface-container', text:'text-on-surface', border:'border-outline-variant' },
+};
+
+const _REASON_KIND_STYLE = {
+  blocker:  { bg:'bg-error-container', border:'border-error/20', text:'text-on-error-container', icon:'text-error' },
+  warning:  { bg:'bg-amber-50', border:'border-amber-200', text:'text-amber-700', icon:'text-amber-500' },
+  info:     { bg:'bg-surface-container', border:'border-outline-variant', text:'text-on-surface-variant', icon:'text-outline' },
+  positive: { bg:'bg-emerald-50', border:'border-emerald-200', text:'text-emerald-700', icon:'text-emerald-500' },
+};
+
+async function openWhyModal(courseCode) {
+  const recData = (window._dashRecsCache || []).find(r => r.course_code === courseCode);
+  let modal = document.getElementById('_whyModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = '_whyModal';
+    modal.className = 'fixed inset-0 bg-black/40 backdrop-blur-sm z-[920] flex items-center justify-center p-4';
+    modal.innerHTML = `
+      <div class="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+        <div class="px-5 py-4 border-b border-outline-variant flex items-start gap-3">
+          <div id="_whyVerdictBadge" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined msym" id="_whyVerdictIcon">help</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-outline" id="_whyVerdictLabel">—</p>
+            <p class="font-bold text-on-surface text-sm" id="_whyCourseTitle">—</p>
+          </div>
+          <button onclick="document.getElementById('_whyModal').remove()" class="text-outline hover:text-on-surface flex-shrink-0">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div id="_whyAlgoSection" class="hidden px-5 py-3 bg-primary-fixed/30 border-b border-outline-variant"></div>
+        <div class="flex-1 overflow-y-auto px-5 py-4 space-y-2" id="_whyReasonList">
+          <p class="text-sm text-outline italic">Đang tải...</p>
+        </div>
+      </div>`;
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+  }
+  const listEl = document.getElementById('_whyReasonList');
+  listEl.innerHTML = '<p class="text-sm text-outline italic">Đang tải...</p>';
+  const algoEl = document.getElementById('_whyAlgoSection');
+  if (algoEl && recData) {
+    const fitS = recData.recommendation_score != null ? Number(recData.recommendation_score).toFixed(1) : null;
+    const mlS  = recData.ml_probability != null ? (Number(recData.ml_probability) * 100).toFixed(0) : null;
+    const predS = recData.predicted_score != null ? Number(recData.predicted_score).toFixed(1) : null;
+    algoEl.innerHTML = `
+      <p class="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1">
+        <span class="material-symbols-outlined msym text-[12px]">psychology</span>Cách hệ thống tính
+      </p>
+      <div class="grid grid-cols-3 gap-2 text-center">
+        ${fitS != null ? `<div class="bg-surface-container-lowest rounded-lg p-2 border border-outline-variant"><p class="text-[9px] text-outline uppercase">Phù hợp</p><p class="text-sm font-extrabold text-primary">${fitS}%</p></div>` : ''}
+        ${mlS != null ? `<div class="bg-surface-container-lowest rounded-lg p-2 border border-outline-variant"><p class="text-[9px] text-outline uppercase">ML model</p><p class="text-sm font-extrabold text-primary">${mlS}%</p></div>` : ''}
+        ${predS != null ? `<div class="bg-surface-container-lowest rounded-lg p-2 border border-outline-variant"><p class="text-[9px] text-outline uppercase">Dự đoán</p><p class="text-sm font-extrabold text-secondary">${predS}/10</p></div>` : ''}
+      </div>
+      <p class="text-[10px] text-on-surface-variant mt-2 leading-snug">
+        Công thức: 0.22·năng_lực + 0.20·track + 0.20·unlock + 0.13·skill + 0.10·prereq + 0.08·peer + 0.07·base
+        ${recData.ai_ranked ? '<br>→ LLM (Gemini/Groq/Claude) sắp xếp lại top 15.' : ''}
+      </p>`;
+    algoEl.classList.remove('hidden');
+  } else if (algoEl) { algoEl.classList.add('hidden'); }
+  try {
+    const res = await callApi(`/recommendations/why-not/${encodeURIComponent(courseCode)}`, { headers: auth() });
+    if (!res.ok) {
+      listEl.innerHTML = `<p class="text-sm text-error bg-error-container border border-error/20 rounded-lg px-3 py-2">${res.data?.detail || 'Không tìm thấy môn học.'}</p>`;
+      return;
+    }
+    _renderWhyReasons(res.data);
+  } catch { listEl.innerHTML = '<p class="text-sm text-error">Lỗi kết nối. Vui lòng thử lại.</p>'; }
+}
+
+function _renderWhyReasons(d) {
+  const verdict = d.verdict || 'eligible_low_priority';
+  const vstyle = _VERDICT_STYLE[verdict] || _VERDICT_STYLE.eligible_low_priority;
+  const badge = document.getElementById('_whyVerdictBadge');
+  const icon = document.getElementById('_whyVerdictIcon');
+  if (badge && icon) {
+    badge.className = `w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${vstyle.bg} ${vstyle.text}`;
+    icon.textContent = vstyle.icon;
+  }
+  const labelEl = document.getElementById('_whyVerdictLabel');
+  if (labelEl) labelEl.textContent = vstyle.label;
+  const titleEl = document.getElementById('_whyCourseTitle');
+  if (titleEl) titleEl.textContent = `${d.course_code} · ${d.course_name}${d.credits ? ' · ' + d.credits + ' TC' : ''}`;
+  const listEl = document.getElementById('_whyReasonList');
+  if (!d.reasons || !d.reasons.length) { listEl.innerHTML = '<p class="text-sm text-on-surface-variant">Không có thông tin chi tiết.</p>'; return; }
+  listEl.innerHTML = d.reasons.map(r => {
+    const rstyle = _REASON_KIND_STYLE[r.kind] || _REASON_KIND_STYLE.info;
+    let extraHtml = '';
+    if (r.data?.missing?.length) {
+      extraHtml = '<ul class="mt-1.5 space-y-0.5">' + r.data.missing.map(m =>
+        `<li class="text-[11px] text-on-surface-variant"><span class="font-mono font-bold">${m.course_code}</span> · ${m.course_name}</li>`
+      ).join('') + '</ul>';
+    }
+    return `<div class="${rstyle.bg} ${rstyle.border} border rounded-lg p-3 flex items-start gap-2">
+      <span class="material-symbols-outlined msym text-lg ${rstyle.icon} flex-shrink-0 mt-0.5">${r.icon || 'info'}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold ${rstyle.text}">${r.title || ''}</p>
+        <p class="text-xs text-on-surface-variant mt-0.5">${r.detail || ''}</p>
+        ${extraHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Autocomplete
+let _whyNotCourseCache = null;
+let _whyNotSuggestTimer = null;
+
+async function _ensureCourseCache() {
+  if (_whyNotCourseCache) return _whyNotCourseCache;
+  const res = await callApi('/courses', { headers: auth() });
+  _whyNotCourseCache = res.ok && Array.isArray(res.data) ? res.data : [];
+  return _whyNotCourseCache;
+}
+
+function _whyNotSuggest() {
+  clearTimeout(_whyNotSuggestTimer);
+  _whyNotSuggestTimer = setTimeout(async () => {
+    const q = (document.getElementById('whyNotInput')?.value || '').toLowerCase().trim();
+    const box = document.getElementById('whyNotSuggest');
+    if (!box) return;
+    if (q.length < 2) { box.classList.add('hidden'); return; }
+    const courses = await _ensureCourseCache();
+    const matches = courses.filter(c =>
+      (c.course_code || '').toLowerCase().includes(q) || (c.course_name || '').toLowerCase().includes(q)
+    ).slice(0, 8);
+    if (!matches.length) { box.classList.add('hidden'); return; }
+    box.innerHTML = matches.map(c =>
+      `<button type="button" onclick="_whyNotPickCode('${c.course_code}')"
+         class="w-full text-left px-3 py-2 text-xs hover:bg-primary-fixed flex items-baseline gap-2 border-b border-outline-variant last:border-0">
+         <span class="font-mono font-bold text-primary flex-shrink-0">${c.course_code}</span>
+         <span class="text-on-surface-variant truncate">${c.course_name || ''}</span>
+       </button>`
+    ).join('');
+    box.classList.remove('hidden');
+  }, 200);
+}
+
+function _whyNotPickCode(code) {
+  const inp = document.getElementById('whyNotInput');
+  if (inp) inp.value = code;
+  _whyNotHideSuggest();
+  _checkWhyNot();
+}
+
+function _whyNotHideSuggest() { document.getElementById('whyNotSuggest')?.classList.add('hidden'); }
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#whyNotSuggest') && !e.target.closest('#whyNotInput')) _whyNotHideSuggest();
+});
+
+async function _checkWhyNot() {
+  const input = document.getElementById('whyNotInput');
+  const result = document.getElementById('whyNotResult');
+  const raw = input.value.trim();
+  if (!raw) return;
+  result.className = 'mt-3 text-sm text-outline italic';
+  result.textContent = 'Đang tra cứu...';
+  result.classList.remove('hidden');
+  let code = raw;
+  if (!/^\d{7}$/.test(raw)) {
+    const courses = await _ensureCourseCache();
+    const ql = raw.toLowerCase();
+    const match = courses.find(c =>
+      (c.course_code || '').toLowerCase() === ql || (c.course_name || '').toLowerCase() === ql
+    ) || courses.find(c => (c.course_name || '').toLowerCase().includes(ql));
+    if (match) code = match.course_code;
+  }
+  try {
+    const res = await callApi(`/recommendations/why-not/${encodeURIComponent(code)}`, { headers: auth() });
+    if (!res.ok) {
+      result.className = 'mt-3 p-3 rounded-lg border text-sm bg-error-container border-error/20 text-on-error-container';
+      result.textContent = res.data?.detail || 'Không tìm thấy môn học.';
+      return;
+    }
+    const d = res.data;
+    const vstyle = _VERDICT_STYLE[d.verdict] || _VERDICT_STYLE.eligible_low_priority;
+    const reasonsHtml = (d.reasons || []).map(r => {
+      const rstyle = _REASON_KIND_STYLE[r.kind] || _REASON_KIND_STYLE.info;
+      return `<div class="${rstyle.bg} ${rstyle.border} border rounded-lg p-2 flex items-start gap-2 mt-1.5">
+        <span class="material-symbols-outlined msym text-base ${rstyle.icon} flex-shrink-0 mt-0.5">${r.icon || 'info'}</span>
+        <div class="flex-1">
+          <p class="text-xs font-semibold ${rstyle.text}">${r.title || ''}</p>
+          <p class="text-[11px] text-on-surface-variant">${r.detail || ''}</p>
+        </div>
+      </div>`;
+    }).join('');
+    result.className = `mt-3 p-3 rounded-lg border ${vstyle.bg} ${vstyle.border}`;
+    result.innerHTML = `
+      <div class="flex items-center gap-2 mb-1">
+        <span class="material-symbols-outlined msym text-base ${vstyle.text}">${vstyle.icon}</span>
+        <p class="text-sm font-bold ${vstyle.text}">${vstyle.label}</p>
+      </div>
+      <p class="text-xs font-semibold text-on-surface">${d.course_code} · ${d.course_name}${d.credits ? ' · ' + d.credits + ' TC' : ''}</p>
+      ${reasonsHtml}`;
+  } catch {
+    result.className = 'mt-3 text-sm text-error';
+    result.textContent = 'Lỗi kết nối. Vui lòng thử lại.';
+  }
+}
+</script>
+</body>
+</html>
