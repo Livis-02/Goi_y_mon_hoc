@@ -1,0 +1,17 @@
+.env
+AIKEY.env
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+test_temp.db
+
+# Demo data — chứa plaintext passwords, KHÔNG commit
+data/demo/seed_passwords.txt
+data/demo/*.xlsx
+
+# OS noise + temp
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

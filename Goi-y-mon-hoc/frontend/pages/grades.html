@@ -1,0 +1,2501 @@
+﻿<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Bảng điểm</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
+  </style>
+  
+  <!-- Smooth page transitions (Chrome 111+, Safari 18+) -->
+  <style>
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) {
+      animation-duration: 0.15s;
+      animation-timing-function: ease-out;
+    }
+    /* Keep sidebar + header stable across transitions (no fade on persistent UI) */
+    #sidebarMount, #sidebarDrawer, #adminSidebar, #adminSidebarMount, header {
+      view-transition-name: none;
+    }
+  </style>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+
+      theme: {
+        extend: {
+          colors: {
+            "background": "#f8f9ff", "on-background": "#0b1c30",
+            "surface": "#f8f9ff", "on-surface": "#0b1c30",
+            "surface-container-lowest": "#ffffff", "surface-container-low": "#eff4ff",
+            "surface-container": "#e5eeff", "surface-container-high": "#dce9ff",
+            "surface-container-highest": "#d3e4fe", "surface-variant": "#d3e4fe",
+            "outline": "#777682", "outline-variant": "#c8c5d3",
+            "on-surface-variant": "#474651", "surface-bright": "#f8f9ff",
+            "primary": "#1a146b", "on-primary": "#ffffff",
+            "primary-container": "#312e81", "on-primary-container": "#9c9af4",
+            "secondary": "#006c49", "on-secondary": "#ffffff",
+            "secondary-container": "#6cf8bb", "on-secondary-container": "#00714d",
+            "error": "#ba1a1a", "on-error": "#ffffff",
+            "error-container": "#ffdad6", "on-error-container": "#93000a"
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=6"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    body { font-family:'Inter',sans-serif; }
+    .pri-grad { background:linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .2s ease both; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+    mark { background:#fef08a; border-radius:2px; padding:0 1px; }
+    .tab-btn.active { background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#1a146b; font-weight:600; }
+    .tab-btn { color:#474651; }
+    .tab-btn:hover:not(.active) { color:#0b1c30; }
+  </style>
+
+  <style>
+    /* disable browser autofill yellow highlight */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus,
+    select:-webkit-autofill,
+    select:-webkit-autofill:hover,
+    select:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+      -webkit-text-fill-color: inherit !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background antialiased">
+
+<!-- ── TOAST ─────────────────────────────────────────────────────────────── -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ── SIDEBAR ────────────────────────────────────────────────────────────── -->
+<div id="sidebarMount"></div>
+
+<!-- ── HEADER ────────────────────────────────────────────────────────────── -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-on-surface-variant">menu</span>
+    </button>
+    <span class="material-symbols-outlined msym text-lg text-primary">grade</span>
+    <h2 class="text-base font-bold text-on-background">Bảng điểm</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
+        <div class="px-4 py-3 border-b border-outline-variant">
+          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
+            <span class="material-symbols-outlined msym text-lg">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── UPLOAD MODAL ───────────────────────────────────────────────────────── -->
+<div id="uploadModal" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+  <div class="bg-[#ffffff] rounded-2xl shadow-2xl w-full max-w-lg">
+
+    <!-- Shared header -->
+    <div class="flex items-center justify-between px-6 pt-5 pb-3 border-b border-[#c8c5d3]">
+      <h3 class="text-base font-bold text-[#0b1c30] flex items-center gap-2">
+        <span class="material-symbols-outlined msym text-[#1a146b] text-xl">upload_file</span>
+        <span id="uploadModalTitle">Upload bảng điểm</span>
+      </h3>
+      <button onclick="closeUploadModal()" class="text-[#777682] hover:text-[#474651]">
+        <span class="material-symbols-outlined msym text-xl">close</span>
+      </button>
+    </div>
+
+    <!-- Step indicator (Bước 1 → Bước 2) -->
+    <div class="px-6 pt-4 pb-2">
+      <div class="grid grid-cols-2 gap-3">
+        <div id="stepInd1">
+          <div class="h-1.5 rounded-full mb-2 bg-[#1a146b]"></div>
+          <p class="text-[10px] uppercase tracking-wider font-bold text-[#1a146b]">Bước 1</p>
+          <p class="text-xs font-semibold text-[#0b1c30] flex items-center gap-1">
+            <span class="material-symbols-outlined msym text-sm">cloud_upload</span>Tải lên
+          </p>
+        </div>
+        <div id="stepInd2" class="opacity-50">
+          <div class="h-1.5 rounded-full mb-2 bg-[#c8c5d3]"></div>
+          <p class="text-[10px] uppercase tracking-wider font-bold text-[#777682]">Bước 2</p>
+          <p class="text-xs font-semibold text-[#474651] flex items-center gap-1">
+            <span class="material-symbols-outlined msym text-sm">table_view</span>Xem trước
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1: select file -->
+    <div id="uploadStep1">
+      <div class="px-6 py-4">
+        <div class="bg-[#eef2ff] rounded-xl p-4 mb-4 text-sm text-[#474651] space-y-1">
+          <p class="font-semibold text-[#1a146b] mb-2">Hướng dẫn:</p>
+          <p>1. Vào hệ thống quản lý đào tạo → Kết quả học tập → Xuất Excel</p>
+          <p>2. Upload file vừa tải về đây</p>
+        </div>
+        <label id="dropZone"
+          class="flex flex-col items-center justify-center border-2 border-dashed border-[#c8c5d3] rounded-xl p-8 cursor-pointer hover:border-[#1a146b] hover:bg-[#eef2ff]/30 transition-all">
+          <span class="material-symbols-outlined msym text-3xl text-[#777682] mb-2">attach_file</span>
+          <p class="text-sm text-[#474651] font-medium">Kéo thả file hoặc click để chọn</p>
+          <p class="text-xs text-[#777682] mt-1">Hỗ trợ: .xlsx, .xls, .csv (tối đa 10MB)</p>
+          <input type="file" id="gradeFileInput" accept=".xlsx,.xls,.csv" class="hidden"/>
+        </label>
+        <p id="selectedFileName" class="hidden mt-2 text-sm text-[#474651] text-center"></p>
+      </div>
+      <div class="px-6 pb-5 flex justify-end gap-2">
+        <button onclick="closeUploadModal()"
+          class="px-4 py-2 text-sm text-[#474651] hover:bg-[#eef2ff] rounded-lg transition-colors">Hủy</button>
+        <button id="uploadBtn" onclick="doUploadPreview()"
+          class="px-4 py-2 text-sm bg-[#1a146b] hover:bg-[#312e81] text-white font-semibold rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50" disabled>
+          Tiếp tục
+          <span class="material-symbols-outlined msym text-base">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: preview -->
+    <div id="uploadStep2" class="hidden">
+      <div class="px-6 py-4">
+        <div id="previewSummary" class="mb-3 space-y-1 text-sm"></div>
+        <div class="max-h-56 overflow-y-auto rounded-xl border border-[#c8c5d3]">
+          <table class="w-full text-xs">
+            <thead class="bg-[#eff4ff] sticky top-0">
+              <tr>
+                <th class="text-left px-3 py-2 text-[#474651] font-medium">HK</th>
+                <th class="text-left px-3 py-2 text-[#474651] font-medium">Môn</th>
+                <th class="text-center px-3 py-2 text-[#474651] font-medium">TC</th>
+                <th class="text-center px-3 py-2 text-[#474651] font-medium">Điểm</th>
+                <th class="text-center px-3 py-2 text-[#474651] font-medium">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody" class="divide-y divide-[#c8c5d3]"></tbody>
+          </table>
+        </div>
+        <p id="previewFooter" class="mt-2 text-[11px] text-[#777682] text-right"></p>
+      </div>
+      <div class="px-6 pb-5 flex justify-between gap-2">
+        <button onclick="backToStep1()"
+          class="px-4 py-2 text-sm text-[#474651] hover:bg-[#eef2ff] rounded-lg flex items-center gap-1 transition-colors">
+          <span class="material-symbols-outlined msym text-base">arrow_back</span>Chọn file khác</button>
+        <button onclick="doConfirmUpload()" id="confirmBtn"
+          class="px-4 py-2 text-sm bg-[#1a146b] hover:bg-[#312e81] text-white font-semibold rounded-lg flex items-center gap-1.5 transition-colors">
+          <span class="material-symbols-outlined msym text-base">check_circle</span>Xác nhận lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ───────────────────────────────────────────────────────────────── -->
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 lg:p-6 max-w-6xl mx-auto">
+
+    <!-- Page header -->
+    <div class="flex items-start justify-between mb-5 gap-3 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-bold text-[#0b1c30]">Bảng điểm</h1>
+        <p class="text-sm text-[#474651] mt-0.5" id="headerSubtitle">
+          <span class="inline-block w-24 h-3 bg-[#c8c5d3] rounded animate-pulse"></span>
+        </p>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="openSimulator()" title="Mô phỏng điểm + đánh giá target GPA"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#7c3aed] text-[#7c3aed] bg-white hover:bg-[#f5f3ff] text-sm font-semibold transition-colors">
+          <span class="material-symbols-outlined msym text-base">analytics</span>
+          Mô phỏng GPA
+        </button>
+        <button id="uploadGradesBtn" onclick="openUploadModal()" style="display:none"
+          class="flex items-center gap-2 bg-[#1a146b] hover:bg-[#312e81] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex-shrink-0">
+          <span class="material-symbols-outlined msym text-base">upload_file</span>
+          Upload điểm mới
+        </button>
+      </div>
+    </div>
+
+    <!-- Lock banner — hiển thị khi điểm đã được xác thực hoặc khoá -->
+    <div id="gradesLockBanner" class="hidden mb-4 bg-[#dcfce7] border border-[#86efac] rounded-xl px-4 py-3 flex items-start gap-3">
+      <span class="material-symbols-outlined msym text-[#006c49] mt-0.5">verified</span>
+      <div class="flex-1 text-sm">
+        <p class="font-semibold text-emerald-800" id="gradesLockTitle">Bảng điểm đã được xác thực</p>
+        <p class="text-emerald-700 text-xs mt-0.5" id="gradesLockMsg">—</p>
+      </div>
+    </div>
+
+    <!-- ── PROGRESS KPI BLOCK (TỔNG TC + 4 nhóm tự chọn) ── -->
+    <div class="bg-white rounded-2xl border border-[#e5eeff] p-4 mb-5">
+      <h3 class="text-sm font-bold text-[#0b1c30] mb-3 flex items-center gap-2">
+        <span class="material-symbols-outlined msym text-lg text-[#1a146b]">stacked_bar_chart</span>
+        Tiến độ tích lũy theo nhóm môn (mục tiêu 153 TC)
+      </h3>
+      <div id="kpiGrid" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="col-span-full text-center py-4 text-sm text-[#474651]">
+          <span class="spin material-symbols-outlined msym">progress_activity</span>
+          <span class="ml-2">Đang tải...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab bar (3 tab: Đã học / Chưa học / Biểu đồ) -->
+    <div class="flex gap-1 bg-[#e5eeff] p-1 rounded-xl w-fit mb-5 flex-wrap">
+      <button id="tab1Btn" onclick="switchTab(1)"
+        class="tab-btn active px-5 py-2 rounded-lg text-sm transition-all flex items-center gap-1.5">
+        <span class="material-symbols-outlined msym text-base">history_edu</span>
+        Đã học <span id="tab1Count" class="text-[10px] opacity-60">0</span>
+      </button>
+      <button id="tab2Btn" onclick="switchTab(2)"
+        class="tab-btn px-5 py-2 rounded-lg text-sm transition-all flex items-center gap-1.5">
+        <span class="material-symbols-outlined msym text-base">menu_book</span>
+        Chưa học <span id="tab2Count" class="text-[10px] opacity-60">0</span>
+      </button>
+      <button id="tab3Btn" onclick="switchTab(3)"
+        class="tab-btn px-5 py-2 rounded-lg text-sm transition-all flex items-center gap-1.5">
+        <span class="material-symbols-outlined msym text-base">show_chart</span>
+        Biểu đồ
+      </button>
+    </div>
+
+    <!-- ── TAB 1: BẢNG ĐIỂM ─────────────────────────────────────────────── -->
+    <div id="tab1Content">
+      <!-- Filters -->
+      <div class="flex items-center gap-2 mb-4 flex-wrap">
+        <div class="relative flex-1 min-w-[200px]">
+          <span class="material-symbols-outlined msym absolute left-3 top-1/2 -translate-y-1/2 text-outline text-base">search</span>
+          <input autocomplete="off" type="text" id="searchInput" placeholder="Tìm tên hoặc mã môn..."
+            class="w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+            oninput="applyFilters()"/>
+        </div>
+        <select autocomplete="off" id="filterTerm" onchange="applyFilters()" class="min-w-[140px] px-3 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface-variant focus:outline-none focus:border-primary">
+          <option value="">Tất cả học kỳ</option>
+        </select>
+        <select autocomplete="off" id="filterStatus" onchange="applyFilters()" class="min-w-[140px] px-3 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface-variant focus:outline-none focus:border-primary">
+          <option value="">Tất cả</option>
+          <option value="passed">Đã đạt</option>
+          <option value="failed">Trượt (F)</option>
+          <option value="retake">Học lại</option>
+        </select>
+        <select autocomplete="off" id="filterBlock" onchange="applyFilters()" class="min-w-[160px] px-3 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface-variant focus:outline-none focus:border-primary">
+          <option value="">Tất cả khối</option>
+          <option value="required">Đại cương / Bắt buộc</option>
+          <option value="elective">Tự chọn</option>
+          <option value="conditional">Cơ sở ngành</option>
+          <option value="gdtc_qpan">GDTC / QPAN</option>
+        </select>
+      </div>
+
+      <!-- Loading state -->
+      <div id="gradesLoading" class="space-y-4">
+        <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] h-32 animate-pulse"></div>
+        <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] h-48 animate-pulse"></div>
+      </div>
+
+      <!-- Empty state (no grades) -->
+      <div id="gradesEmpty" class="hidden text-center py-16">
+        <div class="w-16 h-16 bg-[#e5eeff] rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined msym text-3xl text-[#777682]">school</span>
+        </div>
+        <p class="text-[#474651] font-medium mb-1">Chưa có dữ liệu điểm</p>
+        <p class="text-sm text-[#777682] mb-4">Upload bảng điểm từ cổng sinh viên để bắt đầu</p>
+        <button onclick="openUploadModal()" id="emptyUploadBtn" style="display:none"
+          class="inline-flex items-center gap-2 bg-[#1a146b] text-white text-sm font-semibold px-4 py-2 rounded-xl">
+          <span class="material-symbols-outlined msym text-base">upload_file</span>Upload bảng điểm ngay
+        </button>
+      </div>
+
+      <!-- No search results -->
+      <div id="gradesNoResult" class="hidden text-center py-12">
+        <span class="material-symbols-outlined msym text-3xl text-[#c8c5d3] block mb-2">search_off</span>
+        <p class="text-[#474651] text-sm">Không tìm thấy môn <span id="noResultKeyword" class="font-semibold"></span></p>
+        <p class="text-xs text-[#777682] mt-1">Thử tìm bằng mã môn hoặc tên đầy đủ</p>
+      </div>
+
+      <!-- Grades grouped by term -->
+      <div id="gradesList" class="hidden space-y-6 fade-in"></div>
+    </div>
+
+    <!-- ── TAB 2: MÔN CHƯA HỌC ─────────────────────────────────────────── -->
+    <div id="tab2Content" class="hidden fade-in">
+      <!-- Spec context banner -->
+      <div id="remSpecBanner" class="mb-3 bg-[#eef2ff] border border-indigo-100 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2 text-sm text-[#0b1c30]">
+          <span class="material-symbols-outlined msym text-[#312e81] text-base">school</span>
+          <span id="remSpecLabel">Hiển thị môn theo chương trình đào tạo</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <select autocomplete="off" id="remSpecFilter" onchange="applyRemainingFilters()"
+            class="text-xs border border-indigo-200 bg-white rounded-lg px-2.5 py-1.5 text-[#0b1c30] focus:outline-none focus:border-[#1a146b]">
+            <option value="auto">Mặc định (CN của tôi + chung)</option>
+            <option value="all">Tất cả 6 CN</option>
+            <option value="common">Chỉ môn chung</option>
+            <option value="7480201_07">— KHMT</option>
+            <option value="7480201_06">— MMT</option>
+            <option value="7480201_05">— CNPM</option>
+            <option value="7480201_09">— HTTT</option>
+            <option value="7480201_04">— THKT</option>
+            <option value="7480201_08">— CNTTDH</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex items-center gap-2 mb-4 flex-wrap">
+        <div class="relative flex-1 min-w-[200px]">
+          <span class="material-symbols-outlined msym absolute left-3 top-1/2 -translate-y-1/2 text-outline text-base">search</span>
+          <input autocomplete="off" type="text" id="remSearchInput" placeholder="Tìm tên hoặc mã môn..."
+            class="w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+            oninput="applyRemainingFilters()"/>
+        </div>
+        <select autocomplete="off" id="remFilterGroup" onchange="applyRemainingFilters()"
+          class="min-w-[140px] px-3 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface-variant focus:outline-none focus:border-primary">
+          <option value="">Tất cả nhóm</option>
+          <option value="required">Bắt buộc</option>
+          <option value="elective_a">Tự chọn A</option>
+          <option value="elective_b">Tự chọn B</option>
+          <option value="elective_c">Tự chọn C</option>
+          <option value="gdtc_qpan">GDTC / QPAN</option>
+        </select>
+        <select autocomplete="off" id="remFilterSem" onchange="applyRemainingFilters()"
+          class="min-w-[130px] px-3 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface-variant focus:outline-none focus:border-primary">
+          <option value="">Tất cả HK chuẩn</option>
+          <option value="1">HK 1</option>
+          <option value="2">HK 2</option>
+          <option value="3">HK 3</option>
+          <option value="4">HK 4</option>
+          <option value="5">HK 5</option>
+          <option value="6">HK 6</option>
+          <option value="7">HK 7</option>
+          <option value="8">HK 8</option>
+          <option value="9">HK 9</option>
+        </select>
+        <select autocomplete="off" id="remFilterPrereq" onchange="applyRemainingFilters()"
+          class="min-w-[160px] px-3 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface-variant focus:outline-none focus:border-primary">
+          <option value="">Tất cả tiên quyết</option>
+          <option value="ready">Đủ điều kiện học</option>
+          <option value="locked">Đang bị khóa</option>
+        </select>
+      </div>
+
+      <!-- Stats summary -->
+      <div id="remStatsBar" class="mb-3 text-xs text-[#474651] flex items-center gap-3 flex-wrap">
+        <span><span id="remShowing" class="font-semibold text-[#0b1c30]">0</span> môn hiển thị</span>
+        <span class="text-[#c8c5d3]">·</span>
+        <span><span id="remTotalTc" class="font-semibold text-[#0b1c30]">0</span> TC</span>
+        <span class="text-[#c8c5d3]">·</span>
+        <span><span id="remReady" class="font-semibold text-[#006c49]">0</span> đủ điều kiện học</span>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white border border-[#c8c5d3] rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-[#eff4ff] border-b border-[#c8c5d3]">
+                <th class="text-left px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-24">Mã môn</th>
+                <th class="text-left px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide">Tên môn học</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-12">TC</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-20">HK</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-28">Nhóm</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-36">Tiên quyết</th>
+              </tr>
+            </thead>
+            <tbody id="remainingTableBody" class="divide-y divide-[#c8c5d3]"></tbody>
+          </table>
+        </div>
+        <div id="remPager" class="hidden border-t border-[#c8c5d3] px-4 py-2 text-center">
+          <button onclick="_remShowAll()" class="text-xs font-semibold text-[#1a146b] hover:underline">
+            Hiển thị tất cả <span id="remHiddenCount">0</span> môn còn lại
+          </button>
+        </div>
+      </div>
+
+      <!-- No result -->
+      <div id="remNoResult" class="hidden text-center py-12">
+        <span class="material-symbols-outlined msym text-3xl text-[#c8c5d3] block mb-2">search_off</span>
+        <p class="text-[#474651] text-sm">Không có môn nào khớp bộ lọc</p>
+        <p class="text-xs text-[#777682] mt-1">Thử bỏ bớt filter hoặc đổi từ khóa tìm kiếm</p>
+      </div>
+    </div>
+
+    <!-- ── TAB 3: BIỂU ĐỒ ───────────────────────────────────────────────── -->
+    <div id="tab3Content" class="hidden fade-in">
+
+      <!-- Insufficient data state -->
+      <div id="chartInsufficient" class="hidden text-center py-16">
+        <span class="material-symbols-outlined msym text-4xl text-[#c8c5d3] block mb-3">bar_chart</span>
+        <p class="text-[#474651] font-medium mb-1">Cần ít nhất 2 học kỳ để hiển thị biểu đồ xu hướng</p>
+        <p class="text-sm text-[#777682]" id="insufficientMsg">Bạn mới có 0 kỳ dữ liệu</p>
+      </div>
+
+      <div id="chartsContainer" class="hidden space-y-5">
+        <!-- 4 stat cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] p-4 text-center">
+            <p class="text-2xl font-bold text-[#1a146b]" id="statGpa">—</p>
+            <p class="text-xs text-[#474651] mt-1">GPA tích lũy</p>
+          </div>
+          <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] p-4 text-center">
+            <p class="text-2xl font-bold text-[#0b1c30]" id="statCourses">—</p>
+            <p class="text-xs text-[#474651] mt-1">Môn đã học</p>
+          </div>
+          <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] p-4 text-center">
+            <p class="text-2xl font-bold text-green-600" id="statBestGpa">—</p>
+            <p class="text-xs text-[#474651] mt-1">Điểm TB cao nhất (kỳ)</p>
+          </div>
+          <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] p-4 text-center">
+            <p class="text-2xl font-bold text-[#0b1c30]" id="statAvgTc">—</p>
+            <p class="text-xs text-[#474651] mt-1">TC TB mỗi kỳ</p>
+          </div>
+        </div>
+
+        <!-- Bar chart: TC tích lũy -->
+        <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] shadow-sm p-5 lg:p-6">
+          <div class="mb-4">
+            <h3 class="text-sm font-bold text-[#0b1c30]">Tiến trình tích lũy tín chỉ</h3>
+            <p class="text-xs text-[#777682] mt-0.5">So sánh với kế hoạch chuẩn 4.5 năm</p>
+          </div>
+          <div class="relative" style="height:280px">
+            <svg id="tcChart" width="100%" height="100%" class="overflow-visible"></svg>
+            <div id="tcTooltip" class="absolute pointer-events-none hidden bg-white border border-[#c8c5d3] rounded-xl shadow-lg px-3 py-2.5 text-xs" style="min-width:140px"></div>
+          </div>
+        </div>
+
+        <!-- Line chart: GPA trend -->
+        <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] shadow-sm p-5 lg:p-6">
+          <div class="mb-4">
+            <h3 class="text-sm font-bold text-[#0b1c30]">Xu hướng điểm số</h3>
+            <p class="text-xs text-[#777682] mt-0.5">GPA từng học kỳ và GPA tích lũy</p>
+          </div>
+          <div class="relative" style="height:240px">
+            <svg id="gpaChart" width="100%" height="100%" class="overflow-visible"></svg>
+          </div>
+          <!-- Legend -->
+          <div class="flex items-center gap-4 mt-3 text-xs text-[#474651] justify-end">
+            <div class="flex items-center gap-1.5">
+              <div class="w-3 h-3 bg-[#c8c5d3] rounded-sm"></div><span>GPA từng kỳ</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <div class="w-6 h-0.5 bg-[#eef2ff]0 rounded"></div><span>GPA tích lũy</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trend insights -->
+        <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] p-5">
+          <h3 class="text-sm font-bold text-[#0b1c30] mb-4">📊 Nhận định học tập</h3>
+          <div class="space-y-3">
+            <!-- Tốc độ TC -->
+            <div class="flex items-start gap-3">
+              <div id="paceIcon" class="w-8 h-8 rounded-lg bg-[#e5eeff] flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined msym text-[#1a146b] text-sm">speed</span>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-[#0b1c30]">Tốc độ tích lũy</p>
+                <p class="text-sm text-[#474651] mt-0.5" id="paceText">Đang tính...</p>
+              </div>
+            </div>
+            <!-- Xu hướng GPA -->
+            <div class="flex items-start gap-3">
+              <div id="trendIcon" class="w-8 h-8 rounded-lg bg-[#e5eeff] flex items-center justify-center flex-shrink-0">
+                <span id="trendIconSym" class="material-symbols-outlined msym text-[#474651] text-sm">trending_flat</span>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-[#0b1c30]">Xu hướng GPA</p>
+                <p class="text-sm text-[#474651] mt-0.5" id="trendText">Đang tính...</p>
+              </div>
+            </div>
+            <!-- Dự báo TN -->
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined msym text-[#006c49] text-sm">event_available</span>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-[#0b1c30]">Dự báo tốt nghiệp</p>
+                <p class="text-sm text-[#474651] mt-0.5" id="gradText">Đang tính...</p>
+              </div>
+            </div>
+            <!-- Best/worst -->
+            <div class="pt-3 border-t border-[#c8c5d3]">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-green-50 rounded-xl p-3">
+                  <p class="text-xs text-green-600 font-semibold mb-1">🏆 Điểm cao nhất</p>
+                  <p class="text-sm font-bold text-green-700" id="bestCourseName">—</p>
+                  <p class="text-xs text-green-600" id="bestCourseScore">— / 10</p>
+                </div>
+                <div class="bg-red-50 rounded-xl p-3">
+                  <p class="text-xs text-[#ba1a1a] font-semibold mb-1">📌 Điểm thấp nhất</p>
+                  <p class="text-sm font-bold text-[#ba1a1a]" id="worstCourseName">—</p>
+                  <p class="text-xs text-[#ba1a1a]" id="worstCourseScore">— / 10</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ════════════════ Simulator Modal ════════════════ -->
+<div id="simulatorModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-6">
+    <div class="sticky top-0 bg-white border-b border-[#e5eeff] px-6 py-4 rounded-t-2xl flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-extrabold text-[#1a146b] flex items-center gap-2">
+          <span class="material-symbols-outlined msym text-xl text-[#7c3aed]">analytics</span>
+          Mô phỏng điểm
+        </h3>
+        <p class="text-xs text-[#474651] mt-0.5">Mô phỏng GPA kỳ tới hoặc đánh giá target GPA tốt nghiệp</p>
+      </div>
+      <button onclick="closeSimulator()" class="p-2 rounded-lg hover:bg-[#eef2ff] transition">
+        <span class="material-symbols-outlined msym text-xl text-[#474651]">close</span>
+      </button>
+    </div>
+
+    <!-- Tab nav -->
+    <div class="px-6 pt-4 border-b border-[#e5eeff]">
+      <div class="flex gap-1">
+        <button id="simTab1Btn" onclick="switchSimTab(1)" class="px-4 py-2 rounded-t-lg text-sm font-semibold border-b-2 border-[#7c3aed] text-[#7c3aed]">
+          📊 Kỳ tới
+        </button>
+        <button id="simTab2Btn" onclick="switchSimTab(2)" class="px-4 py-2 rounded-t-lg text-sm font-semibold border-b-2 border-transparent text-[#474651] hover:text-[#1a146b]">
+          🎯 Target GPA tốt nghiệp
+        </button>
+      </div>
+    </div>
+
+    <div class="p-6 max-h-[65vh] overflow-y-auto">
+      <!-- TAB 1: What-if -->
+      <div id="simTab1" class="space-y-3">
+        <!-- HK selector -->
+        <div class="bg-[#f8f9ff] rounded-xl p-3 flex items-center gap-3 flex-wrap">
+          <label class="text-xs font-bold uppercase tracking-wider text-[#474651]">Mô phỏng HK:</label>
+          <select id="simTermSelect" onchange="loadCoursesForTerm()"
+            class="text-sm border border-[#c8c5d3] rounded-lg px-3 py-1.5 bg-white font-semibold text-[#1a146b] focus:outline-none focus:border-[#7c3aed]">
+            <option value="">— Chọn HK —</option>
+            <option value="HK1">Học kỳ 1</option>
+            <option value="HK2">Học kỳ 2</option>
+            <option value="HK3">Học kỳ 3</option>
+            <option value="HK4">Học kỳ 4</option>
+            <option value="HK5">Học kỳ 5</option>
+            <option value="HK6">Học kỳ 6</option>
+            <option value="HK7">Học kỳ 7</option>
+            <option value="HK8">Học kỳ 8</option>
+            <option value="HK9">Học kỳ 9</option>
+          </select>
+          <span id="simTermInfo" class="text-xs text-[#474651]"></span>
+        </div>
+
+        <p class="text-[11px] text-[#7c3aed] flex items-center gap-1">
+          <span class="material-symbols-outlined msym text-xs">info</span>
+          Click <strong>▾</strong> để nhập từng đầu điểm (CC + GK + CK) — hệ thống tự tính tổng
+        </p>
+
+        <div id="simWhatIfRows" class="space-y-1.5">
+          <p class="text-sm text-[#94a3b8] italic text-center py-4" id="simEmptyHint">
+            Chọn HK ở trên để auto-load các môn từ lộ trình.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="addSimRow()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#c8c5d3] hover:bg-[#eef2ff] text-xs font-semibold text-[#1a146b] transition">
+            <span class="material-symbols-outlined msym text-sm">add</span>
+            Thêm môn khác
+          </button>
+          <button onclick="resetSimRows()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#c8c5d3] hover:bg-[#fef2f2] text-xs text-[#474651] transition">
+            <span class="material-symbols-outlined msym text-sm">restart_alt</span>
+            Reset
+          </button>
+        </div>
+
+        <!-- Detailed result (per-course breakdown) -->
+        <div id="simWhatIfResult" class="hidden space-y-2 pt-3 border-t border-[#e5eeff]"></div>
+      </div>
+
+      <!-- TAB 2: Target GPA -->
+      <div id="simTab2" class="hidden space-y-4">
+        <p class="text-sm text-[#474651]">Nhập target GPA mong muốn khi tốt nghiệp. AI sẽ đánh giá khả thi + đề xuất.</p>
+
+        <div class="bg-[#f8f9ff] rounded-xl p-4">
+          <label class="text-xs font-bold uppercase tracking-wider text-[#474651] mb-2 block">Mục tiêu GPA tốt nghiệp (hệ 4)</label>
+          <div class="flex items-center gap-3">
+            <input type="range" id="simTargetSlider" min="2.0" max="4.0" step="0.1" value="3.5"
+                   oninput="document.getElementById('simTargetVal').textContent = this.value"
+                   class="flex-1 accent-[#7c3aed]">
+            <span id="simTargetVal" class="text-2xl font-extrabold text-[#7c3aed] w-12 text-center">3.5</span>
+            <span class="text-sm text-[#474651]">/4.0</span>
+          </div>
+          <div class="flex justify-between text-[10px] text-[#474651] mt-1 px-1">
+            <span>Trung bình<br>(2.0)</span>
+            <span>Khá<br>(2.5)</span>
+            <span>Giỏi<br>(3.2)</span>
+            <span>Xuất sắc<br>(3.6+)</span>
+          </div>
+        </div>
+
+        <button onclick="runTargetGpa()" id="simTargetBtn"
+          class="w-full pri-grad text-white font-bold py-3 rounded-xl hover:opacity-90 transition flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined msym text-lg">target</span>
+          Phân tích khả thi
+        </button>
+
+        <!-- Result -->
+        <div id="simTargetResult" class="hidden space-y-3 pt-3 border-t border-[#e5eeff]"></div>
+      </div>
+    </div>
+
+    <!-- Sticky realtime GPA panel — chỉ hiện ở Tab 1 -->
+    <div id="simRealtimePanel" class="border-t border-[#e5eeff] bg-white px-6 py-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-[#f8f9ff] rounded-lg p-2.5 flex items-center gap-3 border border-[#e5eeff]">
+          <div class="flex-shrink-0">
+            <p class="text-[9px] uppercase font-bold text-[#474651]">GPA Kỳ tới</p>
+            <p class="text-2xl font-extrabold text-[#1a146b] leading-tight" id="rtTermGPA">—</p>
+          </div>
+          <p class="text-[10px] text-[#474651] flex-1" id="rtTermInfo">chưa nhập điểm</p>
+        </div>
+        <div class="bg-[#f5f3ff] rounded-lg p-2.5 flex items-center gap-3 border border-[#a78bfa]">
+          <div class="flex-shrink-0">
+            <p class="text-[9px] uppercase font-bold text-[#474651]">GPA Tích lũy</p>
+            <div class="flex items-center gap-1 leading-tight">
+              <span class="text-xs font-bold text-[#94a3b8]" id="rtCumBefore">—</span>
+              <span id="rtCumArrow" class="text-sm text-[#94a3b8]">→</span>
+              <span class="text-2xl font-extrabold text-[#7c3aed]" id="rtCumAfter">—</span>
+            </div>
+          </div>
+          <p class="text-[10px] flex-1" id="rtCumDelta"><span class="text-[#94a3b8]">không thay đổi</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-[#e5eeff] bg-[#f8f9ff] px-6 py-3 rounded-b-2xl flex items-center justify-between">
+      <p class="text-[10px] italic text-[#474651]">⚠ Ước lượng theo formula GPA. Tham khảo cố vấn.</p>
+      <button onclick="closeSimulator()" class="px-4 py-1.5 rounded-lg bg-[#e5eeff] text-[#474651] text-sm hover:bg-[#dce9ff] transition">
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FLOATING CHAT ───────────────────────────────────────────────────────── -->
+<script src="floating-chat.js?v=5"></script>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let _grades = [];        // raw from /grades/me
+let _catalog = [];       // from /courses/catalog/me
+let _analytics = null;   // from /analytics/me
+let _progress = null;    // from /progress/me
+let _user = null;
+let _previewData = null;
+
+const API = window.API_BASE;
+const H = () => ({ Authorization: `Bearer ${getToken()}` });
+
+// ── Init ───────────────────────────────────────────────────────────────────
+checkAuth();
+(async function init() {
+  // Sidebar is injected synchronously by sidebar-init.js
+
+  // Fetch user and data in parallel
+  const [user, grades, catalog, analytics, progress] = await Promise.all([
+    fetch(`${API}/auth/me`, { headers: H() }).then(r => r.ok ? r.json() : null),
+    fetch(`${API}/grades/me`, { headers: H() }).then(r => r.ok ? r.json() : []),
+    fetch(`${API}/courses/catalog/me`, { headers: H() }).then(r => r.ok ? r.json() : []),
+    fetch(`${API}/analytics/me`, { headers: H() }).then(r => r.ok ? r.json() : null),
+    fetch(`${API}/progress/me`, { headers: H() }).then(r => r.ok ? r.json() : null),
+  ]);
+
+  _user = user;
+  _grades = grades || [];
+  _catalog = catalog || [];
+  _analytics = analytics;
+  _progress = progress;
+
+  // Update sidebar user info
+  if (user) {
+    updateTopbarUser(user);
+    document.getElementById('sidebarUserName')?.setAttribute !== undefined &&
+      (document.getElementById('sidebarUserName').textContent = user.full_name || user.username);
+    document.getElementById('avatarCircle') &&
+      (document.getElementById('avatarCircle').textContent = (user.full_name || user.username || '?')[0].toUpperCase());
+
+    // Approach C: 3 trạng thái cho SV
+    //  (1) grades_locked=true → admin đã đồng bộ chính thức → KHÔNG cho upload, banner xanh "đã xác minh"
+    //  (2) grades_locked=false + có grades → SV đã tự upload, chưa có data trường → banner vàng "tự khai", cho upload đè
+    //  (3) grades_locked=false + KHÔNG grades → SV mới → banner xám "chưa có điểm", cho upload tạm
+    if (user.role === 'admin' || user.role === 'advisor') {
+      document.getElementById('uploadGradesBtn').style.display = '';
+      document.getElementById('emptyUploadBtn').style.display = '';
+    } else if (user.role === 'student') {
+      const banner = document.getElementById('gradesLockBanner');
+      const titleEl = document.getElementById('gradesLockTitle');
+      const msgEl = document.getElementById('gradesLockMsg');
+      const uploadBtn = document.getElementById('uploadGradesBtn');
+      const emptyUploadBtn = document.getElementById('emptyUploadBtn');
+      const hasGrades = (_grades || []).length > 0;
+      const isLocked = !!user.grades_locked;
+
+      if (banner) banner.classList.remove('hidden');
+
+      if (isLocked) {
+        // (1) Admin đã đồng bộ
+        if (banner) banner.className = 'mb-4 bg-[#dcfce7] border border-[#86efac] rounded-xl px-4 py-3 flex items-start gap-3';
+        if (titleEl) titleEl.textContent = '✓ Bảng điểm chính thức (đã xác minh)';
+        if (msgEl) msgEl.textContent = `Phòng đào tạo đã đồng bộ ${_grades.length} môn. Mọi cập nhật phải thực hiện ở web trường, app này không tự sửa được.`;
+        if (uploadBtn) uploadBtn.style.display = 'none';
+        if (emptyUploadBtn) emptyUploadBtn.style.display = 'none';
+      } else if (hasGrades) {
+        // (2) SV tự khai, chưa có admin
+        if (banner) banner.className = 'mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3';
+        if (titleEl) titleEl.textContent = '⚠ Bảng điểm tự khai — chưa xác minh';
+        if (msgEl) msgEl.textContent = `Đây là dữ liệu bạn tự upload (${_grades.length} môn). Cố vấn không xem nguồn này. Khi phòng đào tạo đồng bộ chính thức, bản tự khai sẽ bị thay thế.`;
+        // Cho upload đè (re-upload)
+        if (uploadBtn) uploadBtn.style.display = '';
+        if (emptyUploadBtn) emptyUploadBtn.style.display = '';
+      } else {
+        // (3) Chưa có gì
+        if (banner) banner.className = 'mb-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-start gap-3';
+        if (titleEl) titleEl.textContent = 'Chưa có bảng điểm';
+        if (msgEl) msgEl.textContent = 'Bạn có thể tạm upload bảng điểm cá nhân để dùng AI advisor + lập kế hoạch. Khi phòng đào tạo đồng bộ chính thức, bản tự khai sẽ bị thay thế.';
+        if (uploadBtn) uploadBtn.style.display = '';
+        if (emptyUploadBtn) emptyUploadBtn.style.display = '';
+      }
+    }
+  }
+
+  buildHeaderSubtitle();
+  renderProgressKPIs();
+  renderTab1();
+  buildCharts();
+  // Pre-render tab "Chưa học" để khi user click sang đã có dữ liệu sẵn
+  _initRemSpecFilter();
+  applyRemainingFilters();
+  _remTabInitialized = true;
+})();
+
+// ── Progress KPI cards (TỔNG TC + 4 nhóm tự chọn) ──────────────────────────
+// Moved from integrated-roadmap.html — gắn với bảng điểm hợp lý hơn.
+function renderProgressKPIs() {
+  const grid = document.getElementById('kpiGrid');
+  if (!grid) return;
+  const passedCodes = new Set((_grades || []).filter(g => g.passed).map(g => g.course_code));
+
+  const byCat = { BB: [], 'TC-A': [], 'TC-B': [], 'TC-C': [], 'TT-DATN': [] };
+  for (const c of (_catalog || [])) {
+    const name = (c.course_name || '').toLowerCase();
+    if (name.includes('thực tập tốt nghiệp') || name.includes('khóa luận') || name.includes('đồ án tốt nghiệp')) {
+      byCat['TT-DATN'].push(c);
+    } else if (c.category === 'TC-A' || c.category === 'TC-B' || c.category === 'TC-C') {
+      byCat[c.category].push(c);
+    } else {
+      byCat.BB.push(c);
+    }
+  }
+
+  // Tổng TC tích lũy = sum passed credits across all categories
+  const totalPassed = Object.values(byCat).flat()
+    .filter(c => passedCodes.has(c.course_code))
+    .reduce((s, c) => s + (parseFloat(c.credits) || 0), 0);
+  const TOTAL_TARGET = 153;
+  const totalPct = Math.min(100, Math.round(totalPassed / TOTAL_TARGET * 100));
+
+  const totalCard = `
+    <div class="rounded-xl border-2 border-[#1a146b] bg-gradient-to-br from-[#eef2ff] to-white p-3">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-[#1a146b]">TỔNG TÍN CHỈ</p>
+      <div class="flex items-baseline gap-1 mt-1">
+        <span class="text-xl font-extrabold text-[#1a146b]">${totalPassed.toFixed(0)}</span>
+        <span class="text-xs text-[#474651]">/ ${TOTAL_TARGET} TC</span>
+      </div>
+      <div class="mt-2 h-1.5 w-full bg-[#e5eeff] rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-700" style="width:${totalPct}%;background:linear-gradient(135deg,#1a146b,#312e81)"></div>
+      </div>
+      <p class="text-[10px] text-[#474651] mt-1">${totalPct}% hoàn thành</p>
+    </div>`;
+
+  const targets = {
+    'TC-A':    { label: 'Tự chọn A', target: 6,  color: '#7c3aed' },
+    'TC-B':    { label: 'Tự chọn B', target: 9,  color: '#16a34a' },
+    'TC-C':    { label: 'Tự chọn C', target: 9,  color: '#ea580c' },
+    'TT-DATN': { label: 'TT + ĐATN', target: 20, color: '#0ea5e9' },
+  };
+
+  const otherCards = Object.entries(targets).map(([cat, info]) => {
+    const courses = byCat[cat] || [];
+    const passed = courses.filter(c => passedCodes.has(c.course_code))
+      .reduce((s, c) => s + (parseFloat(c.credits) || 0), 0);
+    const pct = info.target > 0 ? Math.min(100, Math.round(passed / info.target * 100)) : 0;
+    return `
+      <div class="rounded-xl border border-[#e5eeff] p-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-[#474651]">${info.label}</p>
+        <div class="flex items-baseline gap-1 mt-1">
+          <span class="text-xl font-extrabold" style="color:${info.color}">${passed.toFixed(0)}</span>
+          <span class="text-xs text-[#474651]">/ ${info.target} TC</span>
+        </div>
+        <div class="mt-2 h-1.5 w-full bg-[#e5eeff] rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-700" style="width:${pct}%;background:${info.color}"></div>
+        </div>
+        <p class="text-[10px] text-[#474651] mt-1">${pct}% hoàn thành</p>
+      </div>`;
+  }).join('');
+
+  grid.innerHTML = totalCard + otherCards;
+}
+
+// ── Header subtitle ────────────────────────────────────────────────────────
+function buildHeaderSubtitle() {
+  // Build course map from catalog
+  const courseMap = {};
+  for (const c of _catalog) courseMap[c.course_code] = c;
+
+  // Count unique passed courses (ignoring retakes, GDTC/QPAN)
+  const passed = new Set(_grades.filter(g => g.passed).map(g => g.course_code));
+  const notStarted = _catalog.filter(c => c.status === 'not_started').length;
+  const gpa = _progress?.avg_score4 ?? (_analytics?.gpa_by_term?.slice(-1)[0]?.gpa4 ?? null);
+
+  document.getElementById('headerSubtitle').innerHTML =
+    `<span class="font-medium text-[#0b1c30]">${passed.size}</span> môn đã học · ` +
+    `<span class="font-medium text-[#0b1c30]">${notStarted}</span> môn chưa học` +
+    (gpa !== null ? ` · GPA <span class="font-semibold text-[#1a146b]">${(+gpa).toFixed(2)}</span>` : '');
+
+  // Tab badges
+  const t1 = document.getElementById('tab1Count');
+  const t2 = document.getElementById('tab2Count');
+  if (t1) t1.textContent = passed.size;
+  if (t2) t2.textContent = notStarted;
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+// 1=Đã học · 2=Chưa học · 3=Biểu đồ
+function switchTab(n) {
+  for (let i = 1; i <= 3; i++) {
+    const c = document.getElementById('tab' + i + 'Content');
+    const b = document.getElementById('tab' + i + 'Btn');
+    if (c) c.classList.toggle('hidden', n !== i);
+    if (b) b.classList.toggle('active', n === i);
+  }
+  if (n === 3) drawCharts();
+  // Lazy-init filters cho tab Chưa học (lần đầu mở)
+  if (n === 2 && _catalog.length && !_remTabInitialized) {
+    _remTabInitialized = true;
+    _initRemSpecFilter();
+    applyRemainingFilters();
+  }
+}
+
+let _remTabInitialized = false;
+let _remShowingAll = false;  // pagination toggle
+
+function _initRemSpecFilter() {
+  // Khi SV chưa có CN: ẩn lựa chọn "Mặc định" (vì không có CN nào để mặc định)
+  // và để default = "common" (chỉ môn chung).
+  const sel = document.getElementById('remSpecFilter');
+  if (!sel) return;
+  const hasSpec = !!(_user?.specialization);
+  if (!hasSpec) {
+    const opt = sel.querySelector('option[value="auto"]');
+    if (opt) opt.remove();
+    sel.value = 'all';  // SV chưa CN → mặc định xem tất cả để khám phá
+  }
+}
+
+// ── Course helpers ─────────────────────────────────────────────────────────
+const GDTC_CODES = new Set(['7010701','7010702','7010703','7010704','7010705']);
+function isGdtcQpan(code) {
+  return GDTC_CODES.has(code) || (code && code.startsWith('73'));
+}
+
+function getCourseInfo(code) {
+  return _catalog.find(c => c.course_code === code) || null;
+}
+
+function getCategoryLabel(cat, code) {
+  if (isGdtcQpan(code)) return { label: 'GDTC/QPAN', cls: 'bg-[#e5eeff] text-[#474651]' };
+  if (!cat) return { label: 'Đại cương', cls: 'bg-sky-100 text-sky-700' };
+  const m = {
+    required:    { label: 'Bắt buộc',  cls: 'bg-sky-100 text-sky-700' },
+    elective:    { label: 'Tự chọn',   cls: 'bg-violet-100 text-violet-700' },
+    conditional: { label: 'Cơ sở ngành', cls: 'bg-[#e5eeff] text-[#1a146b]' },
+  };
+  return m[cat] || { label: cat, cls: 'bg-[#e5eeff] text-[#474651]' };
+}
+
+// ── Tab 1 render ───────────────────────────────────────────────────────────
+function applyFilters() { renderTab1(); }
+
+function renderTab1() {
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const fTerm = document.getElementById('filterTerm').value;
+  const fStatus = document.getElementById('filterStatus').value;
+  const fBlock = document.getElementById('filterBlock').value;
+
+  document.getElementById('gradesLoading').classList.add('hidden');
+
+  const courseMap = {};
+  for (const c of _catalog) courseMap[c.course_code] = c;
+
+  // Detect retakes: same course_code appearing multiple times
+  const codeCount = {};
+  for (const g of _grades) codeCount[g.course_code] = (codeCount[g.course_code] || 0) + 1;
+  // Mark each grade as retake = it's a duplicate AND there's a later passing attempt
+  const gradesSorted = [..._grades].sort((a, b) => (a.term || '').localeCompare(b.term || ''));
+  const lastPassedTerm = {};
+  for (const g of gradesSorted) {
+    if (g.passed) lastPassedTerm[g.course_code] = g.term;
+  }
+
+  // Build enriched grades
+  const enriched = _grades.map(g => {
+    const ci = courseMap[g.course_code] || null;
+    const isDup = codeCount[g.course_code] > 1;
+    const isRetake = isDup && lastPassedTerm[g.course_code] && g.term !== lastPassedTerm[g.course_code] && !g.passed;
+    const isGdtc = isGdtcQpan(g.course_code);
+    const inCurriculum = ci ? (ci.status !== undefined) : false;
+    return {
+      ...g,
+      course_name: ci?.course_name || g.course_code,
+      credits: ci?.credits ?? null,
+      count_toward: ci?.count_toward_credits ?? (!isGdtc),
+      category: ci ? (isGdtc ? 'gdtc_qpan' : (ci.elective_group ? 'elective' : (ci.status ? 'required' : 'conditional'))) : null,
+      isRetake,
+      isGdtc,
+      inCurriculum: ci !== null,
+    };
+  });
+
+  // Populate term dropdown if empty
+  const termSel = document.getElementById('filterTerm');
+  if (termSel.options.length === 1) {
+    const terms = [...new Set(_grades.map(g => g.term).filter(Boolean))].sort().reverse();
+    for (const t of terms) {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      termSel.appendChild(opt);
+    }
+  }
+
+  // Filter
+  let filtered = enriched.filter(g => {
+    if (fTerm && g.term !== fTerm) return false;
+    if (fStatus === 'passed' && !g.passed) return false;
+    if (fStatus === 'failed' && (g.passed || g.isRetake)) return false;
+    if (fStatus === 'retake' && !g.isRetake) return false;
+    if (fBlock === 'gdtc_qpan' && !g.isGdtc) return false;
+    if (fBlock && fBlock !== 'gdtc_qpan') {
+      if (g.isGdtc) return false;
+      const ci = courseMap[g.course_code];
+      if (fBlock === 'required' && ci?.elective_group) return false;
+      if (fBlock === 'elective' && !ci?.elective_group) return false;
+      if (fBlock === 'conditional') {
+        if (!ci || ci?.elective_group) return false;
+      }
+    }
+    if (search) {
+      const hay = (g.course_code + ' ' + g.course_name).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  // Hide/show states
+  const listEl = document.getElementById('gradesList');
+  const emptyEl = document.getElementById('gradesEmpty');
+  const noResultEl = document.getElementById('gradesNoResult');
+
+  if (_grades.length === 0) {
+    listEl.classList.add('hidden');
+    emptyEl.classList.remove('hidden');
+    noResultEl.classList.add('hidden');
+    return;
+  }
+
+  if (filtered.length === 0 && search) {
+    listEl.classList.add('hidden');
+    emptyEl.classList.add('hidden');
+    noResultEl.classList.remove('hidden');
+    document.getElementById('noResultKeyword').textContent = `"${search}"`;
+    return;
+  }
+
+  emptyEl.classList.add('hidden');
+  noResultEl.classList.add('hidden');
+  listEl.classList.remove('hidden');
+
+  // Group by term, newest first
+  const byTerm = {};
+  for (const g of filtered) {
+    const k = g.term || 'Không rõ học kỳ';
+    if (!byTerm[k]) byTerm[k] = [];
+    byTerm[k].push(g);
+  }
+  const sortedTerms = Object.keys(byTerm).sort().reverse();
+
+  let html = '';
+  for (const term of sortedTerms) {
+    const rows = byTerm[term];
+    const termCredits = rows.reduce((s, g) => s + (g.count_toward && g.passed ? (g.credits || 0) : 0), 0);
+    const termGpas = rows.filter(g => g.passed && g.score4 != null);
+    const termGpa = termGpas.length
+      ? (termGpas.reduce((s, g) => s + g.score4 * (g.credits || 3), 0) / termGpas.reduce((s, g) => s + (g.credits || 3), 0)).toFixed(2)
+      : null;
+    const isSummer = term.includes('HK3') || term.toLowerCase().includes('hè');
+
+    html += `
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-3">
+          <h3 class="text-sm font-bold text-[#0b1c30]">${hl(term, search)}</h3>
+          <span class="text-xs text-[#777682]">${rows.length} môn · ${termCredits} TC${termGpa ? ` · GPA ${termGpa}` : ''}</span>
+        </div>
+        <span class="text-xs px-2 py-0.5 rounded-full ${isSummer ? 'bg-amber-100 text-amber-600' : 'bg-[#e5eeff] text-[#474651]'}">
+          ${isSummer ? 'Học kỳ hè' : 'Học kỳ chính'}
+        </span>
+      </div>
+      <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] overflow-hidden mb-1">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-[#eff4ff] border-b border-[#c8c5d3]">
+                <th class="text-left px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-24 hidden sm:table-cell">Mã môn</th>
+                <th class="text-left px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide">Tên môn học</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-12">TC</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-20">Điểm 10</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-20">Xếp loại</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-28">Trạng thái</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-32" title="Đánh giá môn — hiện cho SV trước">Đánh giá</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#c8c5d3]">
+              ${rows.map(g => gradeRow(g, search)).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  listEl.innerHTML = html;
+
+  // Load rating cho mỗi môn đã pass (sau khi DOM render xong)
+  for (const g of filtered) {
+    if (g.passed && !g.isGdtc && !g.isRetake && g.inCurriculum) {
+      _loadRowRating(g.course_code);
+    }
+  }
+}
+
+// ── Rating widget per-row trên bảng điểm ──────────────────────────────────
+async function _loadRowRating(code) {
+  const el = document.getElementById('gr-rating-' + code);
+  if (!el) return;
+  try {
+    const res = await fetch(`${API}/courses/${encodeURIComponent(code)}/rating`, { headers: H() });
+    if (!res.ok) { el.innerHTML = ''; return; }
+    const d = await res.json();
+    _renderRowRating(code, d);
+  } catch { el.innerHTML = ''; }
+}
+
+function _renderRowRating(code, d) {
+  const el = document.getElementById('gr-rating-' + code);
+  if (!el) return;
+  const my = d.my_rating || 0;
+  const avg = d.avg_rating;
+  const count = d.count || 0;
+  // 5 stars clickable; vàng nếu i <= my, viền nếu i <= avg (tham khảo SV khác), grey nếu chưa rate
+  const stars = [1,2,3,4,5].map(i => {
+    let cls = 'text-[#c8c5d3]';
+    if (my && i <= my) cls = 'text-amber-400';
+    else if (!my && avg && i <= Math.round(avg)) cls = 'text-amber-200';
+    return `<button type="button" onclick="_submitRowRating('${code}',${i})"
+      class="cursor-pointer text-base ${cls} hover:scale-110 hover:text-amber-500 transition-transform"
+      title="${i} sao">★</button>`;
+  }).join('');
+  const subtext = my
+    ? `<p class="text-[10px] text-[#006c49] mt-0.5">Bạn đã đánh giá · click sao khác để sửa</p>`
+    : (avg
+        ? `<p class="text-[10px] text-[#777682] mt-0.5">${avg.toFixed(1)}★ · ${count} SV · click để đánh giá</p>`
+        : `<p class="text-[10px] text-[#777682] mt-0.5">Click để đánh giá</p>`);
+  el.innerHTML = `<div class="inline-flex flex-col items-center"><div class="flex gap-0.5">${stars}</div>${subtext}</div>`;
+}
+
+// Click star trong row → mở modal với prefill stars đó. Modal cho phép thêm review,
+// chọn ẩn danh, gửi góp ý riêng cho admin trước khi save.
+async function _submitRowRating(code, stars) {
+  await openRatingModal(code, stars);
+}
+
+// ── Rating Modal ───────────────────────────────────────────────────────────
+let _ratingModalCode = null;
+let _ratingModalStars = 0;
+
+async function openRatingModal(code, prefillStars = 0) {
+  _ratingModalCode = code;
+  _ratingModalStars = prefillStars || 0;
+
+  // Lấy info môn từ catalog (tên + TC) + rating hiện tại của user
+  const courseInfo = _catalog.find(c => c.course_code === code);
+  const courseName = courseInfo?.course_name || code;
+
+  _ensureRatingModalDom();
+  const modal = document.getElementById('ratingModal');
+  document.getElementById('rmCourseName').textContent = courseName;
+  document.getElementById('rmCourseCode').textContent = code;
+  document.getElementById('rmReview').value = '';
+  document.getElementById('rmAnonymous').checked = false;
+  document.getElementById('rmAdminFeedback').value = '';
+  document.getElementById('rmAdminToggle').checked = false;
+  document.getElementById('rmAdminBox').classList.add('hidden');
+  document.getElementById('rmError').classList.add('hidden');
+
+  // Fetch existing rating to pre-fill (nếu user đã rate trước)
+  try {
+    const res = await fetch(`${API}/courses/${encodeURIComponent(code)}/rating`, { headers: H() });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.my_rating) {
+        _ratingModalStars = prefillStars || d.my_rating;
+        document.getElementById('rmReview').value = d.my_review || '';
+        document.getElementById('rmAnonymous').checked = !!d.my_is_anonymous;
+        if (d.my_admin_feedback) {
+          document.getElementById('rmAdminToggle').checked = true;
+          document.getElementById('rmAdminBox').classList.remove('hidden');
+          document.getElementById('rmAdminFeedback').value = d.my_admin_feedback;
+        }
+      }
+    }
+  } catch (_) {}
+
+  _renderRatingModalStars();
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function _ensureRatingModalDom() {
+  if (document.getElementById('ratingModal')) return;
+  const html = `
+  <div id="ratingModal" class="hidden fixed inset-0 z-[9000] bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-[#e5eeff] flex items-start gap-3">
+        <span class="material-symbols-outlined msym text-2xl text-amber-500" style="font-variation-settings:'FILL' 1">star</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs text-[#777682] uppercase tracking-wider font-bold" id="rmCourseCode">—</p>
+          <h3 class="text-base font-extrabold text-[#1a146b]" id="rmCourseName">—</h3>
+        </div>
+        <button onclick="closeRatingModal()" class="p-1 -m-1 text-[#777682] hover:text-[#1a146b] transition">
+          <span class="material-symbols-outlined msym">close</span>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <!-- Stars selector -->
+        <div>
+          <label class="text-sm font-semibold text-[#0b1c30] mb-2 block">Đánh giá tổng thể <span class="text-red-500">*</span></label>
+          <div id="rmStars" class="flex gap-1 mb-1"></div>
+          <p class="text-xs text-[#777682]" id="rmStarsLabel">Chọn từ 1 đến 5 sao</p>
+        </div>
+
+        <!-- Public review -->
+        <div>
+          <label class="text-sm font-semibold text-[#0b1c30] mb-2 block">Nhận xét công khai (tùy chọn)</label>
+          <textarea id="rmReview" rows="3" placeholder="Vd: Môn học bổ ích, GV giảng dễ hiểu, có nhiều bài tập thực hành..."
+            class="w-full text-sm border border-[#c8c5d3] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1a146b] resize-none"></textarea>
+          <p class="text-[11px] text-[#777682] mt-1">Hiển thị cho SV khác để giúp họ chọn TC. Bạn có thể bật ẩn danh bên dưới.</p>
+        </div>
+
+        <!-- Anonymous toggle -->
+        <label class="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg hover:bg-[#f8f9ff] border border-[#e5eeff]">
+          <input type="checkbox" id="rmAnonymous" class="mt-0.5 w-4 h-4 accent-[#1a146b]"/>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-[#0b1c30]">Đăng ẩn danh</p>
+            <p class="text-[11px] text-[#777682] mt-0.5">Tên bạn sẽ không hiện cho SV khác — vẫn lưu danh tính trong DB để admin có thể xác minh khi cần.</p>
+          </div>
+        </label>
+
+        <!-- Admin feedback toggle + textarea -->
+        <div>
+          <label class="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg hover:bg-amber-50 border border-amber-200">
+            <input type="checkbox" id="rmAdminToggle" class="mt-0.5 w-4 h-4 accent-amber-600"
+              onchange="document.getElementById('rmAdminBox').classList.toggle('hidden', !this.checked)"/>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-amber-900">Góp ý riêng cho admin/khoa</p>
+              <p class="text-[11px] text-amber-700 mt-0.5">Phản ánh chất lượng giảng dạy, GV, hàm lượng kiến thức... Chỉ admin/khoa thấy, không công khai.</p>
+            </div>
+          </label>
+          <div id="rmAdminBox" class="hidden mt-2">
+            <textarea id="rmAdminFeedback" rows="3" placeholder="Vd: GV giảng quá nhanh, sinh viên khó theo. Đề thi chưa sát với nội dung học..."
+              class="w-full text-sm border border-amber-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-600 resize-none bg-amber-50"></textarea>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div id="rmError" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"></div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-3 border-t border-[#e5eeff] bg-[#f8f9ff] flex justify-end gap-2">
+        <button onclick="closeRatingModal()"
+          class="px-4 py-2 rounded-xl text-sm font-semibold border border-[#c8c5d3] text-[#474651] hover:bg-white transition">
+          Hủy
+        </button>
+        <button id="rmSaveBtn" onclick="submitRatingModal()"
+          class="px-5 py-2 rounded-xl text-sm font-bold text-white pri-grad hover:opacity-90 transition">
+          Lưu đánh giá
+        </button>
+      </div>
+    </div>
+  </div>`;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  document.body.appendChild(div.firstElementChild);
+}
+
+function _renderRatingModalStars() {
+  const wrap = document.getElementById('rmStars');
+  if (!wrap) return;
+  const labels = ['', 'Rất tệ', 'Tệ', 'Trung bình', 'Tốt', 'Xuất sắc'];
+  wrap.innerHTML = [1,2,3,4,5].map(i => {
+    const filled = i <= _ratingModalStars;
+    return `<button type="button" onclick="_setRatingModalStars(${i})"
+      class="text-3xl ${filled ? 'text-amber-400' : 'text-[#c8c5d3]'} hover:scale-110 transition">★</button>`;
+  }).join('');
+  document.getElementById('rmStarsLabel').textContent = _ratingModalStars
+    ? `${_ratingModalStars} sao — ${labels[_ratingModalStars]}`
+    : 'Chọn từ 1 đến 5 sao';
+}
+
+function _setRatingModalStars(n) {
+  _ratingModalStars = n;
+  _renderRatingModalStars();
+}
+
+function closeRatingModal() {
+  const m = document.getElementById('ratingModal');
+  if (m) m.classList.add('hidden');
+  document.body.style.overflow = '';
+  _ratingModalCode = null;
+}
+
+async function submitRatingModal() {
+  const code = _ratingModalCode;
+  if (!code) return;
+  if (!_ratingModalStars || _ratingModalStars < 1 || _ratingModalStars > 5) {
+    _showRmError('Vui lòng chọn 1-5 sao');
+    return;
+  }
+  const review = document.getElementById('rmReview').value.trim();
+  const isAnonymous = document.getElementById('rmAnonymous').checked;
+  const adminToggle = document.getElementById('rmAdminToggle').checked;
+  const adminFeedback = adminToggle ? document.getElementById('rmAdminFeedback').value.trim() : '';
+
+  const btn = document.getElementById('rmSaveBtn');
+  const oldHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined msym text-base spin">progress_activity</span>';
+
+  try {
+    const params = new URLSearchParams({
+      rating: String(_ratingModalStars),
+      is_anonymous: String(isAnonymous),
+    });
+    if (review) params.set('review', review);
+    if (adminFeedback) params.set('admin_feedback', adminFeedback);
+
+    const res = await fetch(`${API}/courses/${encodeURIComponent(code)}/rate?${params}`, {
+      method: 'POST', headers: H(),
+    });
+    if (!res.ok) {
+      let msg = 'Lỗi đánh giá';
+      try { const j = await res.json(); msg = j.detail || msg; } catch {}
+      _showRmError(msg);
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+      return;
+    }
+    closeRatingModal();
+    _loadRowRating(code);
+  } catch (e) {
+    _showRmError('Lỗi kết nối: ' + (e.message || 'unknown'));
+    btn.disabled = false;
+    btn.innerHTML = oldHtml;
+  }
+}
+
+function _showRmError(msg) {
+  const el = document.getElementById('rmError');
+  if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+}
+
+function hl(text, q) {
+  if (!q) return escHtml(text);
+  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return escHtml(text).replace(re, '<mark>$1</mark>');
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function gradeRow(g, search) {
+  const isF = !g.passed && !g.isRetake;
+  const isGdtc = g.isGdtc;
+  const notInCtdt = !g.inCurriculum;
+
+  // Row background
+  let rowCls = 'hover:bg-[#eef2ff] transition-colors';
+  if (isF) rowCls = 'bg-red-50/50 hover:bg-red-50 transition-colors';
+
+  // Name styling
+  let nameCls = 'text-sm font-medium text-[#0b1c30]';
+  if (isF) nameCls = 'text-sm font-medium text-red-700';
+  if (isGdtc) nameCls = 'text-sm text-[#474651]';
+
+  // Score color
+  const s10 = g.score10 != null ? g.score10 : null;
+  let scoreCls = 'text-sm font-semibold text-[#0b1c30]';
+  if (isF) scoreCls = 'text-sm font-semibold text-[#ba1a1a]';
+  if (isGdtc) scoreCls = 'text-sm text-[#474651]';
+
+  // Letter color
+  const letter = g.letter || (g.score4 != null ? letterFromScore4(g.score4) : '—');
+  let letterCls = 'text-sm font-semibold text-green-600';
+  if (isF) letterCls = 'text-sm font-semibold text-[#ba1a1a]';
+  if (isGdtc) letterCls = 'text-sm text-[#474651]';
+  if (g.isRetake) letterCls = 'text-sm font-semibold text-blue-600';
+
+  // Status badge
+  let statusBadge = '';
+  if (notInCtdt) {
+    statusBadge = `<span class="text-xs bg-red-100 text-[#ba1a1a] px-2 py-1 rounded-full">Ngoài CTDT</span>`;
+  } else if (isGdtc) {
+    statusBadge = `<span class="text-xs bg-[#e5eeff] text-[#474651] px-2 py-1 rounded-full">Hoàn thành</span>`;
+  } else if (isF) {
+    statusBadge = `<span class="inline-flex items-center gap-1 text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#ba1a1a]"></span>Trượt</span>`;
+  } else if (g.isRetake) {
+    statusBadge = `<span class="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">Đạt (lần 2+)</span>`;
+  } else {
+    statusBadge = `<span class="inline-flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full">
+      <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Đạt</span>`;
+  }
+
+  // TC column
+  let tcCell = '';
+  if (notInCtdt) {
+    tcCell = `<td colspan="5" class="px-4 py-3 text-xs text-[#777682]">Môn này không có trong chương trình đào tạo — không tính vào tiến độ</td>`;
+  } else {
+    const tcDisplay = isGdtc ? '—' : (g.credits != null ? g.credits : '—');
+    const tcCls = g.isRetake ? 'text-center text-sm text-[#777682] line-through' : 'text-center text-sm text-[#474651]';
+    // Rating cell: chỉ cho phép rate môn đã pass + count_toward (không rate GDTC/QPAN)
+    const canRate = g.passed && !isGdtc && !g.isRetake;
+    const ratingCellId = `gr-rating-${g.course_code}`;
+    const ratingHtml = canRate
+      ? `<div id="${ratingCellId}" class="text-xs text-[#c8c5d3]"><span class="animate-pulse">···</span></div>`
+      : `<span class="text-xs text-[#c8c5d3]">—</span>`;
+    tcCell = `
+      <td class="px-4 py-3 ${tcCls}">${tcDisplay}</td>
+      <td class="px-4 py-3 text-center"><span class="${scoreCls}">${s10 != null ? s10.toFixed(1) : '—'}</span></td>
+      <td class="px-4 py-3 text-center"><span class="${letterCls}">${escHtml(letter)}</span></td>
+      <td class="px-4 py-3 text-center">${statusBadge}</td>
+      <td class="px-4 py-3 text-center">${ratingHtml}</td>`;
+  }
+
+  // Name badges
+  let nameBadges = '';
+  if (g.isRetake) nameBadges += `<span class="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Học lại</span>`;
+  if (isGdtc) nameBadges += `<span class="text-xs bg-[#e5eeff] text-[#474651] px-1.5 py-0.5 rounded-full">Không tính TC</span>`;
+  if (notInCtdt) nameBadges += `<span class="text-xs bg-red-100 text-[#ba1a1a] px-1.5 py-0.5 rounded-full">Ngoài CTDT</span>`;
+  // Source badge: phân biệt điểm xác thực vs tự nhập
+  if (g.source === 'admin') {
+    nameBadges += `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-semibold inline-flex items-center gap-0.5" title="Điểm do quản trị nhập từ bảng điểm chính thức"><span class="material-symbols-outlined msym text-[10px]">verified</span>Đã xác thực</span>`;
+  } else if (g.source === 'self') {
+    nameBadges += `<span class="text-[10px] bg-[#e5eeff] text-[#474651] px-1.5 py-0.5 rounded-full font-medium" title="Điểm do bạn tự upload">Tự nhập</span>`;
+  }
+
+  // Click row → hiển thị toast (chi tiết môn — tính năng đang phát triển)
+  const linkAttr = !notInCtdt
+    ? `onclick="if(event.target.closest('button')||event.target.closest('input'))return;showToast('Chi tiết môn — tính năng đang phát triển', 'info')"`
+    : '';
+  const cursorCls = !notInCtdt ? 'cursor-pointer' : '';
+  return `<tr class="${rowCls} ${cursorCls}" ${linkAttr}>
+    <td class="px-4 py-3 text-xs text-[#777682] font-mono hidden sm:table-cell">${hl(g.course_code, search)}</td>
+    <td class="px-4 py-3">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="${nameCls}">${hl(g.course_name || g.course_code, search)}</span>
+        ${nameBadges}
+      </div>
+    </td>
+    ${tcCell}
+  </tr>`;
+}
+
+function letterFromScore4(s4) {
+  if (s4 >= 3.7) return 'A';
+  if (s4 >= 3.5) return 'A-';
+  if (s4 >= 3.0) return 'B+';
+  if (s4 >= 2.5) return 'B';
+  if (s4 >= 2.0) return 'C+';
+  if (s4 >= 1.5) return 'C';
+  if (s4 >= 1.0) return 'D+';
+  if (s4 >= 0.5) return 'D';
+  return 'F';
+}
+
+// Lọc theo bộ lọc tab "Chưa học" + render. Gọi từ search/select onchange.
+function applyRemainingFilters() {
+  const search = (document.getElementById('remSearchInput')?.value || '').toLowerCase().trim();
+  const fGroup = document.getElementById('remFilterGroup')?.value || '';
+  const fSem = document.getElementById('remFilterSem')?.value || '';
+  const fPrereq = document.getElementById('remFilterPrereq')?.value || '';
+  const fSpec = document.getElementById('remSpecFilter')?.value || 'auto';
+  const userSpec = _user?.specialization || '';
+
+  const all = _catalog.filter(c => c.status === 'not_started');
+
+  // Spec filter: auto = CN của tôi + chung; common = chỉ chung; all = tất cả; <code> = CN cụ thể
+  const specFiltered = all.filter(c => {
+    const cs = c.required_specialization;  // null = chung, hoặc full code CN
+    if (fSpec === 'all') return true;
+    if (fSpec === 'common') return !cs;
+    if (fSpec === 'auto') return !cs || cs === userSpec;
+    // CN cụ thể → chung + CN đó
+    return !cs || cs === fSpec;
+  });
+
+  // Group filter
+  const groupFiltered = specFiltered.filter(c => {
+    if (!fGroup) return true;
+    const isGdtc = isGdtcQpan(c.course_code);
+    if (fGroup === 'gdtc_qpan') return isGdtc;
+    if (isGdtc) return false;  // GDTC/QPAN không match nhóm khác
+    const eg = c.elective_group || '';
+    if (fGroup === 'required') return !eg;
+    if (fGroup === 'elective_a') return eg === 'A';
+    if (fGroup === 'elective_b') return eg === 'B';
+    if (fGroup === 'elective_c') return eg === 'C';
+    return true;
+  });
+
+  // Semester filter
+  const semFiltered = groupFiltered.filter(c => {
+    if (!fSem) return true;
+    return String(c.curriculum_semester || 0) === fSem;
+  });
+
+  // Prereq status filter
+  const prereqFiltered = semFiltered.filter(c => {
+    if (!fPrereq) return true;
+    const ready = c.prereqs_met !== false;
+    return fPrereq === 'ready' ? ready : !ready;
+  });
+
+  // Search
+  const final = !search ? prereqFiltered : prereqFiltered.filter(c =>
+    (c.course_name || '').toLowerCase().includes(search) ||
+    (c.course_code || '').toLowerCase().includes(search)
+  );
+
+  // Stats
+  document.getElementById('remShowing').textContent = final.length;
+  document.getElementById('remTotalTc').textContent = final.reduce((s, c) => s + (c.credits || 0), 0);
+  document.getElementById('remReady').textContent = final.filter(c => c.prereqs_met !== false).length;
+
+  // Spec banner label
+  const banner = document.getElementById('remSpecLabel');
+  if (banner) {
+    if (fSpec === 'auto') banner.textContent = userSpec
+      ? `Mặc định: môn của ${_specShort(userSpec)} + môn chung`
+      : 'Mặc định: chỉ môn chung (chưa chốt CN)';
+    else if (fSpec === 'all') banner.textContent = 'Đang xem: tất cả môn của 6 chuyên ngành';
+    else if (fSpec === 'common') banner.textContent = 'Đang xem: chỉ môn chung (đại cương)';
+    else banner.textContent = `Đang xem trước: ${_specShort(fSpec)} + môn chung`;
+  }
+
+  renderRemaining(final);
+}
+
+function _specShort(code) {
+  const map = {
+    '7480201_07':'KHMT', '7480201_06':'MMT',  '7480201_05':'CNPM',
+    '7480201_09':'HTTT', '7480201_04':'THKT', '7480201_08':'CNTTDH',
+  };
+  return map[code] || code || 'CN';
+}
+
+function _remShowAll() {
+  _remShowingAll = true;
+  applyRemainingFilters();
+}
+
+function renderRemaining(filtered) {
+  const tbody = document.getElementById('remainingTableBody');
+  const noRes = document.getElementById('remNoResult');
+  const pager = document.getElementById('remPager');
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    noRes.classList.remove('hidden');
+    pager.classList.add('hidden');
+    return;
+  }
+  noRes.classList.add('hidden');
+
+  const PAGE = 50;
+  const showAll = _remShowingAll;
+  const visible = showAll ? filtered : filtered.slice(0, PAGE);
+  const hidden = filtered.length - visible.length;
+
+  tbody.innerHTML = visible.map(c => {
+    const isGdtc = isGdtcQpan(c.course_code);
+    const eg = c.elective_group;
+    let groupBadge;
+    if (isGdtc) groupBadge = { label: 'GDTC/QPAN', cls: 'bg-[#e5eeff] text-[#474651]' };
+    else if (eg === 'A') groupBadge = { label: 'Tự chọn A', cls: 'bg-violet-100 text-violet-700' };
+    else if (eg === 'B') groupBadge = { label: 'Tự chọn B', cls: 'bg-violet-100 text-violet-700' };
+    else if (eg === 'C') groupBadge = { label: 'Tự chọn C', cls: 'bg-fuchsia-100 text-fuchsia-700' };
+    else groupBadge = { label: 'Bắt buộc', cls: 'bg-sky-100 text-sky-700' };
+
+    const prereqsMet = c.prereqs_met !== false;
+    const prereqNames = (c.prerequisites || []).filter(p => !p.completed).map(p => p.course_code).join(', ');
+    const sem = c.curriculum_semester ? `HK ${c.curriculum_semester}` : '—';
+    const specBadge = c.required_specialization
+      ? `<span class="ml-1 text-[9px] font-bold uppercase bg-amber-100 text-amber-700 px-1 py-0.5 rounded">${_specShort(c.required_specialization)}</span>`
+      : '';
+
+    return `<tr class="hover:bg-[#eef2ff] cursor-pointer"
+      onclick="showToast('Chi tiết môn — tính năng đang phát triển', 'info')">
+      <td class="px-4 py-3 text-xs text-[#777682] font-mono">${escHtml(c.course_code)}</td>
+      <td class="px-4 py-3">
+        ${prereqsMet
+          ? `<span class="text-sm font-medium text-[#0b1c30]">${escHtml(c.course_name)}</span>${specBadge}`
+          : `<div>
+               <p class="text-sm text-[#474651]">${escHtml(c.course_name)}${specBadge}</p>
+               <p class="text-xs text-[#777682] mt-0.5">Cần học trước: ${escHtml(prereqNames)}</p>
+             </div>`
+        }
+      </td>
+      <td class="px-4 py-3 text-center text-sm text-[#474651]">${c.credits || '—'}</td>
+      <td class="px-4 py-3 text-center text-xs text-[#474651]">${sem}</td>
+      <td class="px-4 py-3 text-center">
+        <span class="text-xs ${groupBadge.cls} px-2 py-0.5 rounded-full whitespace-nowrap">${groupBadge.label}</span>
+      </td>
+      <td class="px-4 py-3 text-center">
+        ${prereqsMet
+          ? `<span class="text-xs text-green-600 flex items-center justify-center gap-1">
+               <span class="material-symbols-outlined msym text-sm">check_circle</span>Đủ điều kiện
+             </span>`
+          : `<span class="text-xs text-[#777682] flex items-center justify-center gap-1">
+               <span class="material-symbols-outlined msym text-sm">lock</span>Bị khóa
+             </span>`
+        }
+      </td>
+    </tr>`;
+  }).join('');
+
+  if (hidden > 0) {
+    pager.classList.remove('hidden');
+    document.getElementById('remHiddenCount').textContent = hidden;
+  } else {
+    pager.classList.add('hidden');
+  }
+}
+
+// ── Charts ─────────────────────────────────────────────────────────────────
+function buildCharts() {
+  const terms = _analytics?.gpa_by_term || [];
+  const n = terms.length;
+
+  if (n < 2) {
+    document.getElementById('chartInsufficient').classList.remove('hidden');
+    document.getElementById('insufficientMsg').textContent = `Bạn mới có ${n} kỳ dữ liệu.`;
+    return;
+  }
+
+  document.getElementById('chartsContainer').classList.remove('hidden');
+
+  // Stat cards
+  const lastGpa = terms[n - 1]?.gpa4 ?? null;
+  const totalCreds = terms.reduce((s, t) => s + (t.credits_earned || 0), 0);
+  const bestKy = Math.max(...terms.map(t => t.gpa4));
+  const avgTc = Math.round(totalCreds / n);
+
+  document.getElementById('statGpa').textContent = lastGpa != null ? (+lastGpa).toFixed(2) : '—';
+  document.getElementById('statCourses').textContent = _grades.length;
+  document.getElementById('statBestGpa').textContent = bestKy > 0 ? (+bestKy).toFixed(2) : '—';
+  document.getElementById('statAvgTc').textContent = avgTc || '—';
+
+  // Insights
+  renderInsights(terms, totalCreds);
+}
+
+function drawCharts() {
+  const terms = _analytics?.gpa_by_term || [];
+  if (terms.length < 2) return;
+  drawTcChart(terms);
+  drawGpaChart(terms);
+}
+
+function renderInsights(terms, totalCreds) {
+  const n = terms.length;
+  const pace = _analytics?.study_pace || 'unknown';
+  const trend = _analytics?.gpa_trend_direction || 'insufficient_data';
+  const avgTc = totalCreds / n;
+
+  // Tốc độ
+  const paceMap = {
+    ahead:     { text: `Trung bình ${avgTc.toFixed(1)} TC/kỳ · Nhanh hơn kế hoạch chuẩn 17 TC/kỳ`, icon: 'bolt', cls: 'bg-green-100', iconCls: 'text-green-600' },
+    on_track:  { text: `Trung bình ${avgTc.toFixed(1)} TC/kỳ · Đúng kế hoạch chuẩn 17 TC/kỳ`, icon: 'speed', cls: 'bg-[#e5eeff]', iconCls: 'text-[#1a146b]' },
+    behind:    { text: `Trung bình ${avgTc.toFixed(1)} TC/kỳ · Chậm hơn kế hoạch chuẩn 17 TC/kỳ`, icon: 'warning', cls: 'bg-amber-100', iconCls: 'text-amber-600' },
+    unknown:   { text: `Trung bình ${avgTc.toFixed(1)} TC/kỳ`, icon: 'speed', cls: 'bg-[#e5eeff]', iconCls: 'text-[#474651]' },
+  };
+  const pi = paceMap[pace] || paceMap.unknown;
+  document.getElementById('paceIcon').className = `w-8 h-8 rounded-lg ${pi.cls} flex items-center justify-center flex-shrink-0`;
+  document.getElementById('paceIcon').innerHTML = `<span class="material-symbols-outlined msym ${pi.iconCls} text-sm">${pi.icon}</span>`;
+  document.getElementById('paceText').textContent = pi.text;
+
+  // Xu hướng GPA
+  const trendMap = {
+    improving:        { text: 'GPA đang tăng trong các kỳ gần nhất', icon: 'trending_up', cls: 'bg-green-100', iconCls: 'text-green-600' },
+    declining:        { text: 'GPA đang giảm trong các kỳ gần nhất', icon: 'trending_down', cls: 'bg-red-100', iconCls: 'text-[#ba1a1a]' },
+    stable:           { text: 'GPA ổn định trong các kỳ gần nhất', icon: 'trending_flat', cls: 'bg-[#e5eeff]', iconCls: 'text-[#1a146b]' },
+    insufficient_data:{ text: 'Chưa đủ dữ liệu để xác định xu hướng', icon: 'trending_flat', cls: 'bg-[#e5eeff]', iconCls: 'text-[#777682]' },
+  };
+  const ti = trendMap[trend] || trendMap.insufficient_data;
+  document.getElementById('trendIcon').className = `w-8 h-8 rounded-lg ${ti.cls} flex items-center justify-center flex-shrink-0`;
+  document.getElementById('trendIconSym').className = `material-symbols-outlined msym ${ti.iconCls} text-sm`;
+  document.getElementById('trendIconSym').textContent = ti.icon;
+  document.getElementById('trendText').textContent = ti.text;
+
+  // Dự báo TN
+  const earnedCreds = totalCreds;
+  const threshold = 153;
+  const remaining = Math.max(0, threshold - earnedCreds);
+  if (remaining <= 0) {
+    document.getElementById('gradText').innerHTML = `Đã tích lũy đủ <span class="font-semibold text-[#0b1c30]">${earnedCreds} TC</span> — đủ điều kiện tốt nghiệp 🎉`;
+  } else {
+    const kySoLuong = Math.ceil(remaining / avgTc);
+    document.getElementById('gradText').innerHTML =
+      `Còn <span class="font-semibold text-[#0b1c30]">${remaining.toFixed(0)} TC</span> · ` +
+      `Với tốc độ hiện tại, dự kiến thêm <span class="font-semibold text-[#0b1c30]">${kySoLuong} kỳ</span> nữa`;
+  }
+
+  // Best / worst
+  const passedWithScore = _grades.filter(g => g.passed && g.score10 != null);
+  if (passedWithScore.length) {
+    const best = passedWithScore.reduce((a, b) => (a.score10 > b.score10 ? a : b));
+    const worst = passedWithScore.reduce((a, b) => (a.score10 < b.score10 ? a : b));
+    const bInfo = getCourseInfo(best.course_code);
+    const wInfo = getCourseInfo(worst.course_code);
+    document.getElementById('bestCourseName').textContent = bInfo?.course_name || best.course_code;
+    document.getElementById('bestCourseScore').textContent = `${best.score10.toFixed(1)} / 10`;
+    document.getElementById('worstCourseName').textContent = wInfo?.course_name || worst.course_code;
+    document.getElementById('worstCourseScore').textContent = `${worst.score10.toFixed(1)} / 10`;
+  }
+}
+
+// ── SVG Bar Chart ──────────────────────────────────────────────────────────
+function drawTcChart(terms) {
+  const svgEl = document.getElementById('tcChart');
+  const W = svgEl.parentElement.clientWidth || 600;
+  const H = 260;
+  const padL = 46, padR = 20, padT = 24, padB = 50;
+  const cW = W - padL - padR;
+  const cH = H - padT - padB;
+  const THRESHOLD = 153;
+
+  // Cumulative TC
+  let cum = 0;
+  const data = terms.map((t, i) => {
+    cum += (t.credits_earned || 0);
+    return { term: t.term, tc: t.credits_earned || 0, cumTc: cum, gpa4: t.gpa4 };
+  });
+
+  const maxY = Math.max(THRESHOLD + 10, cum + 10);
+  const yStep = maxY <= 60 ? 15 : maxY <= 120 ? 30 : maxY <= 180 ? 30 : 40;
+  const yTicks = [];
+  for (let y = 0; y <= maxY; y += yStep) yTicks.push(y);
+
+  const n = data.length;
+  const barW = Math.min(36, (cW / n) * 0.55);
+  const gap = cW / n;
+
+  const toX = (i) => padL + gap * i + gap / 2;
+  const toY = (v) => padT + cH - (v / maxY) * cH;
+
+  let svg = '';
+
+  // Y grid lines
+  for (const y of yTicks) {
+    const yPx = toY(y);
+    svg += `<line x1="${padL}" y1="${yPx}" x2="${W - padR}" y2="${yPx}" stroke="#f1f5f9" stroke-width="1"/>`;
+    svg += `<text x="${padL - 6}" y="${yPx + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${y}</text>`;
+  }
+
+  // 153 TC threshold line
+  const yThresh = toY(THRESHOLD);
+  svg += `<line x1="${padL}" y1="${yThresh}" x2="${W - padR}" y2="${yThresh}" stroke="#fca5a5" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+  svg += `<text x="${W - padR + 2}" y="${yThresh + 4}" font-size="9" fill="#f87171">153TC</text>`;
+
+  // Bars
+  for (let i = 0; i < n; i++) {
+    const d = data[i];
+    const x = toX(i) - barW / 2;
+    const barH = (d.cumTc / maxY) * cH;
+    const y = padT + cH - barH;
+
+    // Color by pace
+    let color = '#312e81';
+    if (d.tc >= 20) color = '#10B981';
+    else if (d.tc < 15) color = '#F59E0B';
+
+    const termShort = d.term ? d.term.replace(/Học kỳ /i, 'HK').replace(/ /g, ' ') : `Kỳ ${i+1}`;
+
+    svg += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${color}" rx="3" opacity="0.9"
+      class="tc-bar" data-idx="${i}" style="cursor:pointer;transition:opacity .15s"
+      onmouseenter="showTcTooltip(event,${i})" onmouseleave="hideTcTooltip()" />`;
+
+    // X label
+    const labelY = padT + cH + 14;
+    svg += `<text x="${toX(i)}" y="${labelY}" text-anchor="middle" font-size="9" fill="#64748b">${escHtml(termShort.slice(0, 8))}</text>`;
+  }
+
+  // X axis
+  svg += `<line x1="${padL}" y1="${padT + cH}" x2="${W - padR}" y2="${padT + cH}" stroke="#e2e8f0" stroke-width="1"/>`;
+
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgEl.setAttribute('height', H);
+  svgEl.innerHTML = svg;
+  window._tcChartData = data;
+}
+
+function showTcTooltip(event, idx) {
+  const d = window._tcChartData?.[idx];
+  if (!d) return;
+  const tt = document.getElementById('tcTooltip');
+  tt.innerHTML = `
+    <div class="font-semibold text-[#0b1c30] mb-1">${escHtml(d.term || `Kỳ ${idx+1}`)}</div>
+    <div class="text-[#474651]">TC kỳ này: <span class="font-semibold text-[#0b1c30]">+${d.tc}</span></div>
+    <div class="text-[#474651]">Tích lũy: <span class="font-semibold text-[#1a146b]">${d.cumTc} TC</span></div>
+    ${d.gpa4 != null ? `<div class="text-[#474651]">GPA kỳ: <span class="font-semibold text-[#0b1c30]">${(+d.gpa4).toFixed(2)}</span></div>` : ''}`;
+  tt.classList.remove('hidden');
+  const rect = event.target.closest('.relative').getBoundingClientRect();
+  tt.style.left = Math.min(event.clientX - rect.left + 8, rect.width - 160) + 'px';
+  tt.style.top = Math.max(0, event.clientY - rect.top - 60) + 'px';
+}
+function hideTcTooltip() {
+  document.getElementById('tcTooltip')?.classList.add('hidden');
+}
+
+// ── SVG GPA Line Chart ─────────────────────────────────────────────────────
+function drawGpaChart(terms) {
+  const svgEl = document.getElementById('gpaChart');
+  const W = svgEl.parentElement.clientWidth || 600;
+  const H = 220;
+  const padL = 40, padR = 50, padT = 16, padB = 44;
+  const cW = W - padL - padR;
+  const cH = H - padT - padB;
+
+  const n = terms.length;
+  const gap = cW / n;
+
+  const toX = (i) => padL + gap * i + gap / 2;
+  const toY = (v) => padT + cH - (v / 4.0) * cH;
+
+  // Compute cumulative GPA
+  let cumW = 0, cumV = 0;
+  const cumGpas = terms.map(t => {
+    const tc = t.credits_earned || 0;
+    cumW += tc; cumV += (t.gpa4 || 0) * tc;
+    return cumW > 0 ? cumV / cumW : 0;
+  });
+
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgEl.setAttribute('height', H);
+  let inner2 = '';
+
+  // Reference lines
+  const refs = [
+    { v: 3.6, color: '#10B981', label: 'Xuất sắc' },
+    { v: 3.2, color: '#312e81', label: 'Giỏi' },
+    { v: 2.5, color: '#F59E0B', label: 'Khá' },
+    { v: 2.0, color: '#EF4444', label: 'Ngưỡng' },
+  ];
+  for (const r of refs) {
+    const y = toY(r.v);
+    inner2 += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${r.color}" stroke-width="0.8" stroke-dasharray="4,3" opacity="0.6"/>`;
+    inner2 += `<text x="${W - padR + 4}" y="${y + 4}" font-size="9" fill="${r.color}">${r.v}</text>`;
+  }
+
+  // Gray bars (per-term GPA)
+  const barW = Math.min(28, gap * 0.45);
+  for (let i = 0; i < n; i++) {
+    const v = terms[i].gpa4 || 0;
+    const bH = (v / 4.0) * cH;
+    const x = toX(i) - barW / 2;
+    const y = padT + cH - bH;
+    inner2 += `<rect x="${x}" y="${y}" width="${barW}" height="${bH}" fill="#e2e8f0" rx="2"/>`;
+  }
+
+  // Cumulative GPA line
+  const pts = cumGpas.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
+  inner2 += `<polyline points="${pts}" fill="none" stroke="#312e81" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  for (let i = 0; i < n; i++) {
+    inner2 += `<circle cx="${toX(i)}" cy="${toY(cumGpas[i])}" r="3" fill="#312e81"/>`;
+  }
+
+  // X labels
+  for (let i = 0; i < n; i++) {
+    const t = terms[i].term || `Kỳ${i+1}`;
+    const short = t.replace(/Học kỳ /i, 'HK').slice(0, 8);
+    inner2 += `<text x="${toX(i)}" y="${padT + cH + 14}" text-anchor="middle" font-size="9" fill="#64748b">${escHtml(short)}</text>`;
+  }
+
+  // Y ticks
+  for (let y = 0; y <= 4; y += 1) {
+    const yPx = toY(y);
+    inner2 += `<text x="${padL - 6}" y="${yPx + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${y}.0</text>`;
+  }
+
+  // X axis
+  inner2 += `<line x1="${padL}" y1="${padT + cH}" x2="${W - padR}" y2="${padT + cH}" stroke="#e2e8f0" stroke-width="1"/>`;
+
+  svgEl.innerHTML = inner2;
+}
+
+// ── Upload modal ───────────────────────────────────────────────────────────
+function openUploadModal() {
+  document.getElementById('uploadModal').classList.remove('hidden');
+  document.getElementById('uploadStep1').classList.remove('hidden');
+  document.getElementById('uploadStep2').classList.add('hidden');
+  document.getElementById('gradeFileInput').value = '';
+  document.getElementById('selectedFileName').classList.add('hidden');
+  document.getElementById('uploadBtn').disabled = true;
+  _setUploadStep(1);
+}
+function closeUploadModal() {
+  document.getElementById('uploadModal').classList.add('hidden');
+  _previewData = null;
+}
+function backToStep1() {
+  document.getElementById('uploadStep1').classList.remove('hidden');
+  document.getElementById('uploadStep2').classList.add('hidden');
+  _setUploadStep(1);
+}
+
+function _setUploadStep(n) {
+  // Step indicator visual states
+  const ind1 = document.getElementById('stepInd1');
+  const ind2 = document.getElementById('stepInd2');
+  const title = document.getElementById('uploadModalTitle');
+  if (!ind1 || !ind2) return;
+  if (n === 1) {
+    ind1.classList.remove('opacity-50');
+    ind1.querySelector('.h-1\\.5').className = 'h-1.5 rounded-full mb-2 bg-[#1a146b]';
+    ind2.classList.add('opacity-50');
+    ind2.querySelector('.h-1\\.5').className = 'h-1.5 rounded-full mb-2 bg-[#c8c5d3]';
+    if (title) title.textContent = 'Upload bảng điểm';
+  } else {
+    ind1.classList.remove('opacity-50');
+    // Step 1 done: show as completed (lighter primary)
+    ind1.querySelector('.h-1\\.5').className = 'h-1.5 rounded-full mb-2 bg-[#1a146b]/40';
+    ind2.classList.remove('opacity-50');
+    ind2.querySelector('.h-1\\.5').className = 'h-1.5 rounded-full mb-2 bg-[#1a146b]';
+    if (title) title.textContent = 'Xem trước dữ liệu';
+  }
+}
+
+document.getElementById('dropZone').addEventListener('click', () => document.getElementById('gradeFileInput').click());
+document.getElementById('gradeFileInput').addEventListener('change', function () {
+  if (this.files.length) {
+    const fn = document.getElementById('selectedFileName');
+    fn.textContent = `📎 ${this.files[0].name}`;
+    fn.classList.remove('hidden');
+    document.getElementById('uploadBtn').disabled = false;
+  }
+});
+
+async function doUploadPreview() {
+  const f = document.getElementById('gradeFileInput').files[0];
+  if (!f) return;
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="msym material-symbols-outlined text-sm spin">progress_activity</span> Đang đọc...';
+
+  const fd = new FormData();
+  fd.append('file', f);
+  try {
+    const res = await fetch(`${API}/grades/preview`, { method: 'POST', headers: H(), body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Lỗi khi đọc file');
+
+    _previewData = data;
+    const matched = data.matched || [];
+    const unmatched = data.unmatched || [];
+    const terms = [...new Set(matched.map(m => m.term).filter(Boolean))];
+
+    document.getElementById('previewSummary').innerHTML = `
+      <div class="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg px-3 py-2">
+        <span class="material-symbols-outlined msym text-base">check_circle</span>
+        <span>Đọc được <strong>${matched.length}</strong> môn từ <strong>${terms.length}</strong> học kỳ</span>
+      </div>
+      ${unmatched.length ? `<div class="flex items-center gap-2 text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        <span class="material-symbols-outlined msym text-base">warning</span>
+        <span><strong>${unmatched.length}</strong> môn không tính vào tiến độ TC (GDTC, QPAN hoặc ngoài chương trình) — vẫn hiện trong bảng dưới</span>
+      </div>` : ''}`;
+
+    const tbody = document.getElementById('previewBody');
+    const matchedRows = matched.slice(0, 30).map(m => `
+      <tr class="divide-x divide-[#c8c5d3]">
+        <td class="px-3 py-1.5 text-[#474651]">${escHtml(m.term || '—')}</td>
+        <td class="px-3 py-1.5 text-[#0b1c30] font-medium">${escHtml(m.course_name || m.course_code)}</td>
+        <td class="px-3 py-1.5 text-center text-[#474651]">${m.credits ?? '—'}</td>
+        <td class="px-3 py-1.5 text-center font-semibold ${m.passed ? 'text-green-600' : 'text-[#ba1a1a]'}">${m.score10 != null ? (+m.score10).toFixed(1) : '—'}</td>
+        <td class="px-3 py-1.5 text-center">
+          <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full ${m.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-[#ba1a1a]'}">${m.passed ? 'Đạt' : 'Trượt'}</span>
+        </td>
+      </tr>`).join('');
+    const unmatchedRows = unmatched.slice(0, 10).map(m => `
+      <tr class="divide-x divide-[#c8c5d3] bg-amber-50/40">
+        <td class="px-3 py-1.5 text-[#474651]">${escHtml(m.term || '—')}</td>
+        <td class="px-3 py-1.5 text-[#92400e] font-medium">${escHtml(m.course_name || m.course_code)}</td>
+        <td class="px-3 py-1.5 text-center text-[#92400e]">${m.credits ?? '—'}</td>
+        <td class="px-3 py-1.5 text-center font-semibold text-[#92400e]">${m.score10 != null ? (+m.score10).toFixed(1) : '—'}</td>
+        <td class="px-3 py-1.5 text-center">
+          <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800" title="GDTC / QPAN / ngoài CTĐT — không tính TC tích lũy">Không tính</span>
+        </td>
+      </tr>`).join('');
+    tbody.innerHTML = matchedRows + unmatchedRows;
+
+    const total = matched.length + unmatched.length;
+    const fp = document.getElementById('previewFooter');
+    if (fp) fp.innerHTML = `Tổng số: <strong>${total}</strong> dòng — <span class="text-green-700">${matched.length} hợp lệ</span>${unmatched.length ? ` · <span class="text-amber-700">${unmatched.length} không tính</span>` : ''}${total > matchedRows.length + unmatched.slice(0, 10).length ? ` <span class="text-[#777682]">(hiển thị tối đa 30 + 10 dòng đầu)</span>` : ''}`;
+
+    document.getElementById('uploadStep1').classList.add('hidden');
+    document.getElementById('uploadStep2').classList.remove('hidden');
+    _setUploadStep(2);
+  } catch (err) {
+    showToast(err.message || 'Không đọc được file', 'error');
+    btn.disabled = false;
+    btn.innerHTML = 'Upload <span class="material-symbols-outlined msym text-base">arrow_forward</span>';
+  }
+}
+
+async function doConfirmUpload() {
+  const f = document.getElementById('gradeFileInput').files[0];
+  if (!f) return;
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="msym material-symbols-outlined text-sm spin">progress_activity</span> Đang lưu...';
+
+  const fd = new FormData();
+  fd.append('file', f);
+  try {
+    const res = await fetch(`${API}/grades/upload`, { method: 'POST', headers: H(), body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Lỗi khi lưu điểm');
+
+    closeUploadModal();
+    showToast('Cập nhật điểm thành công!', 'success');
+    // Refresh data
+    const [grades, catalog, analytics, progress] = await Promise.all([
+      fetch(`${API}/grades/me`, { headers: H() }).then(r => r.ok ? r.json() : []),
+      fetch(`${API}/courses/catalog/me`, { headers: H() }).then(r => r.ok ? r.json() : []),
+      fetch(`${API}/analytics/me`, { headers: H() }).then(r => r.ok ? r.json() : null),
+      fetch(`${API}/progress/me`, { headers: H() }).then(r => r.ok ? r.json() : null),
+    ]);
+    _grades = grades || []; _catalog = catalog || [];
+    _analytics = analytics; _progress = progress;
+    buildHeaderSubtitle();
+    renderTab1();
+    buildCharts();
+    if (!document.getElementById('tab3Content').classList.contains('hidden')) drawCharts();
+  } catch (err) {
+    showToast(err.message || 'Lỗi khi lưu điểm', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined msym text-base">check_circle</span> Xác nhận lưu';
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-indigo-600' };
+  el.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium ${colors[type] || colors.info} fade-in`;
+  const icons = { success: 'check_circle', error: 'error', info: 'info' };
+  el.innerHTML = `<span class="material-symbols-outlined msym text-base">${icons[type] || 'info'}</span>${escHtml(msg)}`;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// Redraw charts when tab switches (needs dimensions)
+window.addEventListener('resize', () => {
+  if (!document.getElementById('tab3Content').classList.contains('hidden')) drawCharts();
+});
+
+// ════════════════ Simulator Modal ════════════════
+const _SIM_API = window.API_BASE || (location.hostname==='localhost'||location.hostname==='127.0.0.1' ? 'http://127.0.0.1:8000' : location.origin);
+function _simAuthH() { return { 'Authorization': 'Bearer ' + (typeof getToken==='function' ? getToken() : localStorage.getItem('access_token')), 'Content-Type': 'application/json' }; }
+
+let _simRoadmap = null;  // {placement: {course_code: 'HKn'}, customPlan, plannedElectives, standardPlan}
+
+async function openSimulator() {
+  document.getElementById('simulatorModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Load roadmap state for HK courses (cached after first call)
+  if (!_simRoadmap) {
+    await loadSimRoadmap();
+  }
+
+  // Auto-select next HK chưa học
+  const sel = document.getElementById('simTermSelect');
+  if (!sel.value) {
+    const nextHk = _simSuggestNextTerm();
+    if (nextHk) {
+      sel.value = nextHk;
+      loadCoursesForTerm();
+    }
+  }
+}
+
+async function loadSimRoadmap() {
+  try {
+    const [stdPlan, customPlan, planned] = await Promise.all([
+      fetch(_SIM_API + '/courses/standard-plan?spec=' + (_user?.specialization || ''), { headers: _simAuthH() }).then(r => r.ok ? r.json() : null),
+      fetch(_SIM_API + '/roadmap/custom/me', { headers: _simAuthH() }).then(r => r.ok ? r.json() : null),
+      fetch(_SIM_API + '/roadmap/planned-electives/me', { headers: _simAuthH() }).then(r => r.ok ? r.json() : null),
+    ]);
+    // Build placement map: course_code → HKn
+    const placement = {};
+    if (stdPlan?.semesters) {
+      for (const s of stdPlan.semesters) {
+        const term = `HK${s.semester_number}`;
+        for (const c of s.courses) {
+          if (!c.is_placeholder) placement[c.course_code] = term;
+        }
+      }
+    }
+    if (customPlan?.saved && customPlan?.semesters) {
+      for (const s of customPlan.semesters) {
+        for (const code of (s.course_codes || [])) {
+          placement[code] = s.semester_label;
+        }
+      }
+    }
+    if (planned?.planned) {
+      for (const p of planned.planned) {
+        if (p.course_code && p.term_label) placement[p.course_code] = p.term_label;
+      }
+    }
+    _simRoadmap = { placement };
+  } catch (e) {
+    console.error('loadSimRoadmap failed', e);
+    _simRoadmap = { placement: {} };
+  }
+}
+
+function _simSuggestNextTerm() {
+  // Tìm HK cao nhất user đã có grade → next HK
+  let maxHk = 0;
+  for (const g of (_grades || [])) {
+    const m = /^HK(\d+)$/i.exec(g.term || '');
+    if (m) maxHk = Math.max(maxHk, parseInt(m[1]));
+  }
+  if (maxHk > 0 && maxHk < 9) return `HK${maxHk + 1}`;
+  // Fallback: estimate từ earned credits (~17 TC/HK)
+  const earned = (_grades || []).filter(g => g.passed).reduce((s, g) => {
+    const c = (_catalog || []).find(c => c.course_code === g.course_code);
+    return s + parseFloat(c?.credits || 0);
+  }, 0);
+  const estTerm = Math.min(9, Math.floor(earned / 17) + 1);
+  return `HK${estTerm}`;
+}
+
+function loadCoursesForTerm() {
+  const term = document.getElementById('simTermSelect').value;
+  const container = document.getElementById('simWhatIfRows');
+  const info = document.getElementById('simTermInfo');
+  container.innerHTML = '';
+  if (!term) {
+    container.innerHTML = '<p class="text-sm text-[#94a3b8] italic text-center py-4">Chọn HK để load môn.</p>';
+    info.textContent = '';
+    return;
+  }
+  // Get courses placed in this term + chưa học
+  const passedCodes = new Set((_grades || []).filter(g => g.passed).map(g => g.course_code));
+  const placement = _simRoadmap?.placement || {};
+  const codesInTerm = Object.entries(placement)
+    .filter(([code, t]) => t === term && !passedCodes.has(code))
+    .map(([code]) => code);
+
+  if (codesInTerm.length === 0) {
+    container.innerHTML = `<p class="text-sm text-[#94a3b8] italic text-center py-4">Không có môn nào trong ${term} (đã pass hết hoặc lộ trình trống).</p>`;
+    info.textContent = `${term} không có môn`;
+    return;
+  }
+
+  let totalTC = 0;
+  for (const code of codesInTerm) {
+    const c = (_catalog || []).find(c => c.course_code === code);
+    if (!c) continue;
+    totalTC += parseFloat(c.credits || 0);
+    _addSimRowWithCourse(c);
+  }
+  info.textContent = `${codesInTerm.length} môn · ${totalTC.toFixed(0)} TC từ lộ trình`;
+  _resetRealtimePanel();  // reset because all rows have empty scores
+}
+
+function _addSimRowWithCourse(course) {
+  const container = document.getElementById('simWhatIfRows');
+  const remaining = _simRemainingCourses();
+  const row = document.createElement('div');
+  row.className = 'sim-row bg-[#f8f9ff] rounded-lg p-2';
+  row.innerHTML = `
+    <div class="flex items-center gap-2">
+      <button class="sim-toggle p-1 rounded hover:bg-[#eef2ff] text-[#7c3aed]" title="Nhập từng đầu điểm" onclick="toggleSimComponents(this)">
+        <span class="material-symbols-outlined msym text-base">expand_more</span>
+      </button>
+      <select class="sim-course flex-1 text-sm border border-[#c8c5d3] rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-[#7c3aed]" onchange="recalcRealtime()">
+        <option value="${course.course_code}" data-credits="${course.credits}" selected>${course.course_code} · ${course.course_name} (${course.credits} TC)</option>
+        ${remaining.filter(c => c.course_code !== course.course_code).map(c => `<option value="${c.course_code}" data-credits="${c.credits}">${c.course_code} · ${c.course_name} (${c.credits} TC)</option>`).join('')}
+      </select>
+      <input type="number" class="sim-score w-16 text-sm border border-[#c8c5d3] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#7c3aed]"
+             min="0" max="10" step="0.1" placeholder="—" oninput="recalcRealtime()">
+      <span class="text-xs text-[#474651]">/10</span>
+      <span class="sim-letter text-xs font-bold w-8 text-center text-[#94a3b8]">—</span>
+      <button onclick="this.closest('.sim-row').remove();recalcRealtime()" class="p-1 rounded hover:bg-[#fef2f2] text-[#dc2626]" title="Xoá">
+        <span class="material-symbols-outlined msym text-base">close</span>
+      </button>
+    </div>
+    <!-- Per-component (hidden by default) -->
+    <div class="sim-components hidden mt-2 ml-8 p-2 bg-white rounded border border-[#e5eeff]">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-[10px] font-bold uppercase text-[#474651]">Chuyên cần</span>
+        <span class="text-[10px] text-[#94a3b8]">10%</span>
+        <input type="number" class="sim-cc w-16 ml-auto text-xs border border-[#c8c5d3] rounded px-2 py-1 focus:outline-none focus:border-[#7c3aed]"
+               min="0" max="10" step="0.1" placeholder="—" oninput="recalcComponents(this.closest('.sim-row'))">
+      </div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-[10px] font-bold uppercase text-[#474651]">Giữa kỳ</span>
+        <span class="text-[10px] text-[#94a3b8]">30%</span>
+        <input type="number" class="sim-gk w-16 ml-auto text-xs border border-[#c8c5d3] rounded px-2 py-1 focus:outline-none focus:border-[#7c3aed]"
+               min="0" max="10" step="0.1" placeholder="—" oninput="recalcComponents(this.closest('.sim-row'))">
+      </div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-[10px] font-bold uppercase text-[#474651]">Cuối kỳ</span>
+        <span class="text-[10px] text-[#94a3b8]">60%</span>
+        <input type="number" class="sim-ck w-16 ml-auto text-xs border border-[#c8c5d3] rounded px-2 py-1 focus:outline-none focus:border-[#7c3aed]"
+               min="0" max="10" step="0.1" placeholder="—" oninput="recalcComponents(this.closest('.sim-row'))">
+      </div>
+      <p class="text-[10px] text-[#7c3aed] italic mt-1 sim-target-hint hidden"></p>
+    </div>`;
+  container.appendChild(row);
+}
+
+// ── Per-component calculation ──
+function toggleSimComponents(btn) {
+  const row = btn.closest('.sim-row');
+  const comp = row.querySelector('.sim-components');
+  const icon = btn.querySelector('.material-symbols-outlined');
+  comp.classList.toggle('hidden');
+  icon.textContent = comp.classList.contains('hidden') ? 'expand_more' : 'expand_less';
+}
+
+function recalcComponents(row) {
+  const cc = parseFloat(row.querySelector('.sim-cc').value);
+  const gk = parseFloat(row.querySelector('.sim-gk').value);
+  const ck = parseFloat(row.querySelector('.sim-ck').value);
+  const finalInput = row.querySelector('.sim-score');
+
+  // Có ít nhất 1 component → tính tổng
+  const hasAny = !isNaN(cc) || !isNaN(gk) || !isNaN(ck);
+  if (!hasAny) return;
+  const total = (isNaN(cc) ? 0 : cc) * 0.1 + (isNaN(gk) ? 0 : gk) * 0.3 + (isNaN(ck) ? 0 : ck) * 0.6;
+  // Set tổng vào input chính (chỉ nếu đã có đủ 3 components)
+  if (!isNaN(cc) && !isNaN(gk) && !isNaN(ck)) {
+    finalInput.value = total.toFixed(2);
+    row.querySelector('.sim-target-hint').classList.add('hidden');
+  } else {
+    // Show hint cần CK bao nhiêu để đạt various letters
+    const known = (isNaN(cc) ? 0 : cc) * 0.1 + (isNaN(gk) ? 0 : gk) * 0.3;
+    const knownWeight = (isNaN(cc) ? 0 : 0.1) + (isNaN(gk) ? 0 : 0.3);
+    const remainingWeight = 1 - knownWeight;
+    if (remainingWeight > 0) {
+      const need = (lvl) => Math.max(0, Math.min(10, (lvl - known) / remainingWeight));
+      const tips = [
+        `B+ (8.0): cần ${(isNaN(ck) ? 'CK' : 'CC')} ≥ ${need(8.0).toFixed(1)}`,
+        `A (8.5): cần ≥ ${need(8.5).toFixed(1)}`,
+      ];
+      const hint = row.querySelector('.sim-target-hint');
+      hint.classList.remove('hidden');
+      hint.textContent = '💡 ' + tips.join(' · ');
+    }
+  }
+  recalcRealtime();
+}
+
+// ── Realtime recalc on every score change ──
+let _rtTimer = null;
+function recalcRealtime() {
+  clearTimeout(_rtTimer);
+  _rtTimer = setTimeout(_doRealtimeCalc, 250);
+}
+
+async function _doRealtimeCalc() {
+  const rows = document.querySelectorAll('#simWhatIfRows .sim-row');
+  const grades = [];
+  for (const r of rows) {
+    const code = r.querySelector('.sim-course')?.value;
+    const score = parseFloat(r.querySelector('.sim-score')?.value);
+    if (code && !isNaN(score)) grades.push({ course_code: code, score10: score });
+  }
+
+  // Update letter labels per row immediately (client-side)
+  for (const r of rows) {
+    const score = parseFloat(r.querySelector('.sim-score')?.value);
+    const letterEl = r.querySelector('.sim-letter');
+    if (!isNaN(score) && letterEl) {
+      letterEl.textContent = _scoreLetter(score);
+      const passed = score >= 4;
+      letterEl.style.color = passed ? '#16a34a' : '#dc2626';
+    } else if (letterEl) {
+      letterEl.textContent = '—';
+      letterEl.style.color = '#94a3b8';
+    }
+  }
+
+  if (!grades.length) {
+    _resetRealtimePanel();
+    return;
+  }
+
+  try {
+    const r = await fetch(_SIM_API + '/simulator/what-if', {
+      method: 'POST', headers: _simAuthH(), body: JSON.stringify({ grades })
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    _updateRealtimePanel(data);
+  } catch (e) {}
+}
+
+function _scoreLetter(s10) {
+  if (s10 >= 9.0) return 'A+';
+  if (s10 >= 8.5) return 'A';
+  if (s10 >= 8.0) return 'B+';
+  if (s10 >= 7.0) return 'B';
+  if (s10 >= 6.5) return 'C+';
+  if (s10 >= 5.5) return 'C';
+  if (s10 >= 5.0) return 'D+';
+  if (s10 >= 4.0) return 'D';
+  return 'F';
+}
+
+function _resetRealtimePanel() {
+  document.getElementById('rtTermGPA').textContent = '—';
+  document.getElementById('rtTermInfo').textContent = 'chưa nhập điểm';
+  document.getElementById('rtCumBefore').textContent = '—';
+  document.getElementById('rtCumAfter').textContent = '—';
+  document.getElementById('rtCumDelta').innerHTML = '<span class="text-[#94a3b8]">không thay đổi</span>';
+  document.getElementById('rtCumArrow').textContent = '→';
+  document.getElementById('rtCumArrow').style.color = '#94a3b8';
+  document.getElementById('simWhatIfResult').classList.add('hidden');
+}
+
+function _updateRealtimePanel(data) {
+  const c = data.cumulative;
+  const t = data.term;
+  document.getElementById('rtTermGPA').textContent = t.gpa4 || '0';
+  document.getElementById('rtTermInfo').textContent = `${t.classification} · ${t.credits_passed}/${t.credits_total} TC pass`;
+  document.getElementById('rtCumBefore').textContent = c.before_gpa4;
+  document.getElementById('rtCumAfter').textContent = c.after_gpa4;
+  const arrow = c.direction === 'up' ? '↑' : c.direction === 'down' ? '↓' : '→';
+  const arrowColor = c.direction === 'up' ? '#16a34a' : c.direction === 'down' ? '#dc2626' : '#94a3b8';
+  const arrowEl = document.getElementById('rtCumArrow');
+  arrowEl.textContent = arrow;
+  arrowEl.style.color = arrowColor;
+  const sign = c.delta > 0 ? '+' : '';
+  document.getElementById('rtCumDelta').innerHTML =
+    `<span style="color:${arrowColor}">Δ ${sign}${c.delta}</span> · ${c.classification_before} → <strong>${c.classification_after}</strong>`;
+
+  // Detailed breakdown if any failed
+  if (t.failed_count > 0) {
+    document.getElementById('simWhatIfResult').classList.remove('hidden');
+    document.getElementById('simWhatIfResult').innerHTML = `
+      <div class="bg-[#fef2f2] border border-[#fecaca] rounded-lg p-3 text-xs text-[#dc2626]">
+        ⚠ <strong>${t.failed_count} môn dự kiến trượt</strong>: ${t.failed_course_names.join(', ')}
+      </div>`;
+  } else {
+    document.getElementById('simWhatIfResult').classList.add('hidden');
+  }
+}
+
+function closeSimulator() {
+  document.getElementById('simulatorModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function switchSimTab(n) {
+  for (const i of [1, 2]) {
+    document.getElementById('simTab' + i).classList.toggle('hidden', i !== n);
+    const btn = document.getElementById('simTab' + i + 'Btn');
+    if (i === n) {
+      btn.classList.remove('border-transparent', 'text-[#474651]');
+      btn.classList.add('border-[#7c3aed]', 'text-[#7c3aed]');
+    } else {
+      btn.classList.add('border-transparent', 'text-[#474651]');
+      btn.classList.remove('border-[#7c3aed]', 'text-[#7c3aed]');
+    }
+  }
+  // Realtime panel chỉ hiện ở Tab 1
+  const panel = document.getElementById('simRealtimePanel');
+  if (panel) panel.classList.toggle('hidden', n !== 1);
+}
+
+function _simRemainingCourses() {
+  // _grades = passed courses; _catalog = all
+  const passedCodes = new Set((_grades || []).filter(g => g.passed).map(g => g.course_code));
+  return (_catalog || []).filter(c => !passedCodes.has(c.course_code) && c.count_toward_credits !== false).slice(0, 50);
+}
+
+function addSimRow() {
+  const remaining = _simRemainingCourses();
+  if (!remaining.length) return;
+  // Use first remaining as default
+  _addSimRowWithCourse(remaining[0]);
+  recalcRealtime();
+}
+
+function resetSimRows() {
+  document.getElementById('simWhatIfRows').innerHTML = '';
+  _resetRealtimePanel();
+  loadCoursesForTerm();  // re-load từ HK đang chọn
+}
+
+async function runTargetGpa() {
+  const target = parseFloat(document.getElementById('simTargetSlider').value);
+  const btn = document.getElementById('simTargetBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin material-symbols-outlined msym">progress_activity</span> Đang phân tích...';
+
+  try {
+    const r = await fetch(_SIM_API + '/simulator/target-gpa', {
+      method: 'POST', headers: _simAuthH(), body: JSON.stringify({ target_gpa4: target })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Lỗi');
+
+    const diffColor = {
+      easy: '#16a34a', moderate: '#3b82f6', hard: '#f59e0b',
+      very_hard: '#ea580c', impossible: '#dc2626', not_applicable: '#94a3b8'
+    }[data.difficulty] || '#1a146b';
+    const diffLabel = {
+      easy: 'Dễ ✓', moderate: 'Vừa sức', hard: 'Khó',
+      very_hard: 'Rất khó', impossible: 'Không thể', not_applicable: 'N/A'
+    }[data.difficulty] || data.difficulty;
+
+    document.getElementById('simTargetResult').classList.remove('hidden');
+    document.getElementById('simTargetResult').innerHTML = `
+      <div class="bg-white rounded-xl border-2 p-4" style="border-color:${diffColor}">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-[10px] uppercase font-bold text-[#474651]">Đánh giá khả thi</p>
+            <p class="text-2xl font-extrabold" style="color:${diffColor}">${diffLabel}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-[10px] uppercase font-bold text-[#474651]">Mục tiêu</p>
+            <p class="text-3xl font-extrabold text-[#1a146b]">${data.target_gpa4}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="text-center bg-[#f8f9ff] rounded p-2">
+            <p class="text-[10px] uppercase text-[#474651]">Hiện tại</p>
+            <p class="text-lg font-bold text-[#0b1c30]">${data.current_gpa4}</p>
+          </div>
+          <div class="text-center bg-[#f5f3ff] rounded p-2">
+            <p class="text-[10px] uppercase text-[#474651]">Còn lại</p>
+            <p class="text-lg font-bold text-[#7c3aed]">${data.remaining_credits} TC</p>
+          </div>
+          <div class="text-center bg-[#fff7ed] rounded p-2">
+            <p class="text-[10px] uppercase text-[#474651]">Cần TB</p>
+            <p class="text-lg font-bold text-[#ea580c]">${data.required_avg_score10 || '—'}/10</p>
+          </div>
+        </div>
+        <p class="text-sm text-[#474651]">${data.message}</p>
+      </div>
+      ${data.achievable && data.required_avg_score10 ? `
+        <div class="bg-[#eef2ff] border border-[#7c3aed] rounded-lg p-3 text-xs text-[#1a146b]">
+          💡 <strong>Chiến lược</strong>: Để đạt avg ${data.required_avg_score10}/10 cho ${data.remaining_credits} TC còn lại, hãy:
+          <ul class="list-disc list-inside mt-1 space-y-0.5">
+            <li>Ưu tiên môn cùng domain mạnh (đã pass điểm cao)</li>
+            <li>Tránh fail bất kỳ môn nào — fail 1 môn = giảm GPA đáng kể</li>
+            <li>Cân bằng môn dễ + môn khó mỗi HK</li>
+            <li>Chat với Trợ lý AI để được tư vấn cá nhân hóa</li>
+          </ul>
+        </div>` : ''}`;
+  } catch (e) {
+    showToast('Lỗi: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined msym text-lg">target</span> Phân tích khả thi';
+  }
+}
+
+// Backdrop close
+document.addEventListener('click', e => {
+  if (e.target.id === 'simulatorModal') closeSimulator();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !document.getElementById('simulatorModal').classList.contains('hidden')) {
+    closeSimulator();
+  }
+});
+</script>
+</body>
+</html>

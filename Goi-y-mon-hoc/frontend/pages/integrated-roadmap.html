@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Lộ trình tích hợp</title>
+  <style>
+    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,sans-serif; margin:0; }
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration:0.15s; animation-timing-function:ease-out; }
+    #sidebarMount, header { view-transition-name:none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="auth.js"></script>
+  <script src="sidebar-init.js?v=8"></script>
+  <script src="accessibility.js?v=1"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=6"></script>
+  <script defer src="floating-chat.js?v=5"></script>
+  <style>
+    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
+    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeIn .25s ease both; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    ::-webkit-scrollbar { width:6px; height:8px; }
+    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    /* ─── Sequence map layout ─── */
+    .dag-canvas {
+      position: relative;
+      min-height: 600px;
+      padding: 8px 0;
+    }
+    .year-block {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: top;
+      border: 2px solid #e5eeff;
+      border-radius: 14px;
+      background: #fafbff;
+      padding: 6px;
+      flex-shrink: 0;
+    }
+    .year-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      border-bottom: 1px dashed transparent;
+      margin-bottom: 6px;
+      border-radius: 8px;
+    }
+    .year-label {
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .year-tc {
+      font-size: 10px;
+      font-weight: 600;
+      color: #474651;
+      background: rgba(255,255,255,0.7);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .year-cols {
+      display: inline-flex;
+      align-items: flex-start;
+    }
+    .term-col {
+      display: inline-block;
+      vertical-align: top;
+      /* 9 cols fit trong 1600px max-w content area (≈1552px sau padding):
+         9×170 + 8 inter-col gaps×6 = 1578 — fit comfortably */
+      width: 170px;
+      margin-right: 6px;
+      padding: 0 3px;
+    }
+    .year-cols .term-col:last-child { margin-right: 0; }
+    .term-col:last-child { margin-right: 0; }
+    .term-header {
+      position: sticky; top: 0; z-index: 5;
+      background: linear-gradient(180deg,#fff 60%,rgba(255,255,255,0));
+      padding-bottom: 6px;
+    }
+    .term-pill {
+      background: #1a146b; color: #fff; padding: 5px 8px;
+      border-radius: 8px; font-weight: 700; font-size: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .term-pill .credits {
+      font-size: 10px; font-weight: 500; opacity: .85;
+    }
+    .term-body {
+      min-height: 70px;
+      padding: 4px;
+      border: 2px dashed transparent;
+      border-radius: 10px;
+      transition: background .15s, border-color .15s;
+    }
+    .term-body.drop-valid { background: rgba(22,163,74,.08); border-color: #16a34a; }
+    .term-body.drop-invalid { background: rgba(220,38,38,.08); border-color: #dc2626; }
+
+    /* ─── Course card ─── */
+    .course-card {
+      background: #fff;
+      border: 1px solid #e5eeff;
+      border-left: 4px solid transparent;
+      border-radius: 7px;
+      padding: 6px 8px;
+      margin-bottom: 5px;
+      font-size: 11px;
+      line-height: 1.3;
+      cursor: grab;
+      transition: transform .1s, box-shadow .1s, opacity .1s;
+      position: relative;
+      user-select: none;
+    }
+    .course-card:hover { box-shadow: 0 4px 12px rgba(26,20,107,.1); transform: translateY(-1px); }
+    .course-card.dragging { opacity: 0.4; cursor: grabbing; }
+    .course-card.passed     { border-left-color: #16a34a; background: #f0fdf4; }
+    .course-card.failed     { border-left-color: #dc2626; background: #fef2f2; }
+    .course-card.in-progress{ border-left-color: #f59e0b; background: #fefce8; }
+    .course-card.planned    { border-left-color: #3b82f6; background: #eff6ff; }
+    .course-card.upcoming   { border-left-color: #cbd5e1; }
+    .course-card.locked     { cursor: not-allowed; opacity: 0.85; }
+    .course-card.locked:hover { transform: none; }
+    .course-card.highlight  { box-shadow: 0 0 0 2px #7c3aed, 0 4px 12px rgba(124,58,237,.3); z-index: 6; }
+    /* Cơ sở ngành chuyên (đặc trưng cho chuyên ngành) — viền cam khác biệt */
+    .course-card.spec-core {
+      border-left-color: #ea580c !important;
+      background: linear-gradient(90deg, #fff7ed 0%, #fff 30%) !important;
+      box-shadow: 0 0 0 1px rgba(234,88,12,.15);
+    }
+    .course-card.spec-core.passed {
+      border-left-color: #16a34a !important;
+      background: linear-gradient(90deg, #fff7ed 0%, #f0fdf4 30%) !important;
+    }
+
+    .slot-empty {
+      border: 1.5px dashed #a78bfa;
+      border-radius: 7px; padding: 6px 8px; margin-bottom: 5px;
+      background: #faf5ff; cursor: pointer; font-size: 11px;
+      line-height: 1.3;
+      transition: background .15s, border-color .15s, transform .1s;
+    }
+    .slot-empty:hover {
+      background: #ede9fe;
+      border-color: #7c3aed;
+      transform: translateY(-1px);
+    }
+    /* Tất cả TC-A/B/C empty slot dùng cùng theme tím — đồng nhất */
+    .slot-empty.tc-a, .slot-empty.tc-b, .slot-empty.tc-c { border-color: #a78bfa; }
+
+    /* ─── SVG arrows overlay ─── */
+    .arrows-svg {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 4;
+    }
+    .arrows-svg path { transition: opacity .15s; }
+
+    /* ─── Spec card hover ─── */
+    .spec-card {
+      transition: transform .15s, box-shadow .15s;
+    }
+    .spec-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,20,107,.12); }
+
+    /* ─── Tooltip for invalid drop ─── */
+    .invalid-reason {
+      position: fixed;
+      pointer-events: none;
+      background: #dc2626; color: white;
+      padding: 6px 10px; border-radius: 6px;
+      font-size: 12px; font-weight: 500;
+      z-index: 100; max-width: 240px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    }
+  </style>
+</head>
+<body class="bg-[#f8f9ff] text-[#0b1c30] antialiased min-h-screen">
+
+<!-- Auth guard -->
+<script>
+  if (!localStorage.getItem('access_token')) location.replace('index.html');
+</script>
+
+<!-- Sidebar -->
+<div id="sidebarMount"></div>
+
+<!-- Header -->
+<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-white/95 backdrop-blur border-b border-[#e5eeff] flex items-center justify-between px-4 lg:px-6 z-40">
+  <div class="flex items-center gap-3">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-[#eef2ff] transition" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-[#474651]">menu</span>
+    </button>
+    <h2 class="text-base font-bold text-[#0b1c30]">Lộ trình tích hợp</h2>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- Dirty indicator + Lưu / Hoàn tác (chỉ hiện khi có thay đổi chưa lưu) -->
+    <span id="dirtyBadge" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700 border border-amber-300">
+      <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+      <span id="dirtyBadgeText">Có thay đổi chưa lưu</span>
+    </span>
+    <button id="revertBtn" onclick="revertChanges()" title="Bỏ thay đổi, quay về phiên bản đã lưu"
+      disabled
+      class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c8c5d3] text-xs text-[#474651] transition disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:bg-[#eef2ff]">
+      <span class="material-symbols-outlined msym text-base">undo</span>
+      Hoàn tác
+    </button>
+    <button id="saveBtn" onclick="commitChanges()" title="Lưu lộ trình lên hệ thống"
+      disabled
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg pri-grad text-white text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:opacity-90">
+      <span class="material-symbols-outlined msym text-base">save</span>
+      <span class="hidden sm:inline">Lưu lộ trình</span>
+      <span class="sm:hidden">Lưu</span>
+    </button>
+    <a href="ai-chat.html" title="Hỏi AI về lộ trình"
+      class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c8c5d3] hover:bg-[#eef2ff] text-xs font-semibold text-[#1a146b] transition">
+      <span class="material-symbols-outlined msym text-base">smart_toy</span>
+      Hỏi AI
+    </a>
+    <button id="resetCtdtBtn" onclick="resetToCtdt()" title="Đưa lộ trình về CTDT mặc định"
+      class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#c8c5d3] hover:bg-[#fef2f2] hover:border-[#dc2626] hover:text-[#dc2626] text-xs text-[#474651] transition">
+      <span class="material-symbols-outlined msym text-base">restart_alt</span>
+      Reset CTDT
+    </button>
+  </div>
+</header>
+
+<main class="lg:ml-60 pt-[60px]">
+  <div class="p-4 md:p-6 max-w-[1600px] mx-auto space-y-5">
+
+    <!-- ── HEADER + Title ── -->
+    <div class="flex items-start justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="text-2xl font-extrabold text-[#1a146b]">Lộ trình tích hợp</h1>
+        <p class="text-sm text-[#474651] mt-1">Sequence map · Kéo thả môn để xây lộ trình cá nhân — hệ thống tự kiểm tra tiên quyết</p>
+        <p id="specLabel" class="text-xs font-semibold text-[#1a146b] mt-1.5"></p>
+        <p id="quyCheStatus" class="text-[11px] text-[#474651] mt-1 flex items-center gap-2 flex-wrap"
+           title="Quy chế CTDT: tối đa 16 HK (8 năm) · 25 TC/HK · 153 TC tốt nghiệp"></p>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="openSpecCompare()" id="btnCompareSpec"
+          class="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#c8c5d3] hover:bg-[#eef2ff] text-sm font-semibold text-[#1a146b] transition">
+          <span class="material-symbols-outlined msym text-base">compare_arrows</span>
+          So sánh 6 chuyên ngành
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Banner cho SV chưa chọn CN ── -->
+    <div id="noSpecBanner" class="hidden rounded-2xl border border-[#a78bfa] bg-[#f5f3ff] p-4 flex items-start gap-3">
+      <span class="material-symbols-outlined msym text-xl text-[#7c3aed] flex-shrink-0 mt-0.5">lightbulb</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-[#1a146b]">Bạn chưa chọn chuyên ngành — đang xem preview</p>
+        <p class="text-sm text-[#474651] mt-0.5">Lộ trình hiển thị bên dưới là CTDT của chuyên ngành bạn đang xem trước. Đổi để khám phá 6 hướng đi.</p>
+        <div class="mt-3 flex items-center gap-2 flex-wrap">
+          <label class="text-xs font-semibold text-[#1a146b]">Đang xem CTDT của:</label>
+          <select id="previewSpecSelect" onchange="onPreviewSpecChange(this.value)"
+            class="text-xs border border-[#a78bfa] rounded-lg px-2 py-1.5 bg-white text-[#1a146b] font-semibold focus:outline-none focus:border-[#7c3aed]">
+            <option value="7480201_07">Khoa học máy tính (KHMT)</option>
+            <option value="7480201_06">Mạng máy tính (MMT)</option>
+            <option value="7480201_05">Công nghệ phần mềm (CNPM)</option>
+            <option value="7480201_09">Hệ thống thông tin (HTTT)</option>
+            <option value="7480201_04">Tin học kinh tế (THKT)</option>
+            <option value="7480201_08">CNTT Địa học (CNTTDH)</option>
+          </select>
+          <button onclick="openSpecCompare()" class="px-3 py-1.5 rounded-lg pri-grad text-white text-xs font-semibold hover:opacity-90 transition">
+            So sánh chi tiết →
+          </button>
+          <span id="detectedSpecHint" class="text-xs text-[#7c3aed] hidden ml-2"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Banner cho SV chưa chọn định hướng nghề (career_goal null) ── -->
+    <div id="noCareerGoalBanner" class="hidden rounded-2xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
+      <span class="material-symbols-outlined msym text-xl text-amber-600 flex-shrink-0 mt-0.5" style="font-variation-settings:'FILL' 1">tips_and_updates</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-amber-900">Hãy chọn định hướng nghề trước để xây lộ trình hiệu quả</p>
+        <p class="text-sm text-amber-800 mt-0.5">
+          Khi bạn chọn định hướng (vd: AI/ML Engineer, Backend, Mobile…), hệ thống sẽ <strong>ưu tiên gợi ý môn TC-A/B/C
+          phù hợp</strong> với nghề đó, kỹ năng môn dạy được match với kỹ năng cần học. Nếu bạn xây lộ trình trước, các gợi ý
+          sẽ kém chính xác.
+        </p>
+        <a href="career-goal.html"
+          class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg pri-grad text-white text-xs font-bold hover:opacity-90 transition">
+          <span class="material-symbols-outlined msym text-sm">rocket_launch</span>
+          Chọn định hướng ngay
+          <span class="material-symbols-outlined msym text-sm">arrow_forward</span>
+        </a>
+      </div>
+      <button onclick="document.getElementById('noCareerGoalBanner').classList.add('hidden');try{sessionStorage.setItem('hideCareerGoalBanner','1')}catch(_){}"
+        title="Ẩn nhắc nhở (chỉ phiên này)" class="text-amber-700 hover:text-amber-900 p-1 -m-1">
+        <span class="material-symbols-outlined msym text-lg">close</span>
+      </button>
+    </div>
+
+    <!-- KPI breakdown moved to grades.html (gắn với bảng điểm hợp lý hơn) -->
+
+    <!-- ── HINT bar ── -->
+    <div class="flex items-center gap-2 text-xs text-[#474651] flex-wrap">
+      <span class="font-semibold text-[#1a146b]">Trạng thái:</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-[#16a34a]"></span> Đã pass</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-[#dc2626]"></span> Trượt</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-[#3b82f6]"></span> Đã chọn</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded border border-[#cbd5e1]"></span> CTDT mặc định</span>
+      <span class="border-l border-[#c8c5d3] mx-1 h-3"></span>
+      <span class="font-semibold text-[#1a146b]">Loại:</span>
+      <span class="flex items-center gap-1"><span class="text-[9px] font-bold px-1 rounded bg-[#e0e7ff] text-[#1a146b]">BB</span>Bắt buộc</span>
+      <span class="flex items-center gap-1"><span class="text-[9px] font-bold px-1 rounded bg-[#fed7aa] text-[#c2410c]">CN</span>Cơ sở ngành chuyên</span>
+      <span class="flex items-center gap-1"><span class="text-[9px] font-bold px-1 rounded bg-[#ede9fe] text-[#7c3aed]">TC-A</span></span>
+      <span class="flex items-center gap-1"><span class="text-[9px] font-bold px-1 rounded bg-[#dcfce7] text-[#16a34a]">TC-B</span></span>
+      <span class="flex items-center gap-1"><span class="text-[9px] font-bold px-1 rounded bg-[#ffedd5] text-[#ea580c]">TC-C</span></span>
+      <span class="ml-auto flex items-center gap-1 text-[#7c3aed] font-semibold">
+        <span class="material-symbols-outlined msym text-sm">info</span>
+        Hover môn để xem tiên quyết · Kéo thả để xếp lại
+      </span>
+    </div>
+
+    <!-- ── Sequence Map (9 cột HK ngang) ── -->
+    <div class="bg-white rounded-2xl border border-[#e5eeff] overflow-hidden">
+      <div class="overflow-x-auto" id="dagScroller">
+        <div class="dag-canvas px-3" id="dagCanvas" style="white-space:nowrap;">
+          <div class="text-center py-12 text-sm text-[#474651]">
+            <span class="spin material-symbols-outlined msym">progress_activity</span>
+            Đang tải lộ trình...
+          </div>
+          <!-- term columns inserted here -->
+          <!-- SVG arrows overlay inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Save indicator -->
+    <div id="saveStatus" class="hidden text-xs text-[#16a34a] flex items-center gap-1.5">
+      <span class="material-symbols-outlined msym text-sm">cloud_done</span>
+      Đã lưu lộ trình
+    </div>
+  </div>
+</main>
+
+<!-- ════════════════ SpecCompareModal ════════════════ -->
+<div id="specCompareModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl my-6">
+    <div class="sticky top-0 bg-white border-b border-[#e5eeff] px-6 py-4 rounded-t-2xl flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-extrabold text-[#1a146b]">So sánh 6 chuyên ngành CNTT</h3>
+        <p class="text-xs text-[#474651] mt-0.5">Chọn xem để hiểu rõ từng hướng đi nghề nghiệp</p>
+      </div>
+      <button onclick="closeSpecCompare()" class="p-2 rounded-lg hover:bg-[#eef2ff] transition">
+        <span class="material-symbols-outlined msym text-xl text-[#474651]">close</span>
+      </button>
+    </div>
+    <div id="specCompareBody" class="p-6">
+      <div class="text-center py-8 text-sm text-[#474651]">
+        <span class="spin material-symbols-outlined msym">progress_activity</span>
+        Đang tải dữ liệu so sánh...
+      </div>
+    </div>
+    <div class="border-t border-[#e5eeff] bg-[#f8f9ff] px-6 py-3 rounded-b-2xl">
+      <p class="text-xs text-[#474651]">💡 Khi quyết định, liên hệ cố vấn để cập nhật chuyên ngành chính thức.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ Course Detail Modal (prereq tree) ════════════════ -->
+<div id="courseDetailModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-6">
+    <div class="sticky top-0 bg-white border-b border-[#e5eeff] px-6 py-4 rounded-t-2xl flex items-center justify-between">
+      <div class="flex-1 min-w-0">
+        <h3 class="text-lg font-extrabold text-[#1a146b]" id="cdmTitle">—</h3>
+        <p class="text-xs text-[#474651] mt-0.5" id="cdmSubtitle">—</p>
+      </div>
+      <button onclick="closeCourseDetail()" class="p-2 rounded-lg hover:bg-[#eef2ff] transition">
+        <span class="material-symbols-outlined msym text-xl text-[#474651]">close</span>
+      </button>
+    </div>
+    <div id="cdmBody" class="p-6 space-y-5 max-h-[70vh] overflow-y-auto"></div>
+    <div class="border-t border-[#e5eeff] bg-[#f8f9ff] px-6 py-3 rounded-b-2xl flex items-center justify-end">
+      <button onclick="closeCourseDetail()" class="px-4 py-1.5 rounded-lg bg-[#e5eeff] text-[#474651] text-sm hover:bg-[#dce9ff] transition">
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ ElectivePickerModal ════════════════ -->
+<div id="electivePickerModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-6">
+    <div class="sticky top-0 bg-white border-b border-[#e5eeff] px-6 py-4 rounded-t-2xl flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-extrabold text-[#1a146b]" id="electivePickerTitle">Chọn môn tự chọn</h3>
+        <p class="text-xs text-[#474651] mt-0.5" id="electivePickerSub">—</p>
+      </div>
+      <button onclick="closeElectivePicker()" class="p-2 rounded-lg hover:bg-[#eef2ff] transition">
+        <span class="material-symbols-outlined msym text-xl text-[#474651]">close</span>
+      </button>
+    </div>
+    <div id="electivePickerBody" class="p-6 space-y-2 max-h-[60vh] overflow-y-auto"></div>
+    <div class="border-t border-[#e5eeff] bg-[#f8f9ff] px-6 py-3 rounded-b-2xl flex items-center justify-between">
+      <button id="electivePickerClearBtn" onclick="clearElectiveSlot()"
+        class="hidden px-3 py-1.5 rounded-lg border border-[#dc2626] text-[#dc2626] text-xs font-semibold hover:bg-[#fef2f2] transition">
+        Bỏ chọn
+      </button>
+      <button onclick="closeElectivePicker()" class="ml-auto px-4 py-1.5 rounded-lg bg-[#e5eeff] text-[#474651] text-sm hover:bg-[#dce9ff] transition">
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 z-[60] bg-[#1a146b] text-white text-sm px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 max-w-sm">
+  <span class="material-symbols-outlined msym text-base" id="toastIcon">check_circle</span>
+  <span id="toastMsg">OK</span>
+</div>
+
+<!-- Invalid drop tooltip -->
+<div id="invalidTooltip" class="invalid-reason hidden"></div>
+
+<script>
+const API = window.API_BASE || (location.hostname==='localhost'||location.hostname==='127.0.0.1' ? 'http://127.0.0.1:8000' : location.origin);
+let _token = null;
+let _user = null;
+let _state = {
+  spec: null, specKey: null,
+  previewSpec: null,         // SV chưa có CN: spec đang preview (lưu localStorage)
+  standardPlan: null, grades: [], catalog: [], plannedElectives: [],
+  customPlan: null,
+  prereqs: {},               // {course_code: [prereq_codes]}
+  placement: {},             // {course_code: 'HK1'..'HK9'} — derived from CTDT + custom + grades
+  courseInfo: {},            // {course_code: {name, credits, category, ...}}
+  specsCompare: null, rankCache: null,
+  fit: null, blueprint: null,
+  detectedSpec: null,
+  currentSlot: null,
+  // ── Manual-save mode (Plan B) ──
+  // savedSnapshot = data tại thời điểm vừa load hoặc vừa Lưu — dùng cho Hoàn tác.
+  // dirty = có thay đổi chưa lưu (nút Lưu/Hoàn tác active, badge "X chưa lưu").
+  savedSnapshot: null,
+  dirty: false,
+  // ── HK linh hoạt (Quy chế CTDT) ──
+  // HK1-9 luôn render. extraSemesters chứa HK chính thêm (HK10+) và HK hè (HK{n}_he).
+  // Persist qua localStorage + bao trong customPlan/plannedElectives khi save (term_label).
+  extraSemesters: new Set(),  // Set<string> e.g. {"HK10", "HK4_he"}
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// QUY CHẾ CTDT — hardcoded từ Quy chế Bộ GD-ĐT VN + UMC
+// ══════════════════════════════════════════════════════════════════════════
+const QUY_CHE = {
+  MAX_MAIN_HK: 16,         // Tối đa 16 HK chính (8 năm)
+  MAX_TC_MAIN: 25,         // Khuyến nghị tối đa 25 TC/HK
+  MIN_TC_MAIN: 12,         // Khuyến nghị tối thiểu 12 TC/HK (full-time)
+  TOTAL_TC_GRAD: 153,      // 153 TC để tốt nghiệp
+};
+
+// term_label → numeric order. HK1=1, HK10=10, ...
+function termOrder(term) {
+  const m = String(term || '').match(/^HK(\d+)$/);
+  return m ? parseInt(m[1]) : 99;
+}
+function termLabelHuman(term) {
+  const m = String(term).match(/^HK(\d+)$/);
+  return m ? `HK${m[1]}` : term;
+}
+
+// Trả về danh sách HK đã sort: [HK1, HK2, ..., HK9, HK10?, HK11?, ...]
+function getAllTerms() {
+  const nums = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  for (const t of _state.extraSemesters) {
+    const m = String(t).match(/^HK(\d+)$/);
+    if (m) nums.add(parseInt(m[1]));
+  }
+  return Array.from(nums).sort((a, b) => a - b).map(n => `HK${n}`);
+}
+
+// Spec đang dùng để query backend (real spec hoặc preview spec nếu SV chưa CN)
+function effectiveSpec() {
+  return _state.spec || _state.previewSpec || '7480201_07';  // default KHMT
+}
+let _draggingCode = null;
+let _saveTimer = null;
+
+// ── Bootstrap ──────────────────────────────────────────────────────────────
+async function _bootstrap() {
+  if (typeof requireAuth === 'function') await requireAuth();
+  _token = (typeof getToken === 'function') ? getToken() : localStorage.getItem('access_token');
+  await initRoadmap();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _bootstrap);
+} else {
+  _bootstrap();
+}
+
+async function api(path, method='GET', body=null) {
+  try {
+    const opts = { method, headers: { 'Content-Type':'application/json', Authorization:'Bearer '+_token } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(API + path, opts);
+    if (!r.ok) {
+      const text = await r.text();
+      return { _error: true, status: r.status, body: text };
+    }
+    return await r.json();
+  } catch (e) {
+    return { _error: true, status: 0, body: e.message };
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function initRoadmap() {
+  _user = await api('/auth/me');
+  _state.spec = _user?.specialization || null;
+  _state.specKey = _state.spec;
+
+  // Banner: SV chưa chọn định hướng nghề → hint chọn trước (career_goal tác động /recommendations).
+  // Tôn trọng user nếu họ đã ẩn trong phiên này.
+  try {
+    const banner = document.getElementById('noCareerGoalBanner');
+    const hidden = sessionStorage.getItem('hideCareerGoalBanner') === '1';
+    const noGoal = !_user?.career_goal || _user.career_goal === 'general';
+    if (banner && noGoal && !hidden) {
+      banner.classList.remove('hidden');
+      banner.classList.add('flex');
+    }
+  } catch (_) {}
+
+  // Nếu chưa có CN, load preview spec từ localStorage hoặc detected hoặc default KHMT
+  if (!_state.spec) {
+    const saved = localStorage.getItem('previewSpec');
+    if (saved && _SPEC_FULL_NAMES[saved]) {
+      _state.previewSpec = saved;
+    } else {
+      // Try detect from grades trước khi default
+      const detected = await api('/grades/detected-spec');
+      if (detected?.detected_specialization && _SPEC_FULL_NAMES[detected.detected_specialization]) {
+        _state.previewSpec = detected.detected_specialization;
+        _state.detectedSpec = detected.detected_specialization;
+      } else {
+        _state.previewSpec = '7480201_07';  // KHMT default
+      }
+    }
+    document.getElementById('noSpecBanner').classList.remove('hidden');
+    // Set dropdown value
+    const sel = document.getElementById('previewSpecSelect');
+    if (sel) sel.value = _state.previewSpec;
+    if (_state.detectedSpec) {
+      const hint = document.getElementById('detectedSpecHint');
+      if (hint) {
+        hint.textContent = `💡 Gợi ý dựa trên môn đã pass: ${_SPEC_SHORT_NAMES[_state.detectedSpec] || _state.detectedSpec}`;
+        hint.classList.remove('hidden');
+      }
+    }
+  }
+
+  // Update spec label
+  const activeSpec = effectiveSpec();
+  const specName = _SPEC_FULL_NAMES[activeSpec] || activeSpec;
+  if (_state.spec) {
+    document.getElementById('specLabel').textContent = `Chuyên ngành: ${specName}`;
+  } else {
+    document.getElementById('specLabel').textContent = `Đang preview: ${specName} (chưa chốt CN)`;
+  }
+
+  const specQuery = activeSpec;
+  const [stdPlan, grades, catalog, planned, customPlan, prereqs] = await Promise.all([
+    api(`/courses/standard-plan?spec=${specQuery}`),
+    api('/grades/me'),
+    api('/courses/catalog/me'),
+    api('/roadmap/planned-electives/me'),
+    api('/roadmap/custom/me'),
+    api('/courses/prerequisites'),
+  ]);
+
+  _state.standardPlan = stdPlan;
+  _state.grades = Array.isArray(grades) ? grades : [];
+  _state.catalog = Array.isArray(catalog) ? catalog : (catalog?.courses || []);
+  _state.plannedElectives = planned?.planned || [];
+  _state.customPlan = customPlan;
+  _state.prereqs = (prereqs && !prereqs._error) ? prereqs : {};
+
+  // Reconstruct extraSemesters từ customPlan + plannedElectives + grades.
+  // Bất kỳ term_label nào HK10+ đều là extra (HK1-9 thuộc CTDT chuẩn).
+  _state.extraSemesters = new Set();
+  const _addIfExtra = (label) => {
+    if (label && !/^HK[1-9]$/.test(label) && /^HK\d+$/.test(label)) {
+      _state.extraSemesters.add(label);
+    }
+  };
+  for (const it of (_state.customPlan?.items || [])) _addIfExtra(it.term_label);
+  for (const p of (_state.plannedElectives || [])) _addIfExtra(p.term_label);
+  for (const g of _state.grades) _addIfExtra(g.term);
+
+  // Build courseInfo lookup
+  for (const c of _state.catalog) {
+    _state.courseInfo[c.course_code] = c;
+  }
+  if (_state.standardPlan?.semesters) {
+    for (const sem of _state.standardPlan.semesters) {
+      for (const c of sem.courses) {
+        if (c.is_placeholder) continue;
+        if (!_state.courseInfo[c.course_code]) {
+          _state.courseInfo[c.course_code] = c;
+        }
+      }
+    }
+  }
+
+  buildPlacement();
+  renderKPIs();
+  renderSequenceMap();
+
+  // Capture initial state for the manual-save dirty/revert flow.
+  _captureSnapshot();
+}
+
+// Handler khi user đổi preview spec (chỉ cho SV chưa chọn CN)
+async function onPreviewSpecChange(newSpec) {
+  if (!newSpec || _state.spec) return;  // SV đã có CN thì ignore
+  if (newSpec === _state.previewSpec) return;  // không đổi → noop
+
+  // Bảo vệ user khỏi mất thay đổi chưa lưu (race với drag-drop hoặc pick TC)
+  if (_state.dirty) {
+    const proceed = confirm(
+      'Bạn có thay đổi chưa lưu trong lộ trình.\n\n' +
+      'Đổi chuyên ngành sẽ ghi đè dữ liệu lên server và HUỶ thay đổi chưa lưu của bạn.\n\n' +
+      'Bấm OK để tiếp tục đổi (mất thay đổi), hoặc Cancel để quay lại Lưu trước.'
+    );
+    if (!proceed) {
+      // Revert dropdown về spec cũ
+      const sel = document.getElementById('previewSpecSelect');
+      if (sel) sel.value = _state.previewSpec || '';
+      return;
+    }
+  }
+
+  // Triết lý: đổi CN = bắt đầu lại việc chọn TC + dọn các BB cơ sở ngành cũ.
+  //  - TC (A/B/C) wipe hết → user chọn lại theo CN mới
+  //  - BB cơ sở ngành đặc thù của CN CŨ (required_specialization = oldSpec) → wipe
+  //  - BB chung (required_specialization=null) → giữ
+  //  - BB của CN MỚI tự update qua standardPlan mới
+
+  // Build TC universe từ specsCompare (catalog.elective_group bị filter theo user.spec)
+  if (!_state.specsCompare) {
+    try { _state.specsCompare = await api('/specs/compare'); } catch (_) {}
+  }
+  const tcUniverse = new Set();
+  for (const c of (_state.catalog || [])) {
+    if (c.elective_group === 'A') tcUniverse.add(c.course_code);
+  }
+  for (const s of (_state.specsCompare?.specs || [])) {
+    for (const c of (s.elective_b?.courses || [])) tcUniverse.add(c.course_code);
+    for (const c of (s.elective_c?.courses || [])) tcUniverse.add(c.course_code);
+  }
+  const _isAnyTC = (code) => tcUniverse.has(code);
+
+  // Helper: BB đặc thù của 1 CN (có required_specialization, NOT NULL)
+  const _getRequiredSpec = (code) => {
+    const c = _state.catalog.find(x => x.course_code === code);
+    return c?.required_specialization || null;
+  };
+  // Phải wipe nếu: TC, hoặc BB cơ sở ngành nhưng không phải của CN MỚI
+  const _shouldWipeOnSpecChange = (code) => {
+    if (_isAnyTC(code)) return true;
+    const req = _getRequiredSpec(code);
+    if (!req) return false;  // BB chung → giữ
+    return req !== newSpec;  // BB đặc thù: chỉ giữ nếu là của spec mới
+  };
+
+  // Tách: items giữ vs items wipe
+  const keptPicks = (_state.plannedElectives || []).filter(p => !_shouldWipeOnSpecChange(p.course_code));
+  const oldCustomItems = _state.customPlan?.items || [];
+  const keptCustomItems = oldCustomItems.filter(it => !_shouldWipeOnSpecChange(it.course_code));
+
+  // Đếm wipe codes (TC + BB cơ sở ngành cũ) để confirm
+  const wipeCodes = new Set();
+  for (const p of (_state.plannedElectives || [])) {
+    if (_shouldWipeOnSpecChange(p.course_code)) wipeCodes.add(p.course_code);
+  }
+  for (const it of oldCustomItems) {
+    if (_shouldWipeOnSpecChange(it.course_code)) wipeCodes.add(it.course_code);
+  }
+
+  if (wipeCodes.size > 0) {
+    const wipeNames = Array.from(wipeCodes).slice(0, 12).map(code => {
+      const info = _state.courseInfo[code];
+      const isTc = _isAnyTC(code);
+      const tag = isTc ? '[TC]' : '[BB cơ sở CN cũ]';
+      return `• ${tag} ${info?.title || info?.course_name || code}`;
+    }).join('\n');
+    const moreCount = wipeCodes.size - Math.min(wipeCodes.size, 12);
+    const moreText = moreCount > 0 ? `\n... và ${moreCount} môn khác` : '';
+    const confirmMsg =
+      `Đổi sang ${_SPEC_SHORT_NAMES[newSpec] || newSpec} sẽ HUỶ ${wipeCodes.size} môn không còn phù hợp:\n\n` +
+      `${wipeNames}${moreText}\n\n` +
+      `• TC (A/B/C): mỗi CN có pool/định hướng khác → chọn lại\n` +
+      `• BB cơ sở ngành cũ: không học khi sang CN mới\n\n` +
+      `Các môn BẮT BUỘC chung + BB của CN mới sẽ tự cập nhật theo CTDT.\n\n` +
+      `Tiếp tục? (Chưa lưu — bấm Lưu lộ trình để xác nhận)`;
+    if (!confirm(confirmMsg)) {
+      const sel = document.getElementById('previewSpecSelect');
+      if (sel) sel.value = _state.previewSpec || '';
+      return;
+    }
+    // STAGED — chỉ update RAM, không API.
+    _state.plannedElectives = keptPicks;
+    _state.customPlan = { items: keptCustomItems };
+  }
+
+  // Bước 3: STAGE đổi preview spec — RAM + UI, KHÔNG ghi localStorage (đợi Save)
+  _state.previewSpec = newSpec;
+  _markDirty();
+
+  _state.standardPlan = null;
+  _state.rankCache = null;
+  _state.placement = {};
+  _state.courseInfo = {};
+
+  const specName = _SPEC_FULL_NAMES[newSpec] || newSpec;
+  document.getElementById('specLabel').textContent = `Đang xem thử: ${specName} · CHƯA LƯU — bấm Lưu lộ trình để xác nhận`;
+
+  showToast(`Đang xem thử CTDT của ${_SPEC_SHORT_NAMES[newSpec] || newSpec} (chưa lưu)`, 'info');
+  const [stdPlan] = await Promise.all([
+    api(`/courses/standard-plan?spec=${newSpec}`),
+  ]);
+  _state.standardPlan = stdPlan;
+
+  for (const c of _state.catalog) _state.courseInfo[c.course_code] = c;
+  if (_state.standardPlan?.semesters) {
+    for (const sem of _state.standardPlan.semesters) {
+      for (const c of sem.courses) {
+        if (c.is_placeholder) continue;
+        _state.courseInfo[c.course_code] = c;
+      }
+    }
+  }
+
+  buildPlacement();
+  renderKPIs();
+  renderSequenceMap();
+  // KHÔNG _captureSnapshot — vì spec change chưa Save, dirty phải persist
+
+  let specCoreCount = 0;
+  for (const code of Object.values(_state.placement) ? Object.keys(_state.placement) : []) {
+    const c = _state.courseInfo[code];
+    if (c?.required_specialization === newSpec) specCoreCount++;
+  }
+  const removedNote = stalePicks.length > 0 ? ` · đã xoá ${stalePicks.length} môn TC cũ` : '';
+  showToast(`Đã chuyển sang ${_SPEC_SHORT_NAMES[newSpec]} — ${specCoreCount} môn cơ sở ngành đặc trưng${removedNote}`);
+}
+
+// Build placement: {course_code: 'HKn'}
+// Priority: customPlan + plannedElectives > standardPlan default > grades (term)
+function buildPlacement() {
+  const placement = {};
+  const currentSpec = _state.spec || _state.previewSpec;
+
+  // Helper: course_code có required_specialization khác CN hiện tại không?
+  // (Defensive — backend filter đã chặn ở /standard-plan, nhưng grades + customPlan
+  // có thể chứa môn cross-spec từ test/spec cũ → cần filter bên frontend.)
+  const _isCrossSpec = (code) => {
+    const c = _state.catalog.find(x => x.course_code === code)
+      || _state.courseInfo[code];
+    const reqSpec = c?.required_specialization;
+    return !!(reqSpec && currentSpec && reqSpec !== currentSpec);
+  };
+
+  // 1. Default từ standardPlan (BB common + cơ sở ngành chuyên của spec hiện tại)
+  // Backend đã filter — nhưng skip thêm cross-spec để chắc.
+  if (_state.standardPlan?.semesters) {
+    for (const sem of _state.standardPlan.semesters) {
+      const term = `HK${sem.semester_number}`;
+      for (const c of sem.courses) {
+        if (c.is_placeholder) continue;
+        // Backend /standard-plan đã filter cross-spec qua _SPEC_HK7_PLUS;
+        // không filter thêm ở đây để tránh edge-case format mismatch
+        // (mã CN canonical vs key) làm mất môn của CN đang chọn.
+        placement[c.course_code] = term;
+      }
+    }
+  }
+  // 2. Override từ grades — SKIP grade môn cross-spec (cả preview LẪN non-preview).
+  // SV test thường có grade nhiều CN; SV thực không nên có grade CN khác, nhưng
+  // nếu lỡ có (data dirty từ legacy) thì cũng filter cho an toàn.
+  for (const g of _state.grades) {
+    if (g.term && /^HK\d+$/.test(g.term)) {
+      if (_isCrossSpec(g.course_code)) continue;
+      placement[g.course_code] = g.term;
+    }
+  }
+  // 3. Override từ customPlan (drag-drop tuỳ chỉnh) — skip cross-spec.
+  if (_state.customPlan?.saved && _state.customPlan?.semesters) {
+    for (const sem of _state.customPlan.semesters) {
+      const term = sem.semester_label;
+      for (const code of (sem.course_codes || [])) {
+        if (_isCrossSpec(code)) continue;
+        placement[code] = term;
+      }
+    }
+  }
+  // 4. Override/Add từ plannedElectives (môn user picked cho slot TC-A/B/C)
+  for (const pe of _state.plannedElectives || []) {
+    if (pe.course_code && pe.term_label) {
+      placement[pe.course_code] = pe.term_label;
+      // Cũng đảm bảo courseInfo có entry này (để render đúng tên/credits)
+      if (!_state.courseInfo[pe.course_code]) {
+        _state.courseInfo[pe.course_code] = {
+          course_code: pe.course_code,
+          course_name: pe.course_name || pe.course_code,
+          credits: pe.credits || 3,
+        };
+      }
+    }
+  }
+  _state.placement = placement;
+}
+
+// ── KPI breakdown ──────────────────────────────────────────────────────────
+function renderKPIs() {
+  const grid = document.getElementById('kpiGrid');
+  if (!grid) return;  // KPI block đã move sang grades.html — no-op trên roadmap
+  const passedCodes = new Set(_state.grades.filter(g => g.passed).map(g => g.course_code));
+
+  const byCat = { BB: [], 'TC-A': [], 'TC-B': [], 'TC-C': [], 'TT-DATN': [] };
+  for (const c of _state.catalog) {
+    const name = (c.course_name || '').toLowerCase();
+    if (name.includes('thực tập tốt nghiệp') || name.includes('khóa luận') || name.includes('đồ án tốt nghiệp')) {
+      byCat['TT-DATN'].push(c);
+    } else if (c.category === 'TC-A' || c.category === 'TC-B' || c.category === 'TC-C') {
+      byCat[c.category].push(c);
+    } else {
+      byCat.BB.push(c);
+    }
+  }
+
+  // Tính tổng TC tích lũy = sum của tất cả các nhóm passed
+  const totalPassed = Object.values(byCat).flat()
+    .filter(c => passedCodes.has(c.course_code))
+    .reduce((s, c) => s + (parseFloat(c.credits) || 0), 0);
+  const TOTAL_TARGET = 153;
+  const totalPct = Math.min(100, Math.round(totalPassed / TOTAL_TARGET * 100));
+
+  // Card đầu = TỔNG (thay cho BB cũ — tổng TC quan trọng hơn để biết tiến độ tốt nghiệp).
+  // Các card khác giữ nguyên nhóm tự chọn để SV biết còn thiếu pool nào.
+  const totalCard = `
+    <div class="rounded-xl border-2 border-[#1a146b] bg-gradient-to-br from-[#eef2ff] to-white p-3">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-[#1a146b]">TỔNG TÍN CHỈ</p>
+      <div class="flex items-baseline gap-1 mt-1">
+        <span class="text-xl font-extrabold text-[#1a146b]">${totalPassed.toFixed(0)}</span>
+        <span class="text-xs text-[#474651]">/ ${TOTAL_TARGET} TC</span>
+      </div>
+      <div class="mt-2 h-1.5 w-full bg-[#e5eeff] rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-700 pri-grad" style="width:${totalPct}%"></div>
+      </div>
+      <p class="text-[10px] text-[#474651] mt-1">${totalPct}% hoàn thành</p>
+    </div>`;
+
+  // Targets từ CTDT 7480201
+  const targets = {
+    'TC-A':    { label: 'Tự chọn A', target: 6,  color: '#7c3aed' },
+    'TC-B':    { label: 'Tự chọn B', target: 9,  color: '#16a34a' },
+    'TC-C':    { label: 'Tự chọn C', target: 9,  color: '#ea580c' },
+    'TT-DATN': { label: 'TT + ĐATN', target: 20, color: '#0ea5e9' },
+  };
+
+  const otherCards = Object.entries(targets).map(([cat, info]) => {
+    const courses = byCat[cat] || [];
+    const passed = courses.filter(c => passedCodes.has(c.course_code))
+      .reduce((s, c) => s + (parseFloat(c.credits) || 0), 0);
+    const pct = info.target > 0 ? Math.min(100, Math.round(passed / info.target * 100)) : 0;
+    return `
+      <div class="rounded-xl border border-[#e5eeff] p-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-[#474651]">${info.label}</p>
+        <div class="flex items-baseline gap-1 mt-1">
+          <span class="text-xl font-extrabold" style="color:${info.color}">${passed.toFixed(0)}</span>
+          <span class="text-xs text-[#474651]">/ ${info.target} TC</span>
+        </div>
+        <div class="mt-2 h-1.5 w-full bg-[#e5eeff] rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-700" style="width:${pct}%;background:${info.color}"></div>
+        </div>
+        <p class="text-[10px] text-[#474651] mt-1">${pct}% hoàn thành</p>
+      </div>`;
+  }).join('');
+
+  grid.innerHTML = totalCard + otherCards;
+}
+
+// ── Sequence Map (HK linh hoạt theo Quy chế CTDT) ──────────────────────────
+// HK1-9 luôn render. HK10+ và HK{n}_he (hè) là extra → có nút thêm/xoá.
+function renderSequenceMap() {
+  const canvas = document.getElementById('dagCanvas');
+  if (!_state.standardPlan?.semesters?.length) {
+    canvas.innerHTML = '<p class="p-8 text-sm text-[#474651] italic text-center">Chưa có CTDT.</p>';
+    return;
+  }
+
+  const allTerms = getAllTerms();  // [HK1, HK1_he?, HK2, ..., HK9, HK10?, ...]
+
+  // Index planned electives by slot
+  const plannedSlotMap = new Map();
+  for (const p of _state.plannedElectives) {
+    plannedSlotMap.set(`${p.term_label}|${p.slot_id}`, p);
+  }
+
+  // Set of course_codes user picked qua elective slot
+  const electiveCodesByTerm = {};
+  for (const t of allTerms) electiveCodesByTerm[t] = [];
+  for (const p of _state.plannedElectives) {
+    if (electiveCodesByTerm[p.term_label]) {
+      electiveCodesByTerm[p.term_label].push({ code: p.course_code, slot_id: p.slot_id });
+    }
+  }
+  const allElectiveCodes = new Set(_state.plannedElectives.map(p => p.course_code));
+
+  // Group non-elective placement: {term: [course_codes]}
+  const byTerm = {};
+  for (const t of allTerms) byTerm[t] = [];
+  for (const [code, term] of Object.entries(_state.placement)) {
+    if (!code || code === 'null' || code === 'undefined') continue;
+    if (!_state.courseInfo[code]) continue;
+    if (allElectiveCodes.has(code)) continue;
+    if (byTerm[term]) byTerm[term].push(code);
+  }
+
+  // Index slot placeholders từ standardPlan (HK1-9 only — extra HK không có slot TC default)
+  const slotsByTerm = {};
+  for (const t of allTerms) slotsByTerm[t] = [];
+  for (const sem of _state.standardPlan.semesters) {
+    const term = `HK${sem.semester_number}`;
+    if (slotsByTerm[term]) slotsByTerm[term] = sem.courses.filter(c => c.is_placeholder);
+  }
+
+  // Helper: tổng TC của 1 term (môn cố định + elective picks + empty slots)
+  const _termTotalTC = (term) => {
+    let totalCr = 0;
+    for (const code of byTerm[term] || []) {
+      const c = _state.courseInfo[code];
+      if (c) totalCr += parseFloat(c.credits) || 0;
+    }
+    for (const e of electiveCodesByTerm[term] || []) {
+      const c = _state.courseInfo[e.code];
+      if (c) totalCr += parseFloat(c.credits) || 0;
+    }
+    for (const slot of slotsByTerm[term] || []) {
+      const key = `${term}|${slot.course_code}`;
+      if (!plannedSlotMap.has(key)) totalCr += parseFloat(slot.credits) || 0;
+    }
+    return totalCr;
+  };
+
+  // Render mỗi term thành 1 column
+  const colByTerm = {};
+  for (const term of allTerms) {
+    const semNum = parseInt(term.match(/^HK(\d+)/)[1]);
+    const isExtra = !(/^HK[1-9]$/.test(term));  // HK10+
+    const codes = (byTerm[term] || []).slice().sort((a, b) => a.localeCompare(b));
+    const electives = electiveCodesByTerm[term] || [];
+    const slots = slotsByTerm[term] || [];
+    const totalCr = _termTotalTC(term);
+
+    // Cảnh báo TC vượt Quy chế
+    const overTC = totalCr > QUY_CHE.MAX_TC_MAIN;
+    const tcCls = overTC ? 'bg-[#fef3c7] text-[#92400e]' : 'bg-white/20 text-white';
+    const tcTitle = overTC ? `Vượt Quy chế: tối đa ${QUY_CHE.MAX_TC_MAIN} TC/HK` : '';
+
+    // Có thể xoá nếu là extra & không có môn nào (kể cả empty slot)
+    const isEmpty = codes.length === 0 && electives.length === 0
+      && slots.filter(s => !plannedSlotMap.has(`${term}|${s.course_code}`)).length === 0;
+    const canRemove = isExtra && isEmpty;
+
+    const removeBtn = canRemove
+      ? `<button onclick="removeExtraSemester('${term}')" class="text-[10px] px-1.5 py-0.5 rounded bg-red-500/30 hover:bg-red-500/50" title="Xoá HK trống này">×</button>`
+      : '';
+
+    const compulsoryHtml = codes.map(code => courseCardHtml(code, term, null)).join('');
+    const electiveHtml = electives.map(e => courseCardHtml(e.code, term, e.slot_id)).join('');
+    const emptySlotsHtml = slots
+      .filter(slot => !plannedSlotMap.has(`${term}|${slot.course_code}`))
+      .map(slot => emptySlotHtml(slot, term, semNum))
+      .join('');
+    const cardsHtml = compulsoryHtml + electiveHtml;
+
+    colByTerm[term] = `
+      <div class="term-col" data-term-col="${term}">
+        <div class="term-header">
+          <div class="term-pill">
+            <span>HK${semNum}</span>
+            <span class="credits ${tcCls}" title="${tcTitle}">${totalCr.toFixed(0)} TC</span>
+          </div>
+          ${removeBtn ? `<div class="flex items-center gap-1 mt-1">${removeBtn}</div>` : ''}
+        </div>
+        <div class="term-body" data-term-body="${term}"
+             ondragover="onDragOver(event, '${term}')"
+             ondragleave="onDragLeave(event)"
+             ondrop="onDrop(event, '${term}')">
+          ${cardsHtml || (emptySlotsHtml ? '' : '<p class="text-[11px] text-[#a1a1aa] italic text-center py-4">Trống</p>')}
+          ${emptySlotsHtml}
+        </div>
+      </div>`;
+  }
+
+  // Year grouping: Năm 1 (HK1-2), Năm 2 (HK3-4), Năm 3 (HK5-6), Năm 4 (HK7-8), Năm 5 (HK9), Bổ sung (HK10+)
+  const YEAR_DEFS = [
+    { label: 'Năm 1', mainRange: [1, 2], color: '#1a146b' },
+    { label: 'Năm 2', mainRange: [3, 4], color: '#0ea5e9' },
+    { label: 'Năm 3', mainRange: [5, 6], color: '#16a34a' },
+    { label: 'Năm 4', mainRange: [7, 8], color: '#ea580c' },
+    { label: 'Năm 5', mainRange: [9, 9], color: '#dc2626' },
+  ];
+  const yearBlocks = YEAR_DEFS.map(yd => {
+    const termsInYear = allTerms.filter(t => {
+      const ord = termOrder(t);
+      return ord >= yd.mainRange[0] && ord <= yd.mainRange[1];
+    });
+    const totalTC = termsInYear.reduce((s, t) => s + _termTotalTC(t), 0);
+    return { ...yd, terms: termsInYear, totalTC };
+  });
+  // Năm bổ sung (HK10+)
+  const extraTerms = allTerms.filter(t => termOrder(t) >= 10);
+  if (extraTerms.length > 0) {
+    yearBlocks.push({
+      label: 'Bổ sung',
+      terms: extraTerms,
+      totalTC: extraTerms.reduce((s, t) => s + _termTotalTC(t), 0),
+      color: '#7c3aed',
+    });
+  }
+
+  const yearBlocksHtml = yearBlocks.map(yb => {
+    const blockCols = yb.terms.map(t => colByTerm[t]).join('');
+    return `
+      <div class="year-block" style="border-color:${yb.color}33">
+        <div class="year-header" style="background:linear-gradient(135deg,${yb.color}15,${yb.color}05);border-bottom-color:${yb.color}33">
+          <span class="year-label" style="color:${yb.color}">${yb.label}</span>
+          <span class="year-tc">${yb.totalTC.toFixed(0)} TC</span>
+        </div>
+        <div class="year-cols">${blockCols}</div>
+      </div>`;
+  }).join('');
+
+  // Nút "+ HK" cuối row (chỉ hiện nếu chưa đạt max)
+  const totalHK = allTerms.length;
+  const canAddMain = totalHK < QUY_CHE.MAX_MAIN_HK;
+  const addMainHtml = canAddMain ? `
+    <div class="flex items-center px-2">
+      <button onclick="addExtraMainSemester()"
+        class="px-3 py-2 rounded-lg border-2 border-dashed border-[#7c3aed] text-[#7c3aed] hover:bg-[#7c3aed] hover:text-white text-xs font-semibold whitespace-nowrap"
+        title="Thêm HK mới (Quy chế: tối đa ${QUY_CHE.MAX_MAIN_HK} HK)">
+        + HK
+      </button>
+    </div>` : '';
+
+  canvas.innerHTML = `
+    <div style="display: inline-flex; align-items: stretch; padding: 4px 0; gap: 12px;">
+      ${yearBlocksHtml}
+      ${addMainHtml}
+    </div>
+    <svg class="arrows-svg" id="arrowsSvg">
+      <defs>
+        <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#7c3aed"/>
+        </marker>
+      </defs>
+    </svg>`;
+
+  // Render Quy chế status bar (nếu element tồn tại)
+  renderQuyCheStatus(allTerms, _termTotalTC);
+
+  // Bind hover (arrows) + click (detail modal) on cards
+  canvas.querySelectorAll('.course-card').forEach(card => {
+    card.addEventListener('mouseenter', () => drawArrowsForCourse(card.dataset.courseCode));
+    card.addEventListener('mouseleave', () => clearArrows());
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button') || e.target.closest('a')) return;
+      openCourseDetail(card.dataset.courseCode);
+    });
+  });
+}
+
+// Render status bar: số HK vs Quy chế + tổng TC vs 153
+function renderQuyCheStatus(allTerms, totalTCFn) {
+  const el = document.getElementById('quyCheStatus');
+  if (!el) return;
+  const totalHK = allTerms.length;
+  const totalTC = allTerms.reduce((s, t) => s + totalTCFn(t), 0);
+  const overHK = totalHK > QUY_CHE.MAX_MAIN_HK;
+  const c = (over) => over ? 'text-[#dc2626] font-bold' : 'text-[#0b1c30]';
+  el.innerHTML = `
+    <span class="${c(overHK)}">HK: ${totalHK}/${QUY_CHE.MAX_MAIN_HK}</span>
+    <span class="text-[#a1a1aa]">·</span>
+    <span>${totalTC.toFixed(0)}/${QUY_CHE.TOTAL_TC_GRAD} TC</span>
+  `;
+}
+
+// ── Add/Remove HK handlers ─────────────────────────────────────────────────
+function addExtraMainSemester() {
+  const allTerms = getAllTerms();
+  if (allTerms.length >= QUY_CHE.MAX_MAIN_HK) {
+    showToast(`Vượt Quy chế: tối đa ${QUY_CHE.MAX_MAIN_HK} HK`, 'error');
+    return;
+  }
+  const nums = allTerms.map(t => parseInt(t.match(/^HK(\d+)/)[1]));
+  const next = Math.max(...nums) + 1;
+  _state.extraSemesters.add(`HK${next}`);
+  _markDirty();
+  renderSequenceMap();
+  showToast(`Đã thêm HK${next}`, 'success');
+}
+
+function removeExtraSemester(term) {
+  if (/^HK[1-9]$/.test(term)) {
+    showToast('HK1-9 thuộc CTDT chuẩn — không thể xoá', 'error');
+    return;
+  }
+  // Verify cột rỗng
+  const codesInTerm = Object.entries(_state.placement)
+    .filter(([_, t]) => t === term)
+    .map(([c]) => c);
+  const electivesInTerm = (_state.plannedElectives || []).filter(p => p.term_label === term);
+  if (codesInTerm.length > 0 || electivesInTerm.length > 0) {
+    showToast('HK còn môn — kéo môn ra trước khi xoá', 'error');
+    return;
+  }
+  _state.extraSemesters.delete(term);
+  _markDirty();
+  renderSequenceMap();
+  showToast(`Đã xoá ${termLabelHuman(term)}`, 'success');
+}
+
+function courseCardHtml(code, term, forcedSlotId = null) {
+  const c = _state.courseInfo[code] || { course_code: code, course_name: code, credits: 0 };
+  const grade = _state.grades.find(g => g.course_code === code);
+  let status = 'upcoming';
+  if (grade?.passed) status = 'passed';
+  else if (grade && grade.passed === false) status = 'failed';
+  else if (_state.customPlan?.saved || _state.placement[code] !== _ctdtDefaultTerm(code)) status = 'planned';
+
+  const isLocked = !!grade; // không cho drag môn đã có grade
+  const dragAttrs = isLocked ? '' : `draggable="true" ondragstart="onDragStart(event,'${code}')" ondragend="onDragEnd(event)"`;
+  const lockedCls = isLocked ? ' locked' : '';
+
+  const gradeText = grade?.score10 != null
+    ? `<span class="text-xs font-bold ${grade.passed ? 'text-[#16a34a]' : 'text-[#dc2626]'} flex-shrink-0">${grade.score10}</span>`
+    : '';
+  // Phân loại: BB common / BB cơ sở ngành chuyên / TC-A/B/C
+  // Nếu forcedSlotId được pass (course render qua plannedElectives entry) → dùng slot_id đó
+  // Else fallback tìm trong plannedElectives
+  let electiveEntry = null;
+  if (forcedSlotId) {
+    electiveEntry = _state.plannedElectives.find(p => p.course_code === code && p.term_label === term && p.slot_id === forcedSlotId);
+  } else {
+    electiveEntry = _state.plannedElectives.find(p => p.course_code === code && p.term_label === term);
+  }
+  let cat = c.category;
+  let isElectiveChoice = false;
+  let electiveSlotId = null;
+  if (electiveEntry) {
+    const m = /__POOL_([ABC])_/.exec(electiveEntry.slot_id || '');
+    if (m) { cat = `TC-${m[1]}`; isElectiveChoice = true; electiveSlotId = electiveEntry.slot_id; }
+  }
+  const isSpecCore = !!(c.required_specialization && c.required_specialization === effectiveSpec());
+  if (!cat) cat = isSpecCore ? 'CN' : 'BB';
+  const catBadge = `<span class="text-[9px] font-bold px-1 rounded ${_catColor(cat)} flex-shrink-0">${cat}</span>`;
+  const hasPrereqs = (_state.prereqs[code] || []).length > 0;
+  const prereqIcon = hasPrereqs ? `<span class="material-symbols-outlined msym text-xs text-[#7c3aed] flex-shrink-0" title="Có ${_state.prereqs[code].length} tiên quyết">link</span>` : '';
+
+  // Truncate name to fit
+  const name = c.course_name || code;
+  const isPoolPlaceholder = String(code).startsWith('__POOL_');
+  // Nút "Đổi" cho cả pool placeholder VÀ elective course đã chọn (cho phép đổi sang môn khác)
+  let swapBtn = '';
+  if (isPoolPlaceholder) {
+    swapBtn = `<button onclick="event.stopPropagation();openElectivePicker('${term}','${code}','TC-${(c.group||'').toUpperCase()}',${parseInt(term.replace('HK',''))})" class="text-[10px] text-[#7c3aed] hover:underline">Đổi</button>`;
+  } else if (isElectiveChoice && electiveSlotId) {
+    swapBtn = `<button onclick="event.stopPropagation();openElectivePicker('${term}','${electiveSlotId}','${cat}',${parseInt(term.replace('HK',''))})" class="text-[10px] text-[#7c3aed] hover:underline">Đổi</button>`;
+  }
+
+  // Highlight cơ sở ngành chuyên (CN-specific) bằng class extra
+  const specCls = isSpecCore && !isElectiveChoice ? ' spec-core' : '';
+
+  return `
+    <div class="course-card ${status}${lockedCls}${specCls}" data-course-code="${code}" ${dragAttrs}>
+      <div class="flex items-center gap-1 mb-1">
+        ${catBadge}
+        ${prereqIcon}
+        ${gradeText}
+        ${isLocked ? '<span class="material-symbols-outlined msym text-xs text-[#94a3b8] ml-auto" title="Đã có điểm — không thể di chuyển">lock</span>' : ''}
+      </div>
+      <p class="font-semibold text-[#0b1c30] leading-tight" style="font-size:11.5px;white-space:normal;overflow-wrap:break-word">${escHtml(name)}</p>
+      <div class="flex items-center justify-between mt-1">
+        <span class="text-[10px] text-[#474651] font-mono">${code}</span>
+        <span class="text-[10px] text-[#474651]">${c.credits || 0} TC</span>
+      </div>
+      ${swapBtn ? `<div class="mt-1 text-right">${swapBtn}</div>` : ''}
+    </div>`;
+}
+
+function emptySlotHtml(slot, term, semIdx) {
+  const groupUpper = (slot.group || '').toUpperCase();
+  return `
+    <div class="slot-empty tc-${(slot.group||'').toLowerCase()}"
+         onclick="openElectivePicker('${term}','${slot.course_code}','TC-${groupUpper}',${semIdx})">
+      <div class="flex items-center gap-1.5">
+        <span class="text-[9px] font-bold px-1 rounded bg-[#ede9fe] text-[#7c3aed] flex-shrink-0">TC-${groupUpper}</span>
+        <span class="material-symbols-outlined msym text-base text-[#7c3aed]">add_circle</span>
+        <span class="font-semibold text-[#7c3aed] text-xs">Chọn môn ${groupUpper}</span>
+      </div>
+      <p class="text-[10px] text-[#a78bfa] mt-0.5">Click chọn môn · ${slot.credits} TC</p>
+    </div>`;
+}
+
+// ════════════════ Course Detail Modal ════════════════
+function openCourseDetail(code) {
+  if (!code || String(code).startsWith('__POOL_')) return;
+  const c = _state.courseInfo[code];
+  if (!c) return;
+
+  const modal = document.getElementById('courseDetailModal');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('cdmTitle').textContent = c.course_name || code;
+  const cat = c.category || (c.required_specialization === effectiveSpec() ? 'CN' : 'BB');
+  const grade = _state.grades.find(g => g.course_code === code);
+  const placedTerm = _state.placement[code] || _ctdtDefaultTerm(code) || '?';
+  let statusBadge = '';
+  if (grade?.passed) statusBadge = `<span class="text-[10px] font-bold bg-[#dcfce7] text-[#16a34a] px-1.5 py-0.5 rounded">Đã pass · ${grade.score10}</span>`;
+  else if (grade) statusBadge = `<span class="text-[10px] font-bold bg-[#fee2e2] text-[#dc2626] px-1.5 py-0.5 rounded">Trượt · ${grade.score10}</span>`;
+  document.getElementById('cdmSubtitle').innerHTML =
+    `${code} · ${c.credits || 0} TC · <span class="font-semibold">${cat}</span> · Học kỳ ${placedTerm} ${statusBadge}`;
+
+  // Build trees
+  const directPrereqs = _state.prereqs[code] || [];
+  const dependents = Object.entries(_state.prereqs).filter(([_, ps]) => ps.includes(code)).map(([c]) => c);
+
+  const passedCodes = new Set(_state.grades.filter(g => g.passed).map(g => g.course_code));
+
+  // Recursive resolve: build all transitive prereqs as a tree
+  const visited = new Set();
+  function buildPrereqTree(targetCode, depth) {
+    if (depth > 4) return null;  // safety
+    if (visited.has(targetCode)) return { code: targetCode, name: _state.courseInfo[targetCode]?.course_name || targetCode, dup: true };
+    visited.add(targetCode);
+    const prs = _state.prereqs[targetCode] || [];
+    return {
+      code: targetCode,
+      name: _state.courseInfo[targetCode]?.course_name || targetCode,
+      passed: passedCodes.has(targetCode),
+      isMe: targetCode === code,
+      term: _state.placement[targetCode],
+      children: prs.map(p => buildPrereqTree(p, depth + 1)).filter(Boolean),
+    };
+  }
+  visited.clear();
+  const prereqTree = buildPrereqTree(code, 0);
+
+  // Render tree as nested HTML
+  function renderNode(node, depth) {
+    if (!node) return '';
+    const icon = node.passed ? '<span class="material-symbols-outlined msym text-sm text-[#16a34a]">check_circle</span>'
+              : node.dup ? '<span class="material-symbols-outlined msym text-sm text-[#94a3b8]">repeat</span>'
+              : '<span class="material-symbols-outlined msym text-sm text-[#dc2626]">radio_button_unchecked</span>';
+    const meCls = node.isMe ? 'font-bold text-[#1a146b] bg-[#eef2ff] px-2 py-0.5 rounded' : '';
+    const dupHint = node.dup ? ' <span class="text-[10px] italic text-[#94a3b8]">(đã hiện)</span>' : '';
+    const termInfo = node.term ? `<span class="text-[10px] text-[#474651] ml-1">${node.term}</span>` : '';
+    const clickable = !node.isMe && !node.dup
+      ? `cursor-pointer hover:underline" onclick="openCourseDetail('${node.code}')`
+      : '';
+    return `
+      <div style="margin-left:${depth*16}px" class="flex items-center gap-1.5 py-0.5">
+        <span class="text-[#cbd5e1] font-mono text-xs">${depth > 0 ? '└─' : ''}</span>
+        ${icon}
+        <span class="text-xs ${meCls} ${clickable}">${escHtml(node.name)} <span class="text-[10px] text-[#474651] font-mono">${node.code}</span></span>
+        ${termInfo}${dupHint}
+      </div>
+      ${(node.children||[]).map(ch => renderNode(ch, depth + 1)).join('')}`;
+  }
+
+  // Dependents (môn nào cần môn này)
+  const dependentCards = dependents.map(dep => {
+    const dc = _state.courseInfo[dep];
+    const term = _state.placement[dep];
+    const dGrade = _state.grades.find(g => g.course_code === dep);
+    const dStatus = dGrade?.passed ? 'passed' : dGrade ? 'failed' : term ? 'planned' : 'upcoming';
+    const statusIcon = {
+      passed: '✓', failed: '✗', planned: '○', upcoming: '○'
+    }[dStatus];
+    return `
+      <div class="flex items-center gap-2 py-1 cursor-pointer hover:bg-[#eef2ff] rounded px-2"
+           onclick="openCourseDetail('${dep}')">
+        <span class="text-sm">${statusIcon}</span>
+        <span class="text-xs font-semibold text-[#0b1c30]">${escHtml(dc?.course_name || dep)}</span>
+        <span class="text-[10px] text-[#474651] font-mono">${dep}</span>
+        ${term ? `<span class="text-[10px] bg-[#e0e7ff] text-[#1a146b] px-1.5 py-0.5 rounded ml-auto">${term}</span>` : ''}
+      </div>`;
+  }).join('');
+
+  // Build body HTML
+  const body = document.getElementById('cdmBody');
+  body.innerHTML = `
+    <!-- Mô tả -->
+    ${c.description ? `
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-[#474651] mb-1.5 flex items-center gap-1">
+          <span class="material-symbols-outlined msym text-base">description</span>Mô tả
+        </h4>
+        <p class="text-sm text-[#0b1c30] leading-relaxed">${escHtml(c.description)}</p>
+      </div>` : ''}
+
+    <!-- Prereq tree -->
+    <div>
+      <h4 class="text-xs font-bold uppercase tracking-wider text-[#474651] mb-2 flex items-center gap-1">
+        <span class="material-symbols-outlined msym text-base text-[#7c3aed]">account_tree</span>
+        Đường đi tiên quyết
+      </h4>
+      ${directPrereqs.length === 0
+        ? '<p class="text-sm text-[#94a3b8] italic pl-6">Không có tiên quyết — học được ngay.</p>'
+        : `<div class="bg-[#f8f9ff] rounded-lg p-3">${renderNode(prereqTree, 0)}</div>
+           <p class="text-[10px] text-[#474651] mt-2 pl-2">
+             <span class="text-[#16a34a]">●</span> đã pass &nbsp;
+             <span class="text-[#dc2626]">●</span> chưa pass &nbsp;
+             <span class="text-[#94a3b8]">●</span> đã hiện ở nhánh khác
+           </p>`}
+    </div>
+
+    <!-- Dependents -->
+    <div>
+      <h4 class="text-xs font-bold uppercase tracking-wider text-[#474651] mb-2 flex items-center gap-1">
+        <span class="material-symbols-outlined msym text-base text-[#7c3aed]">rocket_launch</span>
+        Môn này dẫn đến (${dependents.length})
+      </h4>
+      ${dependents.length === 0
+        ? '<p class="text-sm text-[#94a3b8] italic pl-6">Không phải tiên quyết của môn nào — môn này là "kết thúc nhánh".</p>'
+        : `<div class="bg-[#f8f9ff] rounded-lg p-2 space-y-0.5">${dependentCards}</div>`}
+    </div>
+
+    <!-- Hint -->
+    <div class="bg-[#f5f3ff] border border-[#a78bfa] rounded-lg p-3 text-xs text-[#1a146b]">
+      💡 <strong>Mẹo</strong>: Click bất kỳ môn nào trong sơ đồ để xem chi tiết môn đó. Dùng để hiểu structure CTDT trước khi sắp xếp lộ trình.
+    </div>
+  `;
+}
+
+function closeCourseDetail() {
+  document.getElementById('courseDetailModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function _ctdtDefaultTerm(code) {
+  // Tìm term mặc định trong standardPlan
+  if (!_state.standardPlan?.semesters) return null;
+  for (const sem of _state.standardPlan.semesters) {
+    if (sem.courses.some(c => c.course_code === code)) return `HK${sem.semester_number}`;
+  }
+  return null;
+}
+
+function _catColor(cat) {
+  return ({
+    'BB':   'bg-[#e0e7ff] text-[#1a146b]',
+    'CN':   'bg-[#fed7aa] text-[#c2410c]',  // Cơ sở ngành chuyên — orange
+    'TC-A': 'bg-[#ede9fe] text-[#7c3aed]',
+    'TC-B': 'bg-[#dcfce7] text-[#16a34a]',
+    'TC-C': 'bg-[#ffedd5] text-[#ea580c]',
+  })[cat] || 'bg-[#f1f5f9] text-[#475569]';
+}
+
+// ── Drag & Drop (HK linh hoạt) ─────────────────────────────────────────────
+function onDragStart(e, code) {
+  _draggingCode = code;
+  e.dataTransfer.effectAllowed = 'move';
+  const card = e.target.closest('.course-card');
+  if (card) card.classList.add('dragging');
+  // Highlight valid drop zones — iterate ALL terms (HK1-9 + extras)
+  for (const term of getAllTerms()) {
+    const body = document.querySelector(`[data-term-body="${term}"]`);
+    if (!body) continue;
+    const validity = isValidPlacement(code, term);
+    if (validity.ok) body.classList.add('drop-valid');
+    else body.classList.add('drop-invalid');
+  }
+}
+
+function onDragEnd(e) {
+  document.querySelectorAll('.course-card.dragging').forEach(c => c.classList.remove('dragging'));
+  document.querySelectorAll('.term-body').forEach(b => {
+    b.classList.remove('drop-valid', 'drop-invalid');
+  });
+  _draggingCode = null;
+  const tip = document.getElementById('invalidTooltip');
+  if (tip) tip.classList.add('hidden');
+}
+
+function onDragOver(e, targetTerm) {
+  e.preventDefault();
+  if (!_draggingCode) return;
+  const validity = isValidPlacement(_draggingCode, targetTerm);
+  const tip = document.getElementById('invalidTooltip');
+  if (!tip) return;
+  if (!validity.ok) {
+    tip.textContent = validity.reason;
+    tip.style.left = (e.clientX + 12) + 'px';
+    tip.style.top = (e.clientY + 12) + 'px';
+    tip.classList.remove('hidden');
+  } else {
+    tip.classList.add('hidden');
+  }
+}
+
+function onDragLeave(e) {
+  const tip = document.getElementById('invalidTooltip');
+  if (tip) tip.classList.add('hidden');
+}
+
+async function onDrop(e, targetTerm) {
+  e.preventDefault();
+  if (!_draggingCode) return;
+  // Capture BEFORE onDragEnd resets _draggingCode (bug fix gốc)
+  const code = _draggingCode;
+  const validity = isValidPlacement(code, targetTerm);
+  onDragEnd(e);
+  if (!validity.ok) {
+    showToast(validity.reason, 'error');
+    return;
+  }
+  if (_state.placement[code] === targetTerm) return;
+
+  _state.placement[code] = targetTerm;
+  renderSequenceMap();
+  scheduleSave();
+}
+
+function isValidPlacement(code, targetTerm) {
+  // Term phải tồn tại (HK1-9 chuẩn hoặc trong extraSemesters)
+  const isStandard = /^HK[1-9]$/.test(targetTerm);
+  const isExtra = _state.extraSemesters.has(targetTerm);
+  if (!isStandard && !isExtra) return { ok: false, reason: 'HK không tồn tại' };
+
+  const targetOrd = termOrder(targetTerm);
+
+  // Locked nếu đã có grade
+  const grade = _state.grades.find(g => g.course_code === code);
+  if (grade) return { ok: false, reason: 'Môn đã có điểm — không thể di chuyển' };
+
+  // Prereq: phải ở HK trước (ord nhỏ hơn)
+  const myPrereqs = _state.prereqs[code] || [];
+  for (const p of myPrereqs) {
+    const pTerm = _state.placement[p];
+    if (!pTerm) continue;
+    if (termOrder(pTerm) >= targetOrd) {
+      const pName = _state.courseInfo[p]?.course_name || p;
+      return { ok: false, reason: `Cần "${pName}" (${p}) ở HK trước ${termLabelHuman(targetTerm)}` };
+    }
+  }
+
+  // Dependents: môn này đang là prereq của môn khác — phải ở HK sau
+  for (const [dependent, prereqs] of Object.entries(_state.prereqs)) {
+    if (!prereqs.includes(code)) continue;
+    const dTerm = _state.placement[dependent];
+    if (!dTerm) continue;
+    if (termOrder(dTerm) <= targetOrd) {
+      const dName = _state.courseInfo[dependent]?.course_name || dependent;
+      return { ok: false, reason: `Môn "${dName}" (${dependent}, ${termLabelHuman(dTerm)}) yêu cầu môn này ở HK trước` };
+    }
+  }
+
+  // Quy chế TT/ĐATN: HK chứa Thực tập/Đồ án tốt nghiệp chỉ được tối đa 3 môn.
+  const ttdViolation = _quyCheTTDViolation(targetTerm, code);
+  if (ttdViolation) return { ok: false, reason: ttdViolation };
+
+  return { ok: true };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MANUAL-SAVE MODE
+// Trước đây: mỗi drag-drop / pick môn / xóa môn → ngay lập tức gọi backend.
+// Sau: chỉ update RAM + đánh dấu dirty. User bấm "Lưu lộ trình" để batch save.
+// Lý do: (1) cho phép Hoàn tác nếu lỡ tay, (2) giảm tải DB.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Quy chế Thực tập / Đồ án tốt nghiệp ────────────────────────────────────
+// Quy chế: SV chỉ đi Thực tập tốt nghiệp khi nợ tối đa 6 TC (≤ 2 môn 3 TC).
+// Đồ án tốt nghiệp tương tự (làm sau Thực tập). → HK chứa TT hoặc ĐATN tốt
+// nghiệp chỉ được tối đa 3 môn (TT/ĐATN + tối đa 2 môn khác).
+function _isTTorDATN(code) {
+  const c = _state.courseInfo[code];
+  if (!c) return false;
+  const name = (c.course_name || '').toLowerCase();
+  return name.includes('thực tập tốt nghiệp')
+      || name.includes('đồ án tốt nghiệp');
+}
+
+// Trả về string lý do nếu drop/pick `addingCode` vào `targetTerm` vi phạm
+// Quy chế TT/ĐATN, hoặc null nếu OK.
+// opts.replacingSlotKey: 'HK8|__POOL_C_8_1__' — slot đang được pick (để loại
+// khỏi đếm slot trống, tránh đếm trùng).
+function _quyCheTTDViolation(targetTerm, addingCode, opts = {}) {
+  const newCodes = new Set();
+  for (const [c, t] of Object.entries(_state.placement)) {
+    if (t !== targetTerm) continue;
+    if (c === addingCode) continue;
+    if (String(c).startsWith('__POOL_')) continue;
+    if (!_state.courseInfo[c]) continue;
+    newCodes.add(c);
+  }
+  newCodes.add(addingCode);
+  // Cộng thêm electives đã pick ở target (trừ slot đang được replace)
+  for (const p of (_state.plannedElectives || [])) {
+    if (p.term_label !== targetTerm) continue;
+    const k = `${p.term_label}|${p.slot_id}`;
+    if (opts.replacingSlotKey === k) continue;
+    newCodes.add(p.course_code);
+  }
+  // Đếm slot TC trống còn lại trong target (HK1-9)
+  let unfilledSlots = 0;
+  const semNum = parseInt(targetTerm.replace('HK', ''));
+  if (_state.standardPlan?.semesters) {
+    const sem = _state.standardPlan.semesters.find(s => s.semester_number === semNum);
+    if (sem) {
+      const plannedKeys = new Set((_state.plannedElectives || []).map(p => `${p.term_label}|${p.slot_id}`));
+      for (const c of sem.courses) {
+        if (!c.is_placeholder) continue;
+        const k = `${targetTerm}|${c.course_code}`;
+        if (opts.replacingSlotKey === k) continue;
+        if (plannedKeys.has(k)) continue;
+        unfilledSlots++;
+      }
+    }
+  }
+  const total = newCodes.size + unfilledSlots;
+  const hasTTDA = Array.from(newCodes).some(_isTTorDATN);
+  if (hasTTDA && total > 3) {
+    return `Quy chế: HK có Thực tập/Đồ án tốt nghiệp chỉ được tối đa 3 môn (sẽ có ${total} ở ${targetTerm}). Hãy kéo bớt môn ra HK khác trước.`;
+  }
+  return null;
+}
+
+// Lưu snapshot tại thời điểm vừa load hoặc vừa save thành công.
+// Bao gồm cả previewSpec — vì spec change cũng được stage qua dirty flow,
+// chỉ persist (vào localStorage + DB) khi user bấm "Lưu lộ trình".
+function _captureSnapshot() {
+  _state.savedSnapshot = {
+    customItems: (_state.customPlan?.items || []).map(i => ({
+      course_code: i.course_code,
+      term_label: i.term_label,
+    })),
+    planned: (_state.plannedElectives || []).map(p => ({
+      term_label: p.term_label,
+      slot_id: p.slot_id,
+      course_code: p.course_code,
+    })),
+    previewSpec: _state.previewSpec,
+    // Snapshot extraSemesters để revert chính xác
+    extraSemesters: Array.from(_state.extraSemesters || []),
+  };
+  _state.dirty = false;
+  _updateDirtyIndicator();
+}
+
+// Đếm số thay đổi cụ thể (so với snapshot) để hiện "X thay đổi chưa lưu".
+function _countDiffFromSnapshot() {
+  if (!_state.savedSnapshot) return 0;
+  // Compare custom items (placement → items list)
+  const currCustom = new Map();
+  for (const [code, term] of Object.entries(_state.placement)) {
+    if (!code || code === 'null' || code === 'undefined') continue;
+    if (!_state.courseInfo[code]) continue;
+    if (String(code).startsWith('__POOL_')) continue;
+    currCustom.set(code, term);
+  }
+  const savedCustom = new Map(_state.savedSnapshot.customItems.map(i => [i.course_code, i.term_label]));
+  let diff = 0;
+  for (const [code, term] of currCustom) {
+    if (savedCustom.get(code) !== term) diff++;
+  }
+  for (const [code] of savedCustom) {
+    if (!currCustom.has(code)) diff++;
+  }
+  // Compare planned electives (by term+slot key)
+  const keyOf = p => `${p.term_label}|${p.slot_id}`;
+  const currMap = new Map(_state.plannedElectives.map(p => [keyOf(p), p.course_code]));
+  const savedMap = new Map(_state.savedSnapshot.planned.map(p => [keyOf(p), p.course_code]));
+  for (const [k, c] of currMap) {
+    if (savedMap.get(k) !== c) diff++;
+  }
+  for (const [k] of savedMap) {
+    if (!currMap.has(k)) diff++;
+  }
+  // Compare previewSpec — spec change đếm như 1 thay đổi
+  if (_state.savedSnapshot.previewSpec !== _state.previewSpec) diff++;
+  // Compare extraSemesters — mỗi HK thêm/bớt đếm như 1 thay đổi
+  const currExtra = new Set(_state.extraSemesters || []);
+  const savedExtra = new Set(_state.savedSnapshot.extraSemesters || []);
+  for (const t of currExtra) if (!savedExtra.has(t)) diff++;
+  for (const t of savedExtra) if (!currExtra.has(t)) diff++;
+  return diff;
+}
+
+function _markDirty() {
+  _state.dirty = true;
+  _updateDirtyIndicator();
+}
+
+function _updateDirtyIndicator() {
+  const badge = document.getElementById('dirtyBadge');
+  const badgeText = document.getElementById('dirtyBadgeText');
+  const saveBtn = document.getElementById('saveBtn');
+  const revertBtn = document.getElementById('revertBtn');
+  if (!badge) return;
+  if (_state.dirty) {
+    const n = _countDiffFromSnapshot();
+    if (badgeText) badgeText.textContent = n > 0 ? `${n} thay đổi chưa lưu` : 'Có thay đổi chưa lưu';
+    badge.classList.remove('hidden');
+    badge.classList.add('flex');
+    saveBtn?.removeAttribute('disabled');
+    revertBtn?.removeAttribute('disabled');
+  } else {
+    badge.classList.add('hidden');
+    badge.classList.remove('flex');
+    saveBtn?.setAttribute('disabled', 'disabled');
+    revertBtn?.setAttribute('disabled', 'disabled');
+  }
+}
+
+// Trước: scheduleSave() debounce + auto-PUT. Giờ: chỉ mark dirty.
+function scheduleSave() {
+  _markDirty();
+}
+
+// Trước: gọi backend ngay. Giờ: deprecated — kept for backward compat (no-op).
+async function saveCustomPlan() {
+  // Hành động này giờ được handle bởi commitChanges()
+  _markDirty();
+}
+
+// Lưu (Save All) — batch 2 endpoint một lượt
+async function commitChanges() {
+  if (!_state.dirty) return;
+  const saveBtn = document.getElementById('saveBtn');
+  const oldHtml = saveBtn?.innerHTML;
+  if (saveBtn) {
+    saveBtn.setAttribute('disabled', 'disabled');
+    saveBtn.innerHTML = '<span class="material-symbols-outlined msym text-base spin">progress_activity</span><span class="hidden sm:inline">Đang lưu...</span>';
+  }
+
+  // ── Build customItems payload (BB courses) ──────────────────────────────
+  // Backend /roadmap/custom/me validate prereq → nếu CTDT default đã có prereq violation
+  // (vd HK4 chứa cả môn + prereq), gửi tất cả sẽ fail 422.
+  // Giải pháp: chỉ lưu items USER ĐÃ DI CHUYỂN khỏi vị trí default.
+  // CTDT default được suy ngược từ standardPlan → backend ko cần biết default placement.
+
+  const standardDefaults = {};  // {course_code: 'HKn'}
+  if (_state.standardPlan?.semesters) {
+    for (const sem of _state.standardPlan.semesters) {
+      const term = `HK${sem.index}`;
+      for (const c of (sem.courses || [])) {
+        if (c.is_placeholder || !c.course_code) continue;
+        standardDefaults[c.course_code] = term;
+      }
+    }
+  }
+
+  // TC courses thuộc tcUniverse → chỉ lưu trong plannedElectives, KHÔNG vào customPlan
+  const tcUniverse = new Set();
+  for (const c of (_state.catalog || [])) {
+    if (c.elective_group === 'A') tcUniverse.add(c.course_code);
+  }
+  for (const s of (_state.specsCompare?.specs || [])) {
+    for (const c of (s.elective_b?.courses || [])) tcUniverse.add(c.course_code);
+    for (const c of (s.elective_c?.courses || [])) tcUniverse.add(c.course_code);
+  }
+
+  const customItems = [];
+  for (const [code, term] of Object.entries(_state.placement)) {
+    // Defensive: skip entries hỏng (null/undefined/empty/code không có trong DB)
+    if (!code || code === 'null' || code === 'undefined') continue;
+    if (!_state.courseInfo[code]) continue;
+    if (String(code).startsWith('__POOL_')) continue;
+    if (tcUniverse.has(code)) continue;  // TC → trong plannedElectives, skip ở custom
+    if (standardDefaults[code] === term) continue;  // CTDT default → skip (server tự suy)
+    customItems.push({ course_code: code, term_label: term });
+  }
+
+  const plannedPayload = (_state.plannedElectives || []).map(p => ({
+    term_label: p.term_label,
+    slot_id: p.slot_id,
+    course_code: p.course_code,
+  }));
+
+  try {
+    const [rCustom, rPlanned] = await Promise.all([
+      api('/roadmap/custom/me', 'PUT', { items: customItems }),
+      api('/roadmap/planned-electives/me', 'PUT', { planned: plannedPayload }),
+    ]);
+    // Detect partial fail — nếu 1 trong 2 endpoint fail, treat as error → revert UI
+    const customFailed = rCustom?._error;
+    const plannedFailed = rPlanned?._error;
+    if (customFailed || plannedFailed) {
+      const detail = customFailed ? `custom: ${rCustom?.body?.slice?.(0, 80) || 'fail'}`
+                                   : `planned: ${rPlanned?.body?.slice?.(0, 80) || 'fail'}`;
+      showToast(`Lỗi lưu (${detail}). Trạng thái cục bộ giữ nguyên — bấm Lưu lại để retry.`, 'error');
+      // Không capture snapshot mới → dirty vẫn true, user retry hoặc revert
+    } else {
+      // Sync state từ payload đã save thành công (cả 2 nguồn)
+      _state.customPlan = { items: customItems.slice() };
+      _state.plannedElectives = plannedPayload.slice();
+      // Persist previewSpec vào localStorage NGAY khi Save thành công
+      // (trước đó staging trong RAM thôi). Giờ navigate đi và quay lại sẽ giữ spec mới.
+      if (_state.previewSpec) {
+        try { localStorage.setItem('previewSpec', _state.previewSpec); } catch (_) {}
+      }
+      // Cập nhật label spec — bỏ chữ "CHƯA LƯU"
+      const specName = _SPEC_FULL_NAMES[_state.previewSpec] || _state.previewSpec;
+      const lbl = document.getElementById('specLabel');
+      if (lbl && _state.previewSpec) {
+        lbl.textContent = _state.spec
+          ? `Chuyên ngành: ${specName}`
+          : `Đang preview: ${specName} (chưa chốt CN)`;
+      }
+      _captureSnapshot();
+      const status = document.getElementById('saveStatus');
+      if (status) {
+        status.classList.remove('hidden');
+        setTimeout(() => status.classList.add('hidden'), 2000);
+      }
+      showToast('Đã lưu lộ trình lên hệ thống', 'success');
+    }
+  } catch (e) {
+    showToast('Lỗi khi lưu: ' + (e?.message || e), 'error');
+  } finally {
+    if (saveBtn) {
+      saveBtn.innerHTML = oldHtml;
+      _updateDirtyIndicator();
+    }
+  }
+}
+
+// Hoàn tác — restore RAM về snapshot, re-render. Cũng revert previewSpec nếu đã đổi.
+async function revertChanges() {
+  if (!_state.dirty) return;
+  if (!_state.savedSnapshot) {
+    showToast('Không có snapshot để hoàn tác', 'error');
+    return;
+  }
+  if (!confirm('Hoàn tác mọi thay đổi và quay về phiên bản đã lưu lần cuối?')) return;
+
+  // Restore data
+  _state.customPlan = { items: _state.savedSnapshot.customItems.map(i => ({ ...i })) };
+  _state.plannedElectives = _state.savedSnapshot.planned.map(p => ({ ...p }));
+  // Restore extraSemesters
+  _state.extraSemesters = new Set(_state.savedSnapshot.extraSemesters || []);
+
+  // Revert previewSpec nếu đã đổi — cần re-fetch standardPlan của spec cũ
+  const oldPreviewSpec = _state.savedSnapshot.previewSpec;
+  const specChanged = oldPreviewSpec && oldPreviewSpec !== _state.previewSpec;
+  if (specChanged) {
+    _state.previewSpec = oldPreviewSpec;
+    // Update dropdown UI
+    const sel = document.getElementById('previewSpecSelect');
+    if (sel) sel.value = oldPreviewSpec;
+    // Re-fetch standardPlan của spec cũ
+    try {
+      const stdPlan = await api(`/courses/standard-plan?spec=${oldPreviewSpec}`);
+      _state.standardPlan = stdPlan;
+      _state.courseInfo = {};
+      for (const c of _state.catalog) _state.courseInfo[c.course_code] = c;
+      if (_state.standardPlan?.semesters) {
+        for (const sem of _state.standardPlan.semesters) {
+          for (const c of sem.courses) {
+            if (c.is_placeholder) continue;
+            _state.courseInfo[c.course_code] = c;
+          }
+        }
+      }
+      // Update spec label
+      const specName = _SPEC_FULL_NAMES[oldPreviewSpec] || oldPreviewSpec;
+      const lbl = document.getElementById('specLabel');
+      if (lbl) lbl.textContent = `Đang preview: ${specName} (chưa chốt CN)`;
+    } catch (e) {
+      console.error('[revert] failed to re-fetch standardPlan:', e);
+      showToast('Lỗi tải lại CTDT cũ. Thử F5.', 'error');
+    }
+  }
+
+  // Rebuild placement từ customPlan + plannedElectives mới (revert)
+  _state.placement = {};
+  buildPlacement();
+  _state.dirty = false;
+  _updateDirtyIndicator();
+  renderSequenceMap();
+  renderKPIs();
+  showToast(specChanged
+    ? 'Đã hoàn tác — quay về CN trước đó'
+    : 'Đã hoàn tác về phiên bản đã lưu');
+}
+
+// Reset CTDT — destructive, vẫn confirm + ghi DB ngay (không qua dirty flow)
+async function resetToCtdt() {
+  if (_state.dirty && !confirm('Bạn có thay đổi chưa lưu. Reset CTDT sẽ mất cả thay đổi đó. Tiếp tục?')) return;
+  if (!confirm('Reset lộ trình về CTDT mặc định?\n(Tất cả thay đổi cá nhân + môn TC đã chọn sẽ mất)')) return;
+
+  // Backup state để rollback nếu API fail
+  const backupCustomPlan = _state.customPlan;
+  const backupPlanned = _state.plannedElectives;
+  const backupPlacement = { ..._state.placement };
+
+  try {
+    await Promise.all([
+      api('/roadmap/custom/me', 'PUT', { items: [] }),
+      api('/roadmap/planned-electives/me', 'PUT', { planned: [] }),
+    ]);
+    _state.customPlan = null;
+    _state.plannedElectives = [];
+    _state.placement = {};
+    buildPlacement();
+    _captureSnapshot();
+    // Clear localStorage preview spec — nếu không, reload page sẽ phục hồi spec preview cũ
+    try { localStorage.removeItem('previewSpec'); } catch (_) {}
+    showToast('Đã reset về CTDT mặc định');
+    renderSequenceMap();
+    renderKPIs();
+  } catch (e) {
+    // Rollback RAM nếu API fail
+    _state.customPlan = backupCustomPlan;
+    _state.plannedElectives = backupPlanned;
+    _state.placement = backupPlacement;
+    showToast('Lỗi khi reset: ' + (e?.message || e) + '. Đã giữ nguyên lộ trình.', 'error');
+  }
+}
+
+// Cảnh báo nếu user thoát trang khi có thay đổi chưa lưu
+window.addEventListener('beforeunload', (e) => {
+  if (_state.dirty) {
+    e.preventDefault();
+    e.returnValue = '';  // browser hiện dialog mặc định
+    return '';
+  }
+});
+
+// ── SVG arrows ─────────────────────────────────────────────────────────────
+function drawArrowsForCourse(code) {
+  clearArrows();
+  if (!code || !_state.prereqs) return;
+  const svg = document.getElementById('arrowsSvg');
+  if (!svg) return;
+
+  // Highlight target card
+  const myCard = document.querySelector(`[data-course-code="${code}"]`);
+  if (myCard) myCard.classList.add('highlight');
+
+  // Set SVG dimensions to match canvas
+  const canvas = document.getElementById('dagCanvas');
+  const rect = canvas.getBoundingClientRect();
+  svg.setAttribute('width', canvas.scrollWidth);
+  svg.setAttribute('height', canvas.scrollHeight);
+  svg.style.width = canvas.scrollWidth + 'px';
+  svg.style.height = canvas.scrollHeight + 'px';
+
+  // Outgoing: courses depending on this
+  const outgoing = Object.entries(_state.prereqs)
+    .filter(([c, ps]) => ps.includes(code))
+    .map(([c]) => c);
+  // Incoming: prereqs of this
+  const incoming = _state.prereqs[code] || [];
+
+  for (const tgt of outgoing) {
+    const tgtCard = document.querySelector(`[data-course-code="${tgt}"]`);
+    if (tgtCard) tgtCard.classList.add('highlight');
+    drawArrow(code, tgt, '#7c3aed');
+  }
+  for (const src of incoming) {
+    const srcCard = document.querySelector(`[data-course-code="${src}"]`);
+    if (srcCard) srcCard.classList.add('highlight');
+    drawArrow(src, code, '#7c3aed');
+  }
+}
+
+function clearArrows() {
+  const svg = document.getElementById('arrowsSvg');
+  if (svg) {
+    Array.from(svg.querySelectorAll('path:not([id])')).forEach(p => p.remove());
+  }
+  document.querySelectorAll('.course-card.highlight').forEach(c => c.classList.remove('highlight'));
+}
+
+function drawArrow(fromCode, toCode, color) {
+  const svg = document.getElementById('arrowsSvg');
+  if (!svg) return;
+  const fromCard = document.querySelector(`[data-course-code="${fromCode}"]`);
+  const toCard = document.querySelector(`[data-course-code="${toCode}"]`);
+  if (!fromCard || !toCard) return;
+
+  const canvas = document.getElementById('dagCanvas');
+  const cRect = canvas.getBoundingClientRect();
+  const sRect = canvas.parentElement.getBoundingClientRect();
+  const scrollLeft = canvas.parentElement.scrollLeft;
+
+  const fRect = fromCard.getBoundingClientRect();
+  const tRect = toCard.getBoundingClientRect();
+
+  // Use canvas-relative coordinates (since SVG is positioned absolutely inside canvas)
+  const x1 = fRect.right - cRect.left;
+  const y1 = fRect.top + fRect.height/2 - cRect.top;
+  const x2 = tRect.left - cRect.left;
+  const y2 = tRect.top + tRect.height/2 - cRect.top;
+
+  // Bezier curve (smooth horizontal flow)
+  const dx = Math.max(40, Math.abs(x2 - x1) / 2);
+  const path = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const arrow = document.createElementNS(ns, 'path');
+  arrow.setAttribute('d', path);
+  arrow.setAttribute('stroke', color);
+  arrow.setAttribute('stroke-width', '2');
+  arrow.setAttribute('fill', 'none');
+  arrow.setAttribute('marker-end', 'url(#arrowhead)');
+  arrow.setAttribute('opacity', '0.85');
+  svg.appendChild(arrow);
+}
+
+// ════════════════ SpecCompareModal ════════════════
+async function openSpecCompare() {
+  const modal = document.getElementById('specCompareModal');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  if (!_state.specsCompare) _state.specsCompare = await api('/specs/compare');
+  renderSpecCompare();
+}
+function closeSpecCompare() {
+  document.getElementById('specCompareModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+// Map Tailwind color name từ backend → hex để dùng trong inline style
+const _COLOR_NAME_TO_HEX = {
+  indigo: '#4f46e5', sky: '#0ea5e9', emerald: '#10b981',
+  violet: '#8b5cf6', amber: '#f59e0b', teal: '#14b8a6',
+  blue: '#3b82f6', rose: '#f43f5e', slate: '#64748b',
+};
+function _hex(colorName) {
+  if (!colorName) return '#1a146b';
+  if (colorName.startsWith('#')) return colorName;
+  return _COLOR_NAME_TO_HEX[colorName] || '#1a146b';
+}
+function _formatSalary(sr) {
+  if (!sr) return '';
+  if (typeof sr === 'string') return sr;
+  if (typeof sr === 'object') {
+    const min = sr.min, max = sr.max, unit = sr.unit || '';
+    if (min != null && max != null) return `${min}-${max} ${unit}`.trim();
+    if (min != null) return `~${min}+ ${unit}`.trim();
+  }
+  return '';
+}
+
+function renderSpecCompare() {
+  const body = document.getElementById('specCompareBody');
+  if (!_state.specsCompare?.specs?.length) {
+    body.innerHTML = '<p class="text-sm text-[#474651] italic text-center py-8">Không tải được dữ liệu so sánh.</p>';
+    return;
+  }
+  const specs = _state.specsCompare.specs;
+  const currentSpec = _state.specsCompare.current_spec;
+  body.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      ${specs.map(s => {
+        const isCurrent = s.code === currentSpec;
+        const careersStr = (s.careers || []).slice(0, 3).map(c => typeof c === 'string' ? c : (c.name || c.role || c.title || '')).filter(Boolean).join(' · ');
+        const skillsHtml = (s.top_skills || []).slice(0, 4).map(sk => `
+          <div class="flex items-center gap-2">
+            <div class="flex-1 h-1 bg-[#e5eeff] rounded-full overflow-hidden">
+              <div class="h-full" style="width:${sk.percent}%;background:${_hex(s.color)}"></div>
+            </div>
+            <span class="text-[11px] text-[#474651] flex-shrink-0">${escHtml(sk.name)}</span>
+          </div>`).join('');
+        const colorHex = _hex(s.color);
+        // Material Symbols icon (backend returns name like 'psychology'). Fallback emoji nếu không phải tên valid.
+        const iconHtml = s.icon
+          ? (/^[a-z_]+$/.test(s.icon)
+              ? `<span class="material-symbols-outlined msym text-2xl" style="color:${colorHex};font-variation-settings:'FILL' 1">${s.icon}</span>`
+              : escHtml(s.icon))
+          : '🎓';
+        return `
+          <div class="spec-card rounded-2xl border-2 ${isCurrent ? 'border-[#1a146b] bg-[#f5f3ff]' : 'border-[#e5eeff] bg-white'} p-4 flex flex-col">
+            <div class="flex items-start gap-3 mb-3">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background:${colorHex}22">
+                ${iconHtml}
+              </div>
+              <div class="flex-1">
+                <p class="text-xs font-bold text-[#474651]">${escHtml(s.short_name||s.code)}</p>
+                <h4 class="font-extrabold text-[#0b1c30] text-base leading-tight">${escHtml(s.name)}</h4>
+                ${isCurrent ? '<span class="inline-block mt-1 text-[9px] font-bold uppercase bg-[#1a146b] text-white px-1.5 py-0.5 rounded">Đang theo</span>' : ''}
+              </div>
+            </div>
+            ${s.tagline ? `<p class="text-xs italic text-[#474651] mb-2">"${escHtml(s.tagline)}"</p>` : ''}
+            ${s.description ? `<p class="text-xs text-[#474651] mb-3 line-clamp-3">${escHtml(s.description)}</p>` : ''}
+            ${careersStr ? `<div class="mb-3"><p class="text-[10px] font-bold uppercase tracking-wider text-[#474651] mb-1">Nghề phổ biến</p><p class="text-xs text-[#0b1c30]">${escHtml(careersStr)}</p></div>` : ''}
+            ${(s.core_topics||[]).length ? `<div class="mb-3"><p class="text-[10px] font-bold uppercase tracking-wider text-[#474651] mb-1">Môn đặc trưng</p><ul class="text-xs text-[#0b1c30] space-y-0.5">${s.core_topics.slice(0,3).map(t => `<li>• ${escHtml(t)}</li>`).join('')}</ul></div>` : ''}
+            ${skillsHtml ? `<div class="mb-2"><p class="text-[10px] font-bold uppercase tracking-wider text-[#474651] mb-1">Kỹ năng nổi bật</p><div class="space-y-1">${skillsHtml}</div></div>` : ''}
+            <div class="mt-auto pt-2 border-t border-[#e5eeff] flex items-center justify-between text-[11px] text-[#474651]">
+              <span><strong>${s.compulsory_credits||0}</strong> TC bắt buộc</span>
+              ${s.salary_range ? `<span class="text-[#16a34a]"><strong>${escHtml(_formatSalary(s.salary_range))}</strong></span>` : ''}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ════════════════ ElectivePickerModal ════════════════
+async function openElectivePicker(termLabel, slotId, slotCategory, semIndex) {
+  _state.currentSlot = { term_label: termLabel, slot_id: slotId, slot_category: slotCategory, semester_index: semIndex };
+  const modal = document.getElementById('electivePickerModal');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('electivePickerTitle').textContent = `Gợi ý môn ${slotCategory} cho HK${semIndex}`;
+  document.getElementById('electivePickerSub').textContent = `${slotCategory} · 3 TC · Sắp xếp theo độ phù hợp`;
+
+  const existing = _state.plannedElectives.find(p => p.term_label === termLabel && p.slot_id === slotId);
+  document.getElementById('electivePickerClearBtn').classList.toggle('hidden', !existing);
+
+  const body = document.getElementById('electivePickerBody');
+  body.innerHTML = '<p class="text-center py-8 text-sm text-[#474651]"><span class="spin material-symbols-outlined msym">progress_activity</span> Đang tải gợi ý môn...</p>';
+
+  if (!_state.rankCache) _state.rankCache = await api('/courses/rank-for-me');
+  if (!_state.specsCompare) _state.specsCompare = await api('/specs/compare');
+
+  const activeSpec = effectiveSpec();
+  const currentSpec = _state.specsCompare?.specs?.find(s => s.code === activeSpec);
+  let poolCourses = [];
+  // 1. Try /specs/compare elective_b/c first (chỉ cho TC-B, TC-C)
+  if (slotCategory === 'TC-B' && currentSpec?.elective_b?.courses?.length) poolCourses = currentSpec.elective_b.courses;
+  else if (slotCategory === 'TC-C' && currentSpec?.elective_c?.courses?.length) poolCourses = currentSpec.elective_c.courses;
+
+  // 2. Fallback: catalog filter theo elective_group (cho TC-A và backup TC-B/C)
+  if (!poolCourses.length) {
+    const targetGroup = slotCategory.replace('TC-', '');  // 'A'/'B'/'C'
+    poolCourses = _state.catalog.filter(c => c.elective_group === targetGroup);
+  }
+
+  if (!poolCourses.length) {
+    body.innerHTML = `<p class="text-center py-8 text-sm text-[#474651] italic">
+      Không có môn ${slotCategory} khả dụng cho chuyên ngành ${_SPEC_SHORT_NAMES[activeSpec] || activeSpec}.
+    </p>`;
+    return;
+  }
+
+  // Build rank map từ /courses/rank-for-me ({courses: [...]})
+  const rankMap = new Map();
+  const rankCourses = _state.rankCache?.courses || (Array.isArray(_state.rankCache) ? _state.rankCache : []);
+  for (const r of rankCourses) rankMap.set(r.course_code, r);
+
+  // Build prereq satisfied map (passed codes)
+  const passedCodes = new Set(_state.grades.filter(g => g.passed).map(g => g.course_code));
+
+  // Compute multi-criteria scoring per course
+  const currentSlotKey = `${_state.currentSlot.term_label}|${_state.currentSlot.slot_id}`;
+  const enriched = poolCourses.map(c => {
+    const rank = rankMap.get(c.course_code);
+    const aiScore = rank?.ml_score ?? (rank?.ml_percent != null ? rank.ml_percent / 100 : null) ?? rank?.final_score ?? rank?.score ?? null;
+    const grade = _state.grades.find(g => g.course_code === c.course_code);
+    const isPassed = !!(grade?.passed);
+
+    // Prereq check
+    const prereqs = _state.prereqs[c.course_code] || [];
+    const prereqsMet = prereqs.length === 0 || prereqs.every(p => passedCodes.has(p));
+    const prereqsMissing = prereqs.filter(p => !passedCodes.has(p));
+
+    // Đã chọn ở slot khác cùng SV (không cho duplicate)
+    const otherSlotEntry = _state.plannedElectives.find(p => p.course_code === c.course_code && `${p.term_label}|${p.slot_id}` !== currentSlotKey);
+    const alreadyPickedElsewhere = !!otherSlotEntry;
+    let alreadyPickedSlotInfo = '';
+    if (alreadyPickedElsewhere) {
+      const m = /__POOL_([ABC])_(\d+)_(\d+)__/.exec(otherSlotEntry.slot_id || '');
+      const cat2 = m ? `TC-${m[1]}` : 'slot khác';
+      alreadyPickedSlotInfo = `${cat2} ở ${otherSlotEntry.term_label}`;
+    }
+
+    // Đã có vị trí trong CTDT (không phải qua elective slot) — vd compulsory course
+    const ctdtTerm = _ctdtDefaultTerm(c.course_code);
+    const isInCtdt = !!ctdtTerm && !poolCourses.find(pc => pc.course_code === c.course_code && pc.is_placeholder);
+
+    // Sub-scores từ breakdown
+    const breakdown = rank?.breakdown || {};
+    const careerAlign = breakdown.career_alignment ?? rank?.career_alignment ?? null;
+    const historyFit = breakdown.history_fit ?? rank?.history_fit ?? null;
+    const peerRating = breakdown.peer_rating ?? rank?.peer_rating ?? null;
+    const peerStars = breakdown.avg_rating_stars ?? null;
+    const peerCount = breakdown.rating_count ?? 0;
+    const tags = rank?.tags || [];
+    const reasonText = rank?.reason || null;
+
+    return { ...c, aiScore, isPassed, prereqs, prereqsMet, prereqsMissing,
+             alreadyPickedElsewhere, alreadyPickedSlotInfo,
+             careerAlign, historyFit, peerRating, peerStars, peerCount, tags, reasonText, rank };
+  });
+
+  // Sort: passed last, prereqMet first, then by aiScore desc
+  enriched.sort((a, b) => {
+    if (a.isPassed !== b.isPassed) return a.isPassed ? 1 : -1;
+    if (a.prereqsMet !== b.prereqsMet) return a.prereqsMet ? -1 : 1;
+    return (b.aiScore || 0) - (a.aiScore || 0);
+  });
+
+  // Top recommendation visual
+  const topPick = enriched.find(c => !c.isPassed && c.prereqsMet && (c.aiScore || 0) > 0) || enriched.find(c => !c.isPassed && c.prereqsMet) || enriched[0];
+
+  body.innerHTML = enriched.map((c, idx) => {
+    const isSelected = existing && existing.course_code === c.course_code;
+    const isTopPick = c.course_code === topPick?.course_code;
+    const scorePct = c.aiScore != null ? Math.round(c.aiScore * 100) : null;
+
+    // Build reasons array (explainable AI)
+    const reasons = [];
+    if (c.careerAlign != null && c.careerAlign > 0.4) {
+      reasons.push({icon: 'rocket_launch', color: '#7c3aed', text: `Phù hợp nghề mục tiêu (${Math.round(c.careerAlign*100)}%)`});
+    }
+    if (c.historyFit != null && c.historyFit > 0.5) {
+      reasons.push({icon: 'auto_graph', color: '#0ea5e9', text: `Bạn mạnh ở domain này (${Math.round(c.historyFit*100)}%)`});
+    }
+    if (c.historyFit != null && c.historyFit < 0.3 && c.tags?.includes('weak_area')) {
+      reasons.push({icon: 'fitness_center', color: '#f59e0b', text: 'Thử thách lĩnh vực bạn chưa mạnh'});
+    }
+    if (c.peerStars != null && c.peerStars >= 3.5) {
+      reasons.push({icon: 'star', color: '#f59e0b', text: `Đánh giá ${c.peerStars}/5 (${c.peerCount} SV)`});
+    }
+    if (c.prereqsMet && c.prereqs.length > 0) {
+      reasons.push({icon: 'check_circle', color: '#16a34a', text: `Đã đủ ${c.prereqs.length} tiên quyết`});
+    }
+    if (!c.prereqsMet) {
+      const missingNames = c.prereqsMissing.map(p => _state.courseInfo[p]?.course_name || p).slice(0, 2);
+      reasons.push({icon: 'lock', color: '#dc2626', text: `Chưa pass: ${missingNames.join(', ')}`});
+    }
+    // Đã chọn ở slot khác — cảnh báo
+    if (c.alreadyPickedElsewhere) {
+      reasons.push({icon: 'info', color: '#dc2626', text: `Đã chọn ở ${c.alreadyPickedSlotInfo}`});
+    }
+    // Backend reason text (1 dòng tổng)
+    if (c.reasonText && reasons.length < 4) {
+      reasons.push({icon: 'lightbulb', color: '#0ea5e9', text: c.reasonText});
+    }
+    // Tag flags hữu ích
+    if (c.tags?.includes('peer_loved') && !reasons.some(r => r.text?.includes('Đánh giá'))) {
+      reasons.push({icon: 'favorite', color: '#dc2626', text: 'Sinh viên khác rất thích'});
+    }
+
+    const scoreColor = scorePct == null ? '#94a3b8'
+                     : scorePct >= 75 ? '#16a34a'
+                     : scorePct >= 50 ? '#1a146b'
+                     : scorePct >= 25 ? '#f59e0b'
+                     : '#94a3b8';
+    const cardBorder = isSelected ? 'border-[#1a146b] bg-[#f5f3ff]'
+                     : c.alreadyPickedElsewhere ? 'border-[#fde68a] bg-[#fffbeb]'
+                     : isTopPick ? 'border-[#16a34a] bg-[#f0fdf4]'
+                     : !c.prereqsMet ? 'border-[#fecaca] bg-[#fef2f2]'
+                     : 'border-[#e5eeff] bg-white';
+    const disabled = !c.prereqsMet || c.alreadyPickedElsewhere;
+    const buttonText = isSelected ? '✓ Đang chọn'
+                     : c.isPassed ? 'Chọn (đã học)'
+                     : c.alreadyPickedElsewhere ? 'Đã chọn slot khác'
+                     : !c.prereqsMet ? 'Chưa thể chọn'
+                     : 'Chọn môn này';
+
+    return `
+      <div class="rounded-xl border-2 ${cardBorder} p-3 transition" data-course="${c.course_code}">
+        ${isTopPick && !isSelected ? '<div class="flex items-center gap-1 mb-2 text-[10px] font-bold text-[#16a34a] uppercase"><span class="material-symbols-outlined msym text-sm">star</span>Khuyên chọn nhất</div>' : ''}
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="font-bold text-[#0b1c30]">${escHtml(c.course_name)}</span>
+              <span class="text-xs text-[#474651] font-mono">${c.course_code}</span>
+              <span class="text-xs text-[#474651]">${c.credits} TC</span>
+              ${c.isPassed ? '<span class="text-[10px] font-bold bg-[#dcfce7] text-[#16a34a] px-1.5 py-0.5 rounded">Đã pass ✓</span>' : ''}
+              ${!c.prereqsMet ? '<span class="text-[10px] font-bold bg-[#fee2e2] text-[#dc2626] px-1.5 py-0.5 rounded">Thiếu tiên quyết</span>' : ''}
+            </div>
+            ${reasons.length ? `
+              <ul class="space-y-0.5 mt-2">
+                ${reasons.slice(0, 4).map(r => `
+                  <li class="flex items-start gap-1.5 text-[11px] text-[#474651]">
+                    <span class="material-symbols-outlined msym text-sm flex-shrink-0" style="color:${r.color}">${r.icon}</span>
+                    <span>${escHtml(r.text)}</span>
+                  </li>`).join('')}
+              </ul>` : '<p class="text-[11px] text-[#94a3b8] italic mt-1">Chưa có dữ liệu phân tích</p>'}
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-2xl font-extrabold leading-none" style="color:${scoreColor}">${scorePct != null ? scorePct : '—'}</p>
+            <p class="text-[9px] text-[#474651] mt-0.5 uppercase tracking-wide">${scorePct != null ? '/100 fit' : 'no rank'}</p>
+          </div>
+        </div>
+        <div class="mt-2 flex items-center justify-between gap-2">
+          <button onclick="toggleReasonDetail('${c.course_code}')"
+            class="text-[10px] text-[#7c3aed] hover:underline flex items-center gap-0.5">
+            <span class="material-symbols-outlined msym text-xs">expand_more</span>
+            Chi tiết
+          </button>
+          <button onclick="selectElective('${c.course_code}')"
+            ${disabled && !isSelected ? 'disabled' : ''}
+            class="px-3 py-1.5 rounded-lg ${isSelected ? 'bg-[#16a34a]' : disabled ? 'bg-[#cbd5e1] cursor-not-allowed' : 'pri-grad hover:opacity-90'} text-white text-xs font-semibold transition">
+            ${buttonText}
+          </button>
+        </div>
+        <div id="detail-${c.course_code}" class="hidden mt-3 pt-3 border-t border-[#e5eeff] grid grid-cols-3 gap-2 text-center">
+          ${c.careerAlign != null ? _scorebox('Career fit', c.careerAlign, '#7c3aed') : ''}
+          ${c.historyFit != null ? _scorebox('Sở trường', c.historyFit, '#0ea5e9') : ''}
+          ${c.peerRating != null ? _scorebox('Peer rating', c.peerRating/5, '#f59e0b') : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function _scorebox(label, val, color) {
+  const pct = Math.round((val||0)*100);
+  return `
+    <div class="rounded-lg bg-[#f8f9ff] p-2">
+      <p class="text-[9px] uppercase font-bold text-[#474651] tracking-wide">${label}</p>
+      <p class="text-base font-extrabold mt-0.5" style="color:${color}">${pct}%</p>
+      <div class="mt-1 h-1 w-full bg-white rounded-full overflow-hidden">
+        <div class="h-full" style="width:${pct}%;background:${color}"></div>
+      </div>
+    </div>`;
+}
+
+function toggleReasonDetail(code) {
+  const el = document.getElementById('detail-' + code);
+  if (el) el.classList.toggle('hidden');
+}
+function closeElectivePicker() {
+  document.getElementById('electivePickerModal').classList.add('hidden');
+  document.body.style.overflow = '';
+  _state.currentSlot = null;
+}
+// Local-only — chỉ update RAM + mark dirty. User bấm "Lưu lộ trình" để persist.
+function selectElective(courseCode) {
+  const slot = _state.currentSlot;
+  if (!slot) return;
+  // Quy chế TT/ĐATN: nếu HK có TT/ĐATN tốt nghiệp + pick đẩy lên > 3 môn → block
+  const ttdViolation = _quyCheTTDViolation(slot.term_label, courseCode, {
+    replacingSlotKey: `${slot.term_label}|${slot.slot_id}`,
+  });
+  if (ttdViolation) {
+    showToast(ttdViolation, 'error');
+    return;
+  }
+  // Loại bỏ entry cũ của slot này (nếu có) + thêm entry mới
+  _state.plannedElectives = _state.plannedElectives.filter(
+    p => !(p.term_label === slot.term_label && p.slot_id === slot.slot_id)
+  );
+  _state.plannedElectives.push({
+    term_label: slot.term_label,
+    slot_id: slot.slot_id,
+    course_code: courseCode,
+  });
+  // Update placement RAM-side
+  _state.placement[courseCode] = slot.term_label;
+  _markDirty();
+  closeElectivePicker();
+  renderSequenceMap();
+  renderKPIs();
+  showToast(`Đã chọn môn cho ${slot.term_label} — bấm "Lưu lộ trình" để xác nhận`, 'info');
+}
+
+function clearElectiveSlot() {
+  const slot = _state.currentSlot;
+  if (!slot) return;
+  // Tìm course_code của entry sắp bị xóa để cũng remove khỏi placement
+  const removed = _state.plannedElectives.find(
+    p => p.term_label === slot.term_label && p.slot_id === slot.slot_id
+  );
+  _state.plannedElectives = _state.plannedElectives.filter(
+    p => !(p.term_label === slot.term_label && p.slot_id === slot.slot_id)
+  );
+  if (removed && _state.placement[removed.course_code] === slot.term_label) {
+    // chỉ xóa khỏi placement nếu không còn entry khác trỏ về cùng course (multi-slot)
+    const stillUsed = _state.plannedElectives.some(p => p.course_code === removed.course_code);
+    if (!stillUsed) delete _state.placement[removed.course_code];
+  }
+  _markDirty();
+  closeElectivePicker();
+  renderSequenceMap();
+  renderKPIs();
+  showToast('Đã bỏ chọn — bấm "Lưu lộ trình" để xác nhận', 'info');
+}
+
+// ════════════════ Toast ════════════════
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  const text = document.getElementById('toastMsg');
+  if (!el) return;
+  text.textContent = msg;
+  if (type === 'error') { el.style.background = '#dc2626'; icon.textContent = 'error'; }
+  else if (type === 'info') { el.style.background = '#1a146b'; icon.textContent = 'info'; }
+  else { el.style.background = '#16a34a'; icon.textContent = 'check_circle'; }
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 2400);
+}
+
+// ════════════════ Helpers ════════════════
+const _SPEC_CODE_TO_KEY = {'7480201_07':'khmt','7480201_06':'mmt','7480201_05':'cnpm','7480201_09':'httt','7480201_04':'thkt','7480201_08':'cnttdh'};
+const _SPEC_FULL_NAMES = {'7480201_07':'Khoa học máy tính','7480201_06':'Mạng máy tính','7480201_05':'Công nghệ phần mềm','7480201_09':'Hệ thống thông tin','7480201_04':'Tin học kinh tế','7480201_08':'CNTT đa phương tiện'};
+const _SPEC_SHORT_NAMES = {'7480201_07':'KHMT','7480201_06':'MMT','7480201_05':'CNPM','7480201_09':'HTTT','7480201_04':'THKT','7480201_08':'CNTTDH'};
+
+function escHtml(s) {
+  return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('click', e => {
+  if (e.target.id === 'specCompareModal') closeSpecCompare();
+  if (e.target.id === 'electivePickerModal') closeElectivePicker();
+  if (e.target.id === 'courseDetailModal') closeCourseDetail();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeSpecCompare();
+    closeElectivePicker();
+    closeCourseDetail();
+  }
+});
+
+// Redraw arrows on window resize / scroll
+window.addEventListener('resize', clearArrows);
+document.getElementById('dagScroller')?.addEventListener('scroll', clearArrows);
+</script>
+</body>
+</html>
