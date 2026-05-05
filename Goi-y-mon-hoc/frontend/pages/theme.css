@@ -1,0 +1,1117 @@
+/* theme.css — EduGuide Stripe-inspired design system (light + dark)
+ *
+ * Architecture:
+ *   :root    → light mode tokens (default)
+ *   .dark    → dark mode tokens (toggle via <html class="dark">)
+ *
+ * Tailwind reads these via CSS vars in theme.js → existing markup like
+ * `bg-surface`, `text-on-surface`, `border-outline-variant` automatically
+ * adapt when the `.dark` class flips.
+ *
+ * Inspired by Stripe Dashboard: subtle gradients, deep slate text on
+ * near-white canvas in light mode; deep navy surfaces with high-contrast
+ * text in dark mode. Brand purple #635bff for primary actions.
+ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   View Transitions API (cross-document, MPA mode v16+).
+   Pattern: persistent layout shell (sidebar + FAB) KHÔNG animate; chỉ
+   <main> content cross-fade. Đây là pattern modern web apps dùng (Chrome
+   team blog "Same-document and cross-document view transitions") để hiện
+   sidebar như "luôn ở đó" qua mọi nav — không có flash, không cảm giác
+   sidebar nháy hoặc giật.
+
+   Cách hoạt động:
+   - `view-transition-name: app-sidebar` đánh dấu sidebar là continuous
+     element giữa old/new page.
+   - `animation: none` tắt cross-fade default → browser swap instant,
+     không thấy gì thay đổi nếu position+content giống nhau.
+   - Main content vẫn cross-fade (root) để có cảm giác nav smooth.
+
+   Browser cũ (Safari/Firefox chưa hỗ trợ): ignore tất cả → fallback paint
+   holding của browser (giữ old page ~200-300ms cho đến khi new page sẵn).
+   ══════════════════════════════════════════════════════════════════════════ */
+@view-transition {
+  navigation: auto;
+}
+
+/* Persistent shell elements — tag để browser treat như continuous */
+aside#sidebarDrawer {
+  view-transition-name: app-sidebar;
+}
+/* #fcRoot is the floating-chat container appended to <body>. It needs an
+   explicit z-index because:
+   1. `view-transition-name` creates a stacking context (z-index applies).
+   2. The roadmap's `.term-header` is `position: sticky; z-index: 5` — that
+      creates its OWN stacking context at z=5 in body. Without explicit z on
+      #fcRoot (default = auto), an explicit-z stacking context wins, so the
+      sticky semester pills (HK7/HK8/HK9) render OVER the chat panel.
+   z-index 9990 beats sticky term-header (5), sidebar (50), topbar (40), and
+   toasts (60); panel (9997) and FAB (9998) live inside this context. */
+#fcRoot {
+  view-transition-name: app-fab;
+  position: relative;
+  z-index: 9990;
+}
+
+/* Persistent elements: NO animation (swap instant — sidebar giống hệt
+   giữa pages thì cross-fade là noise). */
+::view-transition-old(app-sidebar),
+::view-transition-new(app-sidebar) {
+  animation: none;
+}
+::view-transition-old(app-fab),
+::view-transition-new(app-fab) {
+  animation: none;
+}
+
+/* Main content (root = mọi thứ NOT named) cross-fade nhanh — cảm giác
+   nav smooth, sidebar không bị animate kèm. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.18s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — light mode (default)
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Canvases & surfaces */
+  --canvas:           #f6f9fc;   /* page bg, slightly off-white */
+  --surface:          #ffffff;   /* card bg */
+  --surface-raised:   #ffffff;   /* hovered card / popover */
+  --surface-subtle:   #f6f8fb;   /* recessed area / hover row */
+  --surface-strong:   #eef1f6;   /* nested card */
+  --surface-overlay:  rgba(15, 23, 42, 0.55); /* modal backdrop */
+
+  /* Borders & dividers */
+  --border-subtle:    #eef0f4;   /* thin divider */
+  --border-default:   #e3e8ee;   /* card border */
+  --border-strong:    #cbd2da;   /* input focus / active */
+
+  /* Text */
+  --text-primary:     #0a2540;   /* Stripe navy */
+  --text-secondary:   #425466;
+  --text-tertiary:    #697386;
+  --text-disabled:    #a3acba;
+  --text-on-accent:   #ffffff;
+  --text-on-dark:     #f6f9fc;
+
+  /* Brand — Stripe purple */
+  --accent:           #635bff;
+  --accent-hover:     #5851ec;
+  --accent-active:    #4d44d6;
+  --accent-soft:      #f1f0ff;   /* tint bg for chips/banners */
+  --accent-soft-hi:   #e2dffe;   /* hovered tint */
+
+  /* Status */
+  --success:          #009262;
+  --success-soft:     #d4f4e3;
+  --warning:          #b86e00;
+  --warning-soft:     #fff5d4;
+  --danger:           #cd3500;
+  --danger-soft:      #ffd2c2;
+  --info:             #0073e6;
+  --info-soft:        #cfe5ff;
+
+  /* Charts (sequential) */
+  --chart-1: #635bff;
+  --chart-2: #00d4ff;
+  --chart-3: #00ba88;
+  --chart-4: #ffb237;
+  --chart-5: #ff6b4a;
+  --chart-6: #a855f7;
+
+  /* Shadows (Stripe is famously subtle) */
+  --shadow-xs: 0 1px 2px rgba(10, 37, 64, 0.04);
+  --shadow-sm: 0 1px 3px rgba(10, 37, 64, 0.06), 0 1px 2px rgba(10, 37, 64, 0.04);
+  --shadow-md: 0 4px 8px rgba(10, 37, 64, 0.08), 0 2px 4px rgba(10, 37, 64, 0.04);
+  --shadow-lg: 0 12px 24px rgba(10, 37, 64, 0.10), 0 4px 8px rgba(10, 37, 64, 0.04);
+  --shadow-pop: 0 0 0 1px rgba(10, 37, 64, 0.06), 0 12px 32px rgba(10, 37, 64, 0.12);
+
+  /* Misc */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+
+  --container-max: 1280px;
+
+  color-scheme: light;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — dark mode
+   Activated by adding `.dark` class to <html> (theme-switcher.js).
+   ══════════════════════════════════════════════════════════════════════════ */
+.dark {
+  /* Tuned 2026-05-03: tăng contrast giữa canvas/surface + brighter borders +
+     boost text-tertiary để cards đứng tách rời page, text dễ đọc.
+     Reference: GitHub dark, Linear dark — clear card elevation thay vì flat. */
+  --canvas:           #0b1120;   /* page bg, slate-950 với chút indigo tint */
+  --surface:          #1a2238;   /* card bg, +20% lightness vs canvas — RÕ tách */
+  --surface-raised:   #232c47;   /* hovered/raised card */
+  --surface-subtle:   #131a2e;   /* recessed area giữa canvas+surface */
+  --surface-strong:   #2b3654;   /* nested elements (progress tracks, sub-cards) */
+  --surface-overlay:  rgba(2, 6, 18, 0.78);
+
+  --border-subtle:    #1f2a44;   /* mỏng nhất, dùng cho dividers */
+  --border-default:   #36446a;   /* card border RÕ ràng hơn */
+  --border-strong:    #4a5a82;   /* hover/focus borders */
+
+  --text-primary:     #f6f9fc;   /* high contrast 16:1 */
+  --text-secondary:   #cdd6e0;   /* +10% brighter, 9:1 contrast */
+  --text-tertiary:    #97a3b8;   /* +12% brighter, 6:1 — vẫn AA cho text nhỏ */
+  --text-disabled:    #5c6577;
+  --text-on-accent:   #ffffff;
+  --text-on-dark:     #f6f9fc;
+
+  --accent:           #9d96ff;   /* brighter indigo cho dark, +8% lightness */
+  --accent-hover:     #b5afff;
+  --accent-active:    #8e85ff;
+  --accent-soft:      #2a2657;   /* subtle indigo wash bg */
+  --accent-soft-hi:   #3a3580;
+
+  --success:          #4cd296;   /* brighter emerald */
+  --success-soft:     #142e23;
+  --warning:          #ffc043;   /* brighter amber */
+  --warning-soft:     #3a2c10;
+  --danger:           #ff8264;   /* brighter coral */
+  --danger-soft:      #3a1c14;
+  --info:             #5cb1ff;
+  --info-soft:        #122a48;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 12px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.35);
+  --shadow-pop: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 40px rgba(0, 0, 0, 0.65);
+
+  color-scheme: dark;
+}
+
+/* Dark mode: thêm subtle shadow + slight ring cho mọi card để định vị rõ ràng
+   trên page background. Không dùng border quá đậm vì sẽ trông cứng. */
+.dark .card,
+.dark .card-flat,
+.dark .card-elevated,
+.dark .card-feature,
+.dark .card-highlight,
+.dark .aside-card,
+.dark .kpi-tile {
+  box-shadow: var(--shadow-sm);
+}
+.dark .card-hover:hover,
+.dark .kpi-tile:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BASELINE
+   ══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  background: var(--canvas);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';   /* Inter stylistic sets — sharper Vietnamese diacritics */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body { font-family: 'Inter', sans-serif; }
+
+::selection { background: var(--accent-soft-hi); color: var(--accent-active); }
+.dark ::selection { background: var(--accent-soft-hi); color: var(--text-primary); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   VIEW TRANSITIONS — disabled to avoid jitter on full-page reloads
+   (ajax-nav is disabled in v6, so we get full reload on every nav. View
+   transitions overlap with browser repaint and cause visible jank. Better
+   to have crisp instant nav than half-broken animations.)
+   ══════════════════════════════════════════════════════════════════════════ */
+/* @view-transition { navigation: auto; }  — disabled */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ANTI-FOUC: reserve sidebar area with dark bg BEFORE JS mounts sidebar HTML.
+   Without this, on each full reload there's a brief flash where the sidebar
+   region is the page bg (canvas) before sidebar-init.js paints the navy.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  html::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    background: #131829;
+    z-index: 1;
+    pointer-events: none;
+  }
+}
+.dark html::before { background: #0a0e1a; }
+/* Sidebar itself must sit above the reserved area */
+#sidebarDrawer, #adminSidebar, #sidebarOverlay, #adminSidebarOverlay { z-index: 50; }
+/* Topbar above the reserved strip */
+.topbar { z-index: 40; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MATERIAL SYMBOLS UTILITIES
+   ══════════════════════════════════════════════════════════════════════════ */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.msym {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+.msym-fill {
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BRAND GRADIENT
+   Stripe uses subtle, almost-imperceptible gradients. We keep one signature
+   gradient for hero sections + brand moments.
+   ══════════════════════════════════════════════════════════════════════════ */
+.pri-grad,
+.primary-gradient {
+  background: linear-gradient(135deg, #635bff 0%, #5851ec 50%, #4d44d6 100%);
+}
+.pri-grad-soft {
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft-hi) 100%);
+}
+.hero-grad {
+  background:
+    radial-gradient(at 80% 0%, rgba(99, 91, 255, 0.18) 0%, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(0, 212, 255, 0.10) 0%, transparent 50%),
+    var(--canvas);
+}
+.dark .hero-grad {
+  background:
+    radial-gradient(at 80% 0%, rgba(99, 91, 255, 0.30) 0%, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+    var(--canvas);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ANIMATIONS — minimal: only spin/shimmer/pulse for indicators.
+   Fade-up/fade-in classes kept as no-ops so existing markup doesn't break,
+   but they no longer animate on every page reload (which was causing the
+   "stagger" jitter user was reporting).
+   ══════════════════════════════════════════════════════════════════════════ */
+@keyframes spin   { to { transform: rotate(360deg); } }
+@keyframes pulse  { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.spin { animation: spin .8s linear infinite; display: inline-block; }
+/* No-op fade classes — instant visibility, no animation on each reload */
+.fade-in,
+.fade-up,
+.fade-up-delay-1,
+.fade-up-delay-2,
+.fade-up-delay-3,
+.fade-up-delay-4 { opacity: 1; transform: none; }
+
+/* Only animate on prefers-reduced-motion: no-preference AND it's the very first
+   visit of the session — i.e. don't replay on every nav. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-first-visit="true"] .fade-up,
+  html[data-first-visit="true"] .fade-up-delay-1,
+  html[data-first-visit="true"] .fade-up-delay-2,
+  html[data-first-visit="true"] .fade-up-delay-3,
+  html[data-first-visit="true"] .fade-up-delay-4 {
+    animation: fadeUpOnce .35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  html[data-first-visit="true"] .fade-up-delay-1 { animation-delay: 0.04s; }
+  html[data-first-visit="true"] .fade-up-delay-2 { animation-delay: 0.08s; }
+  html[data-first-visit="true"] .fade-up-delay-3 { animation-delay: 0.12s; }
+  html[data-first-visit="true"] .fade-up-delay-4 { animation-delay: 0.16s; }
+}
+@keyframes fadeUpOnce { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Skeleton loading shimmer */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-subtle) 0%, var(--surface-strong) 50%, var(--surface-subtle) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SCROLLBAR (Stripe-style: thin, blends in)
+   ══════════════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+  border: 2px solid var(--canvas);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FORMS
+   ══════════════════════════════════════════════════════════════════════════ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--text-primary);
+  transition: background-color 5000s ease-in-out 0s;
+}
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear { display: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   COMPONENT PRIMITIVES (Stripe-inspired)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Layout container */
+.container-app {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+@media (max-width: 768px) {
+  .container-app { padding-left: 1rem; padding-right: 1rem; }
+}
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+}
+.card-hover { transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease; }
+.card-hover:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+.card-flat {
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+}
+.card-elevated {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+.card-feature {
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-subtle) 100%);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+}
+.card-feature::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--chart-2), var(--accent));
+  background-size: 200% 100%;
+  animation: shimmer 6s linear infinite;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-md);
+  transition: all .15s ease;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) {
+  background: var(--accent-active);
+  transform: translateY(0);
+  box-shadow: var(--shadow-xs);
+}
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-subtle);
+  border-color: var(--border-strong);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+}
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+.btn-sm { padding: 0.375rem 0.75rem; font-size: 13px; }
+.btn-lg { padding: 0.875rem 1.5rem; font-size: 15px; }
+
+/* Input */
+.input {
+  width: 100%;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  font-size: 14px;
+  line-height: 1.4;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.input::placeholder { color: var(--text-tertiary); }
+.input:hover { border-color: var(--border-strong); }
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Status pills (small + softer than M3) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  line-height: 1.4;
+}
+.pill-success { background: var(--success-soft); color: var(--success); }
+.pill-warn    { background: var(--warning-soft); color: var(--warning); }
+.pill-danger  { background: var(--danger-soft); color: var(--danger); }
+.pill-info    { background: var(--info-soft); color: var(--info); }
+.pill-neutral { background: var(--surface-strong); color: var(--text-secondary); }
+.pill-accent  { background: var(--accent-soft); color: var(--accent); }
+
+/* Status dot */
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+}
+.status-dot-success { background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+.status-dot-warn    { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-soft); }
+.status-dot-danger  { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+.status-dot-pulse::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  animation: pulse 2s ease-out infinite;
+}
+
+/* Section heading (Stripe-style: small uppercase eyebrow) */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* Stat block — for big KPI numbers */
+.stat-num {
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.stat-num-lg {
+  font-size: 48px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Divider */
+.divider { height: 1px; background: var(--border-subtle); border: 0; }
+
+/* ── Sidebar — always dark navy, scoped tokens ─────────────────────────── */
+#sidebarDrawer, #adminSidebar {
+  /* Sidebar has its OWN dark theme regardless of page light/dark mode.
+     This gives the page a strong visual contrast (dark nav, light content)
+     and stays consistent across both modes. */
+  --canvas:           #131829;
+  --surface:          #131829;
+  --surface-raised:   #1a2138;
+  --surface-subtle:   #1a2138;
+  --surface-strong:   #25304d;
+  --border-subtle:    #1a2138;
+  --border-default:   #25304d;
+  --border-strong:    #3a4670;
+  --text-primary:     #f6f9fc;
+  --text-secondary:   #adbdcc;
+  --text-tertiary:    #7a8aa0;
+  --text-disabled:    #4a5568;
+  --accent-soft:      rgba(99, 91, 255, 0.18);
+  --accent-soft-hi:   rgba(99, 91, 255, 0.28);
+
+  background: var(--canvas);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+.dark #sidebarDrawer, .dark #adminSidebar {
+  --canvas:           #0a0e1a;
+  --surface:          #0a0e1a;
+  --surface-raised:   #131829;
+  --surface-subtle:   #131829;
+  --surface-strong:   #1a2138;
+}
+/* Override pri-grad inside sidebar for crisper logo on dark */
+#sidebarDrawer .pri-grad, #adminSidebar .pri-grad {
+  background: linear-gradient(135deg, #8e85ff 0%, #635bff 100%);
+}
+
+/* Sidebar nav link */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color .15s ease, color .15s ease;
+  position: relative;
+}
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+.sidebar-link.active {
+  background: var(--accent-soft);
+  color: #c0b8ff;
+  font-weight: 600;
+}
+.sidebar-link.active .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+.sidebar-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 65%; border-radius: 0 2px 2px 0;
+  background: #8e85ff;
+}
+.sidebar-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: 1rem 0.875rem 0.375rem;
+}
+
+/* Topbar shell */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 40;
+}
+.dark .topbar {
+  background: rgba(19, 24, 41, 0.85);
+}
+@media (min-width: 1024px) { .topbar { left: 240px; } }
+
+/* Theme toggle button */
+.theme-toggle {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-md);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+  transition: background-color .15s ease, color .15s ease;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+.theme-toggle:hover { background: var(--surface-subtle); color: var(--text-primary); }
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: inline; }
+.dark .theme-toggle .icon-sun { display: inline; }
+.dark .theme-toggle .icon-moon { display: none; }
+
+/* Tooltip helper */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--surface);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+[data-tooltip]:hover::after { opacity: 1; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FOCUS RING — accessible everywhere
+   ══════════════════════════════════════════════════════════════════════════ */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible, a:focus-visible, .btn:focus-visible {
+  outline-offset: 3px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   VISUAL UTILITIES — 3-color modern system
+   ══════════════════════════════════════════════════════════════════════════
+   Disciplined palette (modern minimal):
+     • Slate     — neutral surfaces, text, borders, dividers
+     • Indigo    — primary brand (#635bff): CTAs, KPI primary, hero accent
+     • Emerald   — secondary (#00ba88): success, growth, positive states
+   Status colors (red/amber) appear ONLY for actual data warnings — never decorative.
+   Differentiate cards via typography + spacing + icon, NOT by color rotation.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Mesh gradient backgrounds — only 2 colors (indigo + emerald) ─────── */
+.bg-mesh-primary {
+  background:
+    radial-gradient(at 80% 0%, rgba(99, 91, 255, 0.10) 0%, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(0, 186, 136, 0.06) 0%, transparent 55%),
+    var(--surface);
+}
+.bg-mesh-emerald {
+  background:
+    radial-gradient(at 100% 0%, rgba(0, 186, 136, 0.10) 0%, transparent 50%),
+    var(--surface);
+}
+.dark .bg-mesh-primary { filter: brightness(1.08); }
+.dark .bg-mesh-emerald { filter: brightness(1.08); }
+
+/* ── Pattern overlays ──────────────────────────────────────────────────── */
+.pattern-dots {
+  background-image: radial-gradient(circle, var(--border-strong) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.pattern-grid {
+  background-image:
+    linear-gradient(var(--border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Icon chips — only 3 variants matching brand palette ───────────────── */
+.chip-primary {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.chip-secondary {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.chip-neutral {
+  background: var(--surface-strong);
+  color: var(--text-secondary);
+}
+.dark .chip-primary   { background: rgba(157, 150, 255, 0.20); color: #c5beff; }
+.dark .chip-secondary { background: rgba(76, 210, 150, 0.18); color: #7fdfac; }
+.dark .chip-neutral   { background: var(--surface-strong); color: var(--text-secondary); }
+
+/* ── Hero strip — compact, no dominant decorative ─────────────────────── */
+.hero-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Tinted KPI tiles — reference-style colored backgrounds ───────────── */
+.kpi-tile {
+  position: relative;
+  padding: 1.25rem 1.25rem 1.5rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid transparent;
+  transition: transform .2s ease, box-shadow .2s ease;
+  overflow: hidden;
+}
+.kpi-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+.kpi-tile-primary {
+  background: linear-gradient(135deg, var(--accent-soft) 0%, rgba(99, 91, 255, 0.04) 100%);
+  border-color: rgba(99, 91, 255, 0.15);
+}
+.kpi-tile-secondary {
+  background: linear-gradient(135deg, var(--success-soft) 0%, rgba(0, 186, 136, 0.04) 100%);
+  border-color: rgba(0, 186, 136, 0.15);
+}
+.kpi-tile-neutral {
+  background: var(--surface);
+  border-color: var(--border-default);
+}
+.dark .kpi-tile-primary {
+  background: linear-gradient(135deg, rgba(99, 91, 255, 0.18) 0%, rgba(99, 91, 255, 0.04) 100%);
+}
+.dark .kpi-tile-secondary {
+  background: linear-gradient(135deg, rgba(0, 186, 136, 0.16) 0%, rgba(0, 186, 136, 0.04) 100%);
+}
+
+/* ── Aside panel card (right column) ───────────────────────────────────── */
+.aside-card {
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+}
+
+/* ── Upload-style CTA card (matches reference dashed border) ──────────── */
+.cta-dashed {
+  background: var(--surface);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.cta-dashed:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ── Subtle accent border (replaces flashy animated gradient) ──────────── */
+.card-highlight {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+.card-highlight::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--success) 100%);
+}
+
+/* ── KPI cards — uniform neutral surface, accent only on metric ───────── */
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+}
+.kpi-card:hover {
+  box-shadow: 0 8px 20px rgba(99, 91, 255, 0.10);
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+
+/* ── Rank badges — minimal: top-1 primary, others neutral ──────────────── */
+.rank-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.rank-top {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: 0 2px 6px rgba(99, 91, 255, 0.30);
+}
+.rank-other {
+  background: var(--surface-strong);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+}
+
+/* ── Sparkline / mini-progress ring ────────────────────────────────────── */
+.progress-ring-bg {
+  fill: none;
+  stroke: var(--surface-strong);
+  stroke-width: 4;
+}
+.progress-ring-fg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transform-origin: center;
+  transform: rotate(-90deg);
+  transition: stroke-dashoffset .8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Inline stat strip ─────────────────────────────────────────────────── */
+.stat-strip {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.stat-strip-item {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-size: 13px; color: var(--text-secondary); font-weight: 500;
+}
+.stat-strip-item strong { color: var(--text-primary); font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-strip-divider {
+  width: 1px; height: 16px; background: var(--border-default);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DARK-MODE OVERRIDES for legacy hardcoded utility classes
+   Pages dùng raw Tailwind colors (bg-white, text-slate-700, bg-amber-50 etc.)
+   không auto-flip. Patches dưới đây bù vào — cover hầu hết color utilities
+   thường dùng trong admin/student/advisor markup cũ.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Backgrounds ───────────────────────────────────────────────────────── */
+.dark .bg-white          { background-color: var(--surface) !important; }
+.dark .bg-slate-50,
+.dark .bg-gray-50,
+.dark .bg-zinc-50,
+.dark .bg-neutral-50,
+.dark .bg-stone-50       { background-color: var(--surface-subtle) !important; }
+.dark .bg-slate-100,
+.dark .bg-gray-100,
+.dark .bg-zinc-100       { background-color: var(--surface-strong) !important; }
+.dark .bg-slate-200,
+.dark .bg-gray-200       { background-color: var(--surface-strong) !important; }
+
+/* ── Text — slate / gray / zinc neutrals ──────────────────────────────── */
+.dark .text-slate-300,
+.dark .text-gray-300,
+.dark .text-slate-400,
+.dark .text-gray-400,
+.dark .text-slate-500,
+.dark .text-gray-500     { color: var(--text-tertiary) !important; }
+.dark .text-slate-600,
+.dark .text-gray-600     { color: var(--text-secondary) !important; }
+.dark .text-slate-700,
+.dark .text-gray-700,
+.dark .text-slate-800,
+.dark .text-gray-800,
+.dark .text-slate-900,
+.dark .text-gray-900,
+.dark .text-black        { color: var(--text-primary) !important; }
+
+/* ── Borders ───────────────────────────────────────────────────────────── */
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-gray-100,
+.dark .border-gray-200   { border-color: var(--border-default) !important; }
+.dark .border-slate-300,
+.dark .border-gray-300   { border-color: var(--border-strong) !important; }
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border-subtle) !important; }
+
+/* ── Status colors — amber/yellow ─────────────────────────────────────── */
+.dark .bg-amber-50,
+.dark .bg-yellow-50      { background-color: rgba(255, 192, 67, 0.12) !important; }
+.dark .bg-amber-100,
+.dark .bg-yellow-100     { background-color: rgba(255, 192, 67, 0.18) !important; }
+.dark .border-amber-100,
+.dark .border-amber-200,
+.dark .border-amber-300,
+.dark .border-yellow-200,
+.dark .border-yellow-300 { border-color: rgba(255, 192, 67, 0.35) !important; }
+.dark .text-amber-500,
+.dark .text-amber-600,
+.dark .text-amber-700,
+.dark .text-amber-800,
+.dark .text-amber-900,
+.dark .text-yellow-600,
+.dark .text-yellow-700   { color: var(--warning) !important; }
+
+/* ── Status colors — red/rose/coral ───────────────────────────────────── */
+.dark .bg-red-50,
+.dark .bg-rose-50        { background-color: rgba(255, 130, 100, 0.10) !important; }
+.dark .bg-red-100,
+.dark .bg-rose-100       { background-color: rgba(255, 130, 100, 0.16) !important; }
+.dark .border-red-100,
+.dark .border-red-200,
+.dark .border-red-300,
+.dark .border-rose-200   { border-color: rgba(255, 130, 100, 0.35) !important; }
+.dark .text-red-500,
+.dark .text-red-600,
+.dark .text-red-700,
+.dark .text-red-800,
+.dark .text-rose-600,
+.dark .text-rose-700     { color: var(--danger) !important; }
+
+/* ── Status colors — green/emerald/teal ──────────────────────────────── */
+.dark .bg-green-50,
+.dark .bg-emerald-50,
+.dark .bg-teal-50        { background-color: rgba(76, 210, 150, 0.10) !important; }
+.dark .bg-green-100,
+.dark .bg-emerald-100    { background-color: rgba(76, 210, 150, 0.16) !important; }
+.dark .border-green-200,
+.dark .border-emerald-200,
+.dark .border-emerald-300{ border-color: rgba(76, 210, 150, 0.35) !important; }
+.dark .text-green-500,
+.dark .text-green-600,
+.dark .text-green-700,
+.dark .text-green-800,
+.dark .text-emerald-500,
+.dark .text-emerald-600,
+.dark .text-emerald-700,
+.dark .text-teal-600     { color: var(--success) !important; }
+
+/* ── Brand colors — indigo/violet/purple/blue ─────────────────────────── */
+.dark .bg-indigo-50,
+.dark .bg-violet-50,
+.dark .bg-purple-50,
+.dark .bg-blue-50,
+.dark .bg-sky-50,
+.dark .bg-cyan-50        { background-color: var(--accent-soft) !important; }
+.dark .bg-indigo-100,
+.dark .bg-violet-100,
+.dark .bg-blue-100       { background-color: var(--accent-soft-hi) !important; }
+.dark .border-indigo-100,
+.dark .border-indigo-200,
+.dark .border-violet-200,
+.dark .border-blue-200   { border-color: rgba(157, 150, 255, 0.30) !important; }
+.dark .text-indigo-500,
+.dark .text-indigo-600,
+.dark .text-indigo-700,
+.dark .text-violet-500,
+.dark .text-violet-600,
+.dark .text-violet-700,
+.dark .text-purple-600,
+.dark .text-blue-600,
+.dark .text-blue-700,
+.dark .text-sky-600,
+.dark .text-cyan-600     { color: var(--accent) !important; }
+
+/* ── Pink/orange (used in admin tabs) ─────────────────────────────────── */
+.dark .bg-pink-50,
+.dark .bg-orange-50      { background-color: rgba(255, 192, 67, 0.10) !important; }
+.dark .text-pink-600,
+.dark .text-pink-700,
+.dark .text-orange-600,
+.dark .text-orange-700   { color: var(--warning) !important; }
+
+/* ── Hover bgs trên cards ─────────────────────────────────────────────── */
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-gray-50:hover { background-color: var(--surface-raised) !important; }
+.dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-gray-100:hover { background-color: var(--surface-raised) !important; }
+.dark .hover\:border-indigo-100:hover,
+.dark .hover\:border-indigo-300:hover { border-color: var(--accent) !important; }
+
+/* ── Form inputs với class hardcoded ───────────────────────────────────── */
+.dark input.bg-white,
+.dark textarea.bg-white,
+.dark select.bg-white   { background-color: var(--surface) !important; color: var(--text-primary) !important; border-color: var(--border-default) !important; }
+
+/* ── Specific patterns: gradient bg with hardcoded white/slate ─────────── */
+.dark [style*="background:#fff"],
+.dark [style*="background: #fff"],
+.dark [style*="background-color:#fff"],
+.dark [style*="background-color: #fff"] { background-color: var(--surface) !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   APP-CORE shared UI components (toast, skeleton, state cards)
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Skeleton loader — pulse animation đồng bộ */
+.app-skeleton {
+  background: linear-gradient(90deg,
+    var(--surface-strong, #e5e7eb) 0%,
+    var(--surface-subtle, #f3f4f6) 50%,
+    var(--surface-strong, #e5e7eb) 100%);
+  background-size: 200% 100%;
+  animation: app-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes app-skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.dark .app-skeleton {
+  background: linear-gradient(90deg,
+    var(--surface-raised) 0%,
+    var(--surface) 50%,
+    var(--surface-raised) 100%);
+  background-size: 200% 100%;
+}
+
+/* Empty / Error state card — đồng bộ giữa các page */
+.app-state-card {
+  background: var(--surface, #ffffff);
+  border: 1px dashed var(--border-default, #e5e7eb);
+  border-radius: 0.75rem;
+  color: var(--text-tertiary, #6b7280);
+}
+.dark .app-state-card {
+  background: var(--surface);
+  border-color: var(--border-default);
+}
+
+/* Toast container — fixed position handled in app-core.js */
+#app-toast-host { pointer-events: none; }
+#app-toast-host .app-toast { pointer-events: auto; }
+
+/* Smooth page-level fade khi swap content (nếu page dùng) */
+.app-fade-in   { animation: app-fade-in .18s ease-out; }
+@keyframes app-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

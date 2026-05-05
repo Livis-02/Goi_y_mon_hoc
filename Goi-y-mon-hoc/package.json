@@ -1,0 +1,19 @@
+{
+  "name": "eduguide-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EduGuide — Playwright E2E test suite for UI flows (3 roles: SV / GV / Admin)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:smoke": "playwright test smoke.spec.ts --headed",
+    "test:student": "playwright test student-*.spec.ts --headed",
+    "test:admin": "playwright test admin-*.spec.ts --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.5.0"
+  }
+}

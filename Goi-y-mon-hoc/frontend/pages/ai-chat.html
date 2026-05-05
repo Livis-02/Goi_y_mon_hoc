@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Trợ lý AI</title>
+  <!-- v=2026-05-04-imsg-v2 always-input-bar -->
+  <link rel="stylesheet" href="theme.css?v=11"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="theme.js?v=6"></script>
+  <script src="theme-switcher.js?v=2"></script>
+  <script src="app-core.js?v=1"></script>
+  <script src="nav-prefetch.js?v=1" defer></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="auth.js?v=5"></script>
+  <script src="utils.js?v=2"></script>
+  <script src="sidebar-init.js?v=13"></script>
+  <script defer src="ajax-nav.js?v=16"></script>
+  <script defer src="nav-prefetch.js?v=1"></script>
+  <style>
+    /* ── iOS Messages-inspired styling ────────────────────────────────────── */
+
+    /* Typing dots */
+    @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity:0.4; } 40% { transform: translateY(-6px); opacity:1; } }
+    .dot-bounce {
+      animation: bounce 1.4s infinite ease-in-out;
+      display: inline-block;
+      width: 7px; height: 7px;
+      background: var(--text-tertiary);
+      border-radius: 50%;
+    }
+    .dot-bounce:nth-child(2) { animation-delay: .15s; }
+    .dot-bounce:nth-child(3) { animation-delay: .30s; }
+    .animate-spin { animation: spin .8s linear infinite; display: inline-block; }
+
+    /* ── Bubble pop-in animation (iOS-like) ─────────────────────────────── */
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.92); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .imsg-bubble { animation: bubbleIn .25s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    /* ── User bubble: indigo gradient (giống iMessage blue nhưng dùng brand) ─ */
+    .imsg-bubble-user {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: #fff;
+      border-radius: 20px 20px 6px 20px;
+      padding: 8px 14px;
+      max-width: 75%;
+      align-self: flex-end;
+      box-shadow: 0 1px 2px rgba(99, 91, 255, 0.18);
+      word-wrap: break-word;
+      line-height: 1.45;
+      font-size: 15px;
+    }
+    .imsg-bubble-user.tail-bottom { border-radius: 20px 20px 6px 20px; }
+    .imsg-bubble-user.no-tail     { border-radius: 20px; }
+
+    /* ── AI bubble: light gray (giống iMessage gray bubble) ───────────────── */
+    .imsg-bubble-ai {
+      background: var(--surface-strong);
+      color: var(--text-primary);
+      border-radius: 20px 20px 20px 6px;
+      padding: 8px 14px;
+      max-width: 75%;
+      align-self: flex-start;
+      box-shadow: 0 1px 2px rgba(10, 37, 64, 0.04);
+      word-wrap: break-word;
+      line-height: 1.45;
+      font-size: 15px;
+    }
+    .imsg-bubble-ai.tail-bottom { border-radius: 20px 20px 20px 6px; }
+    .imsg-bubble-ai.no-tail     { border-radius: 20px; }
+    .dark .imsg-bubble-ai {
+      background: var(--surface-raised);
+    }
+
+    /* ── Bubble row layout ──────────────────────────────────────────────── */
+    .imsg-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 2px;
+    }
+    .imsg-row.consec  { margin-bottom: 2px; }    /* tight gap khi cùng người */
+    .imsg-row.gap     { margin-bottom: 12px; }   /* gap rộng khi đổi người */
+    .imsg-time {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-align: center;
+      padding: 8px 0 4px;
+      font-weight: 500;
+    }
+
+    /* ── Date separator (centered, minimal) ─────────────────────────────── */
+    .imsg-date-sep {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-weight: 600;
+      padding: 14px 0 10px;
+      letter-spacing: 0.02em;
+    }
+    .imsg-date-sep strong { color: var(--text-secondary); }
+
+    /* ── Input bar (pill-shaped) ────────────────────────────────────────── */
+    .imsg-input-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 10px 16px 14px;
+      background: var(--surface);
+      border-top: 1px solid var(--border-subtle);
+    }
+    .imsg-input {
+      flex: 1;
+      min-height: 36px;
+      max-height: 120px;
+      padding: 8px 16px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border-default);
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.4;
+      color: var(--text-primary);
+      resize: none;
+      outline: none;
+      transition: border-color .15s, background .15s;
+      font-family: inherit;
+    }
+    .imsg-input::placeholder { color: var(--text-tertiary); }
+    .imsg-input:focus {
+      border-color: var(--accent);
+      background: var(--surface);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .imsg-send {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background .15s, transform .12s;
+      flex-shrink: 0;
+    }
+    .imsg-send:hover:not(:disabled) { background: var(--accent-hover); transform: scale(1.05); }
+    .imsg-send:active:not(:disabled) { transform: scale(0.95); }
+    .imsg-send:disabled { background: var(--surface-strong); color: var(--text-tertiary); cursor: not-allowed; }
+
+    /* ── Thread list rows (iOS Messages list style) ────────────────────── */
+    .thread-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background .12s;
+      position: relative;
+    }
+    .thread-item:hover { background: var(--surface-subtle); }
+    .thread-item.active {
+      background: var(--accent-soft);
+    }
+    .thread-item.active .thread-title { color: var(--accent); font-weight: 600; }
+    .thread-item .delete-btn { opacity: 0; transition: opacity .12s; }
+    .thread-item:hover .delete-btn { opacity: 1; }
+
+    /* ── Suggestion chips (above input bar) ────────────────────────────── */
+    .imsg-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border-default);
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all .12s;
+      white-space: nowrap;
+    }
+    .imsg-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    /* ── Empty state hero ──────────────────────────────────────────────── */
+    .imsg-empty-hero {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px rgba(99, 91, 255, 0.25);
+      margin-bottom: 16px;
+    }
+
+    /* ── AI markdown prose (inside bubbles) ────────────────────────────── */
+    .ai-msg p { margin-bottom: 6px; }
+    .ai-msg p:last-child { margin-bottom: 0; }
+    .ai-msg ul { list-style: disc; padding-left: 18px; margin: 4px 0; }
+    .ai-msg ol { list-style: decimal; padding-left: 18px; margin: 4px 0; }
+    .ai-msg li { margin-bottom: 2px; }
+    .ai-msg strong { font-weight: 600; }
+    .ai-msg code {
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 0.88em;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    .dark .ai-msg code { background: rgba(255, 255, 255, 0.10); }
+
+    /* ── Chat header avatar with status dot ────────────────────────────── */
+    .imsg-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-weight: 600;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .imsg-avatar-status::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      border: 2px solid var(--surface);
+    }
+
+    /* ── "New thread" button (icon + label, well visible) ──────────────── */
+    .imsg-new-thread-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 10px 6px 8px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: #fff;
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform .12s, box-shadow .15s;
+      box-shadow: 0 1px 3px rgba(99, 91, 255, 0.30);
+      flex-shrink: 0;
+    }
+    .imsg-new-thread-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(99, 91, 255, 0.45);
+    }
+    .imsg-new-thread-btn:active { transform: translateY(0); }
+
+    /* ── Empty hero placed inside messages area ────────────────────────── */
+    .imsg-hero-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 32px 24px;
+      min-height: 100%;
+    }
+  </style>
+</head>
+<body class="bg-canvas text-text-primary antialiased min-h-screen">
+
+<!-- TOAST -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- SIDEBAR FRAGMENT -->
+<div id="sidebarMount"></div>
+
+<!-- HEADER -->
+<header class="topbar flex items-center justify-between px-4 lg:px-6">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-md hover:bg-surface-subtle transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-text-secondary">menu</span>
+    </button>
+    <nav class="flex items-center gap-1.5 text-[13px] min-w-0">
+      <span class="text-text-tertiary font-medium">Sinh viên</span>
+      <span class="material-symbols-outlined msym text-base text-text-tertiary">chevron_right</span>
+      <span class="text-text-primary font-semibold">Trợ lý AI</span>
+    </nav>
+  </div>
+  <div class="flex items-center gap-1">
+    <button class="theme-toggle" data-tooltip="Sáng/Tối">
+      <span class="material-symbols-outlined msym text-[18px] icon-moon">dark_mode</span>
+      <span class="material-symbols-outlined msym text-[18px] icon-sun">light_mode</span>
+    </button>
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md hover:bg-surface-subtle transition-colors">
+        <div class="w-7 h-7 rounded-full pri-grad flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-[11px] font-bold" id="topbarAvatar">?</span>
+        </div>
+        <span class="text-sm font-semibold text-text-primary hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-text-tertiary hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface rounded-xl border border-border-default shadow-pop z-50 overflow-hidden">
+        <div class="px-4 py-3 border-b border-border-subtle">
+          <p class="text-sm font-bold text-text-primary truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-text-tertiary mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-surface-subtle transition-colors">
+            <span class="material-symbols-outlined msym text-[18px] text-text-tertiary">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger-soft transition-colors">
+            <span class="material-symbols-outlined msym text-[18px]">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="lg:ml-60 pt-[60px] h-screen flex flex-col overflow-hidden">
+
+  <!-- (Bỏ 2 tab "Cố vấn & Bạn bè / Trợ lý AI" — messaging.html giờ là page riêng cho cố vấn,
+       không còn duplicate ở đây. ai-chat.html chỉ chứa AI thread list.) -->
+
+  <!-- Chat workspace — iOS Messages style: thread list left + chat panel right -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- THREAD LIST (sidebar trái) -->
+    <aside class="w-[300px] flex-shrink-0 border-r border-border-subtle flex flex-col bg-surface">
+
+      <!-- Header với search-like style -->
+      <div class="px-4 pt-4 pb-3 border-b border-border-subtle">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-[17px] font-bold text-text-primary">Tin nhắn</h2>
+          <button onclick="createNewThread()" title="Tạo đoạn chat mới"
+            class="imsg-new-thread-btn group">
+            <span class="msym material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1">add</span>
+            <span class="text-[12px] font-semibold">Mới</span>
+          </button>
+        </div>
+        <p class="text-[11px] text-text-tertiary" id="threadCountLabel">0/5 đoạn chat</p>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-2 py-2 space-y-0.5" id="threadList">
+        <div class="flex flex-col items-center justify-center h-32 gap-2 text-text-tertiary">
+          <span class="msym material-symbols-outlined text-2xl animate-pulse">hourglass_empty</span>
+        </div>
+      </div>
+
+      <div id="fullIndicator" class="hidden px-4 pb-3">
+        <p class="text-[11px] text-text-tertiary text-center bg-surface-subtle rounded-lg px-3 py-2">
+          Đầy 5 đoạn — chat mới sẽ xóa cũ nhất
+        </p>
+      </div>
+    </aside>
+
+    <!-- CHAT PANEL — input bar LUÔN visible, hero là placeholder bên trong messages area -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-canvas">
+
+      <!-- Chat header — iOS Messages style: avatar + name -->
+      <div class="flex items-center justify-between px-4 py-2.5 border-b border-border-subtle flex-shrink-0 bg-surface/95 backdrop-blur sticky top-0 z-10">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="imsg-avatar imsg-avatar-status">
+            <span class="msym material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1">smart_toy</span>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[15px] font-semibold text-text-primary truncate" id="chatThreadTitle">AI Tư vấn EduGuide</p>
+            <p class="text-[11px] text-text-tertiary" id="chatThreadSub">Online · Sẵn sàng trả lời</p>
+          </div>
+        </div>
+        <button onclick="confirmDeleteActiveThread()" id="chatDeleteBtn" title="Xóa đoạn chat"
+          class="hidden w-9 h-9 rounded-full hover:bg-danger-soft flex items-center justify-center text-text-tertiary hover:text-danger transition-colors">
+          <span class="msym material-symbols-outlined text-[20px]">delete_outline</span>
+        </button>
+      </div>
+
+      <!-- Messages stream — chứa hero placeholder hoặc bubbles -->
+      <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col" id="chatMessages">
+        <!-- Empty hero (default state when chưa có thread/messages) -->
+        <div class="imsg-hero-wrap" id="emptyHero">
+          <div class="imsg-empty-hero">
+            <span class="msym material-symbols-outlined text-white text-[40px]" style="font-variation-settings:'FILL' 1">smart_toy</span>
+          </div>
+          <h2 class="text-[22px] font-bold text-text-primary mb-1">AI Tư vấn EduGuide</h2>
+          <p class="text-[13px] text-text-tertiary mb-1">Online · Sẵn sàng trả lời</p>
+          <p class="text-sm text-text-secondary text-center max-w-md mb-8 leading-relaxed">
+            Hỏi bất cứ điều gì về học vụ, môn học, lộ trình hoặc định hướng nghề nghiệp.
+          </p>
+
+          <!-- Quick prompt chips: click → fill input (user manually presses Enter) -->
+          <div class="flex flex-wrap gap-2 justify-center max-w-2xl">
+            <button onclick="fillInput('Gợi ý môn học kỳ sau cho tôi')" class="imsg-chip">
+              💡 Gợi ý môn kỳ sau
+            </button>
+            <button onclick="fillInput('Tôi còn thiếu bao nhiêu TC để tốt nghiệp?')" class="imsg-chip">
+              🎓 Điều kiện tốt nghiệp
+            </button>
+            <button onclick="fillInput('Lộ trình học tập của tôi như thế nào?')" class="imsg-chip">
+              🗺️ Xem lộ trình học
+            </button>
+            <button onclick="fillInput('Định hướng nghề nghiệp nào phù hợp với em?')" class="imsg-chip">
+              🚀 Tư vấn hướng nghề
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggestions bar (xuất hiện sau AI reply nếu có suggestions) -->
+      <div id="suggestionsBar" class="hidden px-4 pb-2 flex flex-wrap gap-2"></div>
+
+      <!-- Input bar — iOS Messages pill — LUÔN visible -->
+      <div class="imsg-input-wrap">
+        <textarea autocomplete="off" id="chatInput" placeholder="Nhập tin nhắn để bắt đầu…"
+          rows="1"
+          class="imsg-input"
+          oninput="autoResizeTextarea(this)"
+          onkeydown="handleChatKey(event)"></textarea>
+        <button id="sendBtn" onclick="sendChatMessage()" class="imsg-send" title="Gửi (Enter)">
+          <span class="msym material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1">arrow_upward</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let _me = null;
+let _threads = [];
+let _activeThreadId = null;
+let _messages = [];
+let _isTyping = false;
+const MAX_THREADS = 5;
+
+// ─── Toast — migrated 2026-05-05 dùng App.toast ─────────────────────────────
+
+function authH() { return { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' }; }
+const API = window.API_BASE || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://127.0.0.1:8000' : location.origin);
+
+async function apiFetch(url, opts = {}) {
+  // Prepend API base — without nó, POST /chat/me sẽ đi tới live-server (5500) thay vì backend (8000) → 405
+  const fullUrl = url.startsWith('http') ? url : API + url;
+  const r = await fetch(fullUrl, { headers: authH(), ...opts });
+  if (!r.ok) { const t = await r.json().catch(() => ({})); throw new Error(t.detail || r.status); }
+  return r.json();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  console.log('[ai-chat] init start, readyState=', document.readyState);
+  checkAuth();
+
+  // 1. /auth/me — robust retry với exponential backoff (5 retries ~12s tổng)
+  // Backend cold start (FastAPI uvicorn first request) có thể mất 3-8s.
+  try {
+    _me = await (window.__retryFetch
+      ? window.__retryFetch(() => apiFetch('/auth/me'), {
+          retries: 5,
+          onAttempt: (i) => i > 0 && console.log(`[ai-chat] /auth/me retry ${i}/5...`),
+        })
+      : apiFetch('/auth/me'));
+    try { updateTopbarUser(_me); } catch (e) { console.warn('[ai-chat] updateTopbar:', e.message); }
+  } catch (e) {
+    // Hard fail — show banner đỏ với button "Thử lại" thay vì silent fallback
+    console.error('[ai-chat] /auth/me failed after retries:', e.message);
+    if (window.__showInitErrorBanner) {
+      window.__showInitErrorBanner('Không tải được hồ sơ. Backend có thể đang offline.');
+    }
+    // Vẫn dispatch page:ready để overlay hide (user thấy banner thay vì blocked)
+    try { window.dispatchEvent(new Event('page:ready')); } catch (_) {}
+    return;  // Abort init — không tiếp tục với _me invalid
+  }
+  window.__initDone = true;  // signal cho __withInit handlers
+
+  // 2. Load threads — wrap, render empty state if fail
+  try {
+    await loadThreads();
+  } catch (e) {
+    console.error('[ai-chat] loadThreads failed:', e);
+    _threads = [];
+    try { renderThreadList(); } catch (_) {}
+  }
+
+  // 3. Pick thread (URL ?thread= → first → empty)
+  try {
+    let targetThreadId = null;
+    try {
+      const params = new URLSearchParams(location.search);
+      targetThreadId = params.get('thread') || params.get('thread_id');
+    } catch (_) {}
+
+    if (targetThreadId && !_threads.find(t => t.id === targetThreadId)) {
+      try { await loadThreads(); } catch (_) {}
+    }
+    if (targetThreadId && _threads.find(t => t.id === targetThreadId)) {
+      await selectThread(targetThreadId);
+    } else if (_threads.length) {
+      await selectThread(_threads[0].id);
+    }
+  } catch (e) {
+    console.warn('[ai-chat] selectThread:', e.message);
+  }
+
+  // Báo cho ajax-nav biết init xong → hide overlay
+  try { window.dispatchEvent(new Event('page:ready')); } catch (_) {}
+  console.log('[ai-chat] init done');
+}
+
+// ─── Threads ──────────────────────────────────────────────────────────────────
+async function loadThreads() {
+  _threads = await apiFetch('/chat/threads/me');
+  renderThreadList();
+}
+
+function renderThreadList() {
+  const el = document.getElementById('threadList');
+  document.getElementById('threadCountLabel').textContent = `${_threads.length}/5 đoạn`;
+  document.getElementById('fullIndicator').classList.toggle('hidden', _threads.length < MAX_THREADS);
+
+  if (!_threads.length) {
+    el.innerHTML = `<div class="flex flex-col items-center justify-center h-32 gap-sm text-on-surface-variant">
+      <span class="msym material-symbols-outlined text-2xl">chat_bubble_outline</span>
+      <p class="font-body-sm text-body-sm">Chưa có đoạn chat</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = _threads.map(t => {
+    const isActive = t.id === _activeThreadId;
+    const relTime = _relTime(t.updated_at);
+    const title = escHtml(t.title || 'Đoạn chat mới');
+    // Optional: preview last message nếu có (giả sử BE trả last_message)
+    const preview = t.last_message ? escHtml(t.last_message).slice(0, 60) : 'Bắt đầu hội thoại với AI';
+    return `<div class="thread-item ${isActive ? 'active' : ''}" onclick="selectThread('${t.id}')">
+      <div class="imsg-avatar" style="width:42px;height:42px;font-size:18px">
+        <span class="msym material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1">smart_toy</span>
+      </div>
+      <div class="flex-1 min-w-0 pr-2">
+        <div class="flex items-center justify-between gap-2 mb-0.5">
+          <p class="thread-title text-[14px] font-semibold text-text-primary truncate">${title}</p>
+          <span class="text-[11px] text-text-tertiary flex-shrink-0">${relTime}</span>
+        </div>
+        <p class="text-[12px] text-text-tertiary truncate leading-snug">${preview}</p>
+      </div>
+      <button onclick="event.stopPropagation();deleteThread('${t.id}')"
+        class="delete-btn absolute right-2 top-2 w-6 h-6 rounded-full hover:bg-danger-soft flex items-center justify-center text-text-tertiary hover:text-danger transition-colors">
+        <span class="msym material-symbols-outlined text-[14px]">close</span>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function _relTime(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return 'vừa xong';
+  if (diff < 3600) return Math.floor(diff / 60) + ' phút trước';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' giờ trước';
+  return d.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit' });
+}
+
+async function selectThread(threadId) {
+  _activeThreadId = threadId;
+  renderThreadList();
+  _setHeaderForActiveThread();
+  document.getElementById('chatMessages').innerHTML = _loadingSpinner();
+  try {
+    _messages = await apiFetch(`/chat/history/me?thread_id=${encodeURIComponent(threadId)}&limit=50`);
+    renderMessages();
+    scrollToBottom();
+  } catch(e) {
+    document.getElementById('chatMessages').innerHTML = `<p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">${e.message}</p>`;
+  }
+}
+
+// ── Header state helpers ─────────────────────────────────────────────────────
+// Active thread → show thread title + delete button.
+// No thread → "AI Tư vấn EduGuide / Online · Sẵn sàng trả lời" (default), no delete.
+function _setHeaderForActiveThread() {
+  const t = _threads.find(x => x.id === _activeThreadId);
+  document.getElementById('chatThreadTitle').textContent = t ? (t.title || 'Đoạn chat') : 'AI Tư vấn EduGuide';
+  document.getElementById('chatThreadSub').textContent  = t ? 'Online · Gemini · Groq · Claude' : 'Online · Sẵn sàng trả lời';
+  document.getElementById('chatDeleteBtn').classList.toggle('hidden', !t);
+}
+
+function _showEmptyHero() {
+  // Reset header + messages area để hero hiện lại
+  _activeThreadId = null;
+  _messages = [];
+  _setHeaderForActiveThread();
+  const area = document.getElementById('chatMessages');
+  area.innerHTML = `
+    <div class="imsg-hero-wrap" id="emptyHero">
+      <div class="imsg-empty-hero">
+        <span class="msym material-symbols-outlined text-white text-[40px]" style="font-variation-settings:'FILL' 1">smart_toy</span>
+      </div>
+      <h2 class="text-[22px] font-bold text-text-primary mb-1">AI Tư vấn EduGuide</h2>
+      <p class="text-[13px] text-text-tertiary mb-1">Online · Sẵn sàng trả lời</p>
+      <p class="text-sm text-text-secondary text-center max-w-md mb-8 leading-relaxed">
+        Hỏi bất cứ điều gì về học vụ, môn học, lộ trình hoặc định hướng nghề nghiệp.
+      </p>
+      <div class="flex flex-wrap gap-2 justify-center max-w-2xl">
+        <button onclick="fillInput('Gợi ý môn học kỳ sau cho tôi')" class="imsg-chip">💡 Gợi ý môn kỳ sau</button>
+        <button onclick="fillInput('Tôi còn thiếu bao nhiêu TC để tốt nghiệp?')" class="imsg-chip">🎓 Điều kiện tốt nghiệp</button>
+        <button onclick="fillInput('Lộ trình học tập của tôi như thế nào?')" class="imsg-chip">🗺️ Xem lộ trình học</button>
+        <button onclick="fillInput('Định hướng nghề nghiệp nào phù hợp với em?')" class="imsg-chip">🚀 Tư vấn hướng nghề</button>
+      </div>
+    </div>`;
+  document.getElementById('suggestionsBar')?.classList.add('hidden');
+}
+
+// ─── Create / Delete ──────────────────────────────────────────────────────────
+async function createNewThread() {
+  if (_threads.length >= MAX_THREADS) {
+    const oldest = _threads[_threads.length - 1];
+    await deleteThread(oldest.id, true);
+  }
+  const newId = 'th_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  _activeThreadId = newId;
+  _messages = [];
+  _threads.unshift({ id: newId, title: 'Đoạn chat mới', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+  renderThreadList();
+  _setHeaderForActiveThread();
+  // Reset messages area cho thread mới — hiện hint nhỏ thay vì hero (đã active rồi)
+  document.getElementById('chatMessages').innerHTML = `<div class="flex flex-col items-center justify-center flex-1 gap-2 text-text-tertiary py-12">
+    <span class="msym material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1">chat_bubble_outline</span>
+    <p class="text-sm font-medium text-text-secondary">Bắt đầu cuộc trò chuyện mới</p>
+    <p class="text-xs">Gõ câu hỏi vào ô bên dưới…</p>
+  </div>`;
+  document.getElementById('suggestionsBar').classList.add('hidden');
+  document.getElementById('chatInput').focus();
+}
+
+async function deleteThread(threadId, silent = false) {
+  try {
+    await apiFetch(`/chat/threads/${encodeURIComponent(threadId)}/me`, { method: 'DELETE' });
+    _threads = _threads.filter(t => t.id !== threadId);
+    if (_activeThreadId === threadId) {
+      _activeThreadId = null;
+      _messages = [];
+      if (_threads.length) {
+        await selectThread(_threads[0].id);
+      } else {
+        _showEmptyHero();
+        renderThreadList();
+      }
+    } else {
+      renderThreadList();
+    }
+    if (!silent) showToast('Đã xóa đoạn chat', 'info');
+  } catch(e) {
+    if (!silent) showToast('Không thể xóa: ' + e.message, 'error');
+  }
+}
+
+async function confirmDeleteActiveThread() {
+  if (!_activeThreadId) return;
+  const t = _threads.find(x => x.id === _activeThreadId);
+  const title = t?.title || 'Đoạn chat';
+  const ok = await (window.showConfirmModal ? showConfirmModal({
+    title: 'Xóa đoạn chat?',
+    message: `"${title}"\n\nLịch sử trò chuyện sẽ mất, không hoàn tác được.`,
+    confirmText: 'Xóa',
+    cancelText: 'Huỷ',
+    variant: 'danger',
+    icon: 'delete',
+  }) : Promise.resolve(confirm('Xóa đoạn chat này?')));
+  if (ok) deleteThread(_activeThreadId);
+}
+
+// ─── Messages rendering ───────────────────────────────────────────────────────
+function renderMessages() {
+  const area = document.getElementById('chatMessages');
+  if (!_messages.length) {
+    area.innerHTML = `<div class="flex flex-col items-center justify-center py-12 gap-2 text-text-tertiary">
+      <span class="msym material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">chat_bubble_outline</span>
+      <p class="text-sm">Bắt đầu đặt câu hỏi…</p>
+    </div>`;
+    return;
+  }
+
+  // iOS Messages style: group consecutive messages cùng role, date separator,
+  // bubble tail chỉ xuất hiện ở message cuối của group, time hiện khi gap >5min.
+  let html = '';
+  let lastDate = '';
+  let lastTime = 0;
+  let lastRole = '';
+
+  _messages.forEach((msg, idx) => {
+    const isUser = msg.role === 'user';
+    const role = msg.role || (isUser ? 'user' : 'assistant');
+    const d = new Date(msg.created_at);
+    const ts = d.getTime();
+
+    // Date separator (today / yesterday / specific date)
+    const dateStr = _formatDateSep(d);
+    if (dateStr !== lastDate) {
+      const timeOfDay = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      html += `<div class="imsg-date-sep"><strong>${dateStr}</strong> · ${timeOfDay}</div>`;
+      lastDate = dateStr;
+      lastTime = ts;
+    } else if (ts - lastTime > 5 * 60 * 1000) {
+      // Time gap > 5 min → show inline time
+      const timeOfDay = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      html += `<div class="imsg-time">${timeOfDay}</div>`;
+      lastTime = ts;
+    }
+
+    // Detect end of group (next message khác role) → tail at this bubble
+    const nextMsg = _messages[idx + 1];
+    const isLastInGroup = !nextMsg || nextMsg.role !== role;
+    const tailCls = isLastInGroup ? 'tail-bottom' : 'no-tail';
+    const consecCls = (lastRole === role && lastRole !== '') ? 'consec' : 'gap';
+
+    if (isUser) {
+      html += `<div class="imsg-row ${consecCls} items-end">
+        <div class="imsg-bubble imsg-bubble-user ${tailCls}">${escHtml(msg.message)}</div>
+      </div>`;
+    } else {
+      html += `<div class="imsg-row ${consecCls} items-start">
+        <div class="imsg-bubble imsg-bubble-ai ${tailCls}">
+          <div class="ai-msg">${formatAiMessage(msg.message)}</div>
+        </div>
+      </div>`;
+    }
+    lastRole = role;
+    lastTime = ts;
+  });
+  area.innerHTML = html;
+  // Auto scroll bottom
+  area.scrollTop = area.scrollHeight;
+}
+
+// Format date separator: "Hôm nay", "Hôm qua", hoặc "Thứ X · DD/MM"
+function _formatDateSep(d) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yest = new Date(today.getTime() - 24 * 3600 * 1000);
+  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (msgDay.getTime() === today.getTime()) return 'Hôm nay';
+  if (msgDay.getTime() === yest.getTime()) return 'Hôm qua';
+  return d.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' });
+}
+
+function formatAiMessage(text) {
+  return escHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br/>')
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>');
+}
+
+function _loadingSpinner() {
+  return `<div class="flex items-center justify-center py-xl text-on-surface-variant">
+    <span class="msym material-symbols-outlined text-2xl animate-spin">progress_activity</span>
+  </div>`;
+}
+
+function showTypingIndicator() {
+  const area = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.id = 'typingIndicator';
+  el.className = 'imsg-row gap items-start';
+  el.innerHTML = `<div class="imsg-bubble imsg-bubble-ai tail-bottom" style="padding:10px 16px">
+    <div class="flex gap-1 items-center" style="height:14px">
+      <span class="dot-bounce"></span><span class="dot-bounce"></span><span class="dot-bounce"></span>
+    </div>
+  </div>`;
+  area.appendChild(el);
+  scrollToBottom();
+}
+
+function removeTypingIndicator() { document.getElementById('typingIndicator')?.remove(); }
+
+// ─── Send message ─────────────────────────────────────────────────────────────
+async function sendChatMessage() {
+  if (_isTyping) return;
+  // Defensive: nếu init chưa xong, đợi tối đa 5s rồi retry. Tránh user gửi với
+  // _me=null (gây silent fail).
+  if (!_me || !_me.id) {
+    if (window.__waitFor) {
+      const ok = await window.__waitFor(() => _me && _me.id, { timeoutMs: 5000 });
+      if (!ok) {
+        showToast('Đang tải hồ sơ — vui lòng đợi vài giây hoặc bấm F5', 'warning');
+        return;
+      }
+    } else {
+      showToast('Hệ thống đang khởi động, vui lòng đợi 1-2 giây', 'info');
+      return;
+    }
+  }
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = '';
+  input.style.height = '';
+  if (!_activeThreadId) await createNewThread();
+
+  const bar = document.getElementById('suggestionsBar');
+  bar.classList.add('hidden');
+  bar.innerHTML = '';
+
+  const now = new Date().toISOString();
+  _messages.push({ id: 'u_' + Date.now(), role: 'user', message, created_at: now });
+  renderMessages();
+  scrollToBottom();
+
+  _isTyping = true;
+  document.getElementById('sendBtn').disabled = true;
+  showTypingIndicator();
+  scrollToBottom();
+
+  try {
+    const res = await apiFetch('/chat/me', {
+      method: 'POST',
+      body: JSON.stringify({ message, thread_id: _activeThreadId, limit: 8, prefer_llm: true }),
+    });
+    removeTypingIndicator();
+    _messages.push({ id: 'a_' + Date.now(), role: 'assistant', message: res.answer, created_at: new Date().toISOString() });
+
+    const t = _threads.find(x => x.id === _activeThreadId);
+    if (t && (t.title === 'Đoạn chat mới' || !t.title)) {
+      t.title = message.slice(0, 30) + (message.length > 30 ? '…' : '');
+      document.getElementById('chatThreadTitle').textContent = t.title;
+      renderThreadList();
+    }
+    if (t) t.updated_at = new Date().toISOString();
+
+    renderMessages();
+    scrollToBottom();
+
+    if (res.suggestions && res.suggestions.length) {
+      bar.innerHTML = res.suggestions.map(s =>
+        `<button onclick="sendSuggestion('${escAttr(s)}')" class="imsg-chip">${escHtml(s)}</button>`
+      ).join('');
+      bar.classList.remove('hidden');
+    }
+  } catch(e) {
+    removeTypingIndicator();
+    _messages.push({ id: 'err_' + Date.now(), role: 'assistant', message: '⚠️ ' + e.message, created_at: new Date().toISOString() });
+    renderMessages();
+    showToast('Lỗi khi gửi tin nhắn', 'error');
+  } finally {
+    _isTyping = false;
+    document.getElementById('sendBtn').disabled = false;
+    scrollToBottom();
+  }
+}
+
+async function sendSuggestion(text) {
+  document.getElementById('chatInput').value = text;
+  await sendChatMessage();
+}
+
+// Fill input box từ chip — không auto-send để user có thể edit trước
+function fillInput(text) {
+  const inp = document.getElementById('chatInput');
+  if (!inp) return;
+  inp.value = text;
+  inp.focus();
+  // Move cursor về cuối
+  inp.setSelectionRange(text.length, text.length);
+  autoResizeTextarea(inp);
+}
+
+// Quick-start: vẫn giữ cho backward-compat, nhưng giờ behavior = fill + auto-send
+async function quickStart(text) {
+  await createNewThread();
+  document.getElementById('chatInput').value = text;
+  await sendChatMessage();
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+function scrollToBottom() {
+  const area = document.getElementById('chatMessages');
+  requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s) {
+  return String(s).replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+}
+
+// Bootstrap robust — xem comment tương tự trong messaging.html.
+// Tóm tắt: ajax-nav re-execute script lúc DOMContentLoaded đã fire → listener không chạy.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  Promise.resolve().then(() => { try { init(); } catch (e) { console.error('[ai-chat init]', e); } });
+}
+</script>
+</body>
+</html>

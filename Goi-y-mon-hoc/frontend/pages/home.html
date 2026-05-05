@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Tổng quan</title>
+  <link rel="stylesheet" href="theme.css?v=11"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="theme.js?v=6"></script>
+  <script src="theme-switcher.js?v=2"></script>
+  <script src="app-core.js?v=1"></script>
+  <script src="nav-prefetch.js?v=1" defer></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="auth.js?v=5"></script>
+  <script src="utils.js?v=2"></script>
+  <script src="sidebar-init.js?v=13"></script>
+  <script src="accessibility.js?v=1"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=16"></script>
+  <script defer src="nav-prefetch.js?v=1"></script>
+  <script defer src="floating-chat.js?v=12"></script>
+</head>
+<body class="bg-canvas text-text-primary antialiased min-h-screen">
+
+<!-- Auth guard -->
+<script>
+  if (!localStorage.getItem('access_token')) location.replace('index.html');
+</script>
+
+<!-- Toast -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Sidebar fragment -->
+<div id="sidebarMount"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+  TOPBAR — Stripe-style: slim, breadcrumbs, blur backdrop
+═══════════════════════════════════════════════════════════════════ -->
+<header class="topbar flex items-center justify-between px-4 lg:px-6">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-md hover:bg-surface-subtle transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-text-secondary">menu</span>
+    </button>
+    <nav class="flex items-center gap-1.5 text-[13px] min-w-0">
+      <span class="text-text-tertiary font-medium">Sinh viên</span>
+      <span class="material-symbols-outlined msym text-base text-text-tertiary">chevron_right</span>
+      <span class="text-text-primary font-semibold">Tổng quan</span>
+    </nav>
+  </div>
+  <div class="flex items-center gap-1">
+    <button class="theme-toggle" data-tooltip="Sáng/Tối">
+      <span class="material-symbols-outlined msym text-[18px] icon-moon">dark_mode</span>
+      <span class="material-symbols-outlined msym text-[18px] icon-sun">light_mode</span>
+    </button>
+    <!-- Bell -->
+    <div class="relative">
+      <button id="bellBtn" onclick="toggleNotifDropdown()" aria-label="Thông báo"
+        class="w-9 h-9 flex items-center justify-center rounded-md text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors relative">
+        <span class="material-symbols-outlined msym text-[20px]">notifications</span>
+        <span id="notifBubble" class="hidden absolute top-1 right-1 min-w-[16px] h-4 bg-danger text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none ring-2 ring-surface">0</span>
+      </button>
+      <div id="notifDropdown"
+        class="hidden absolute right-0 top-11 w-80 rounded-xl border border-border-default flex flex-col max-h-[420px] overflow-hidden bg-surface shadow-pop"
+        style="z-index:9500">
+        <div class="px-4 py-3 border-b border-border-subtle flex items-center justify-between flex-shrink-0">
+          <span class="text-sm font-bold text-text-primary">Thông báo</span>
+          <button onclick="markAllNotifsRead()" class="text-[11px] text-accent hover:underline font-semibold">Đánh dấu tất cả đã đọc</button>
+        </div>
+        <div id="notifDropdownList" class="overflow-y-auto flex-1 divide-y divide-border-subtle">
+          <div class="px-4 py-3 space-y-3">
+            <div class="skeleton h-12 rounded-md"></div>
+            <div class="skeleton h-12 rounded-md"></div>
+            <div class="skeleton h-12 rounded-md"></div>
+          </div>
+        </div>
+        <a href="notifications.html"
+          class="px-4 py-2.5 border-t border-border-subtle text-xs font-semibold text-accent hover:bg-accent-soft text-center transition-colors flex items-center justify-center gap-1">
+          Xem tất cả thông báo
+          <span class="material-symbols-outlined msym text-sm">arrow_forward</span>
+        </a>
+      </div>
+    </div>
+    <!-- Avatar dropdown -->
+    <div class="relative" id="avatarMenu">
+      <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md hover:bg-surface-subtle transition-colors">
+        <div class="w-7 h-7 rounded-full pri-grad flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-[11px] font-bold" id="topbarAvatar"></span>
+        </div>
+        <span class="text-sm font-semibold text-text-primary hidden sm:block max-w-[120px] truncate" id="topbarUserName"></span>
+        <span class="material-symbols-outlined msym text-sm text-text-tertiary hidden sm:block">expand_more</span>
+      </button>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface rounded-xl border border-border-default shadow-pop z-50 overflow-hidden">
+        <div class="px-4 py-3 border-b border-border-subtle">
+          <p class="text-sm font-bold text-text-primary truncate" id="avatarDropName"></p>
+          <p class="text-xs text-text-tertiary mt-0.5" id="avatarDropRole">Sinh viên</p>
+        </div>
+        <div class="py-1">
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-surface-subtle transition-colors">
+            <span class="material-symbols-outlined msym text-[18px] text-text-tertiary">settings</span>
+            Cài đặt tài khoản
+          </a>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger-soft transition-colors">
+            <span class="material-symbols-outlined msym text-[18px]">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════════════
+  MAIN — 2-column "main + aside" layout (reference-style)
+═══════════════════════════════════════════════════════════════════ -->
+<main class="lg:ml-60 pt-[60px] pb-12 min-h-screen">
+  <div class="container-app py-6 md:py-8">
+
+    <!-- Loading skeleton -->
+    <div id="dashLoading" class="space-y-4">
+      <div class="skeleton h-12 max-w-md"></div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="skeleton h-32"></div>
+        <div class="skeleton h-32"></div>
+        <div class="skeleton h-32"></div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="skeleton h-64 lg:col-span-8"></div>
+        <div class="skeleton h-64 lg:col-span-4"></div>
+      </div>
+    </div>
+
+    <!-- Dashboard content -->
+    <div id="dashContent" class="hidden">
+
+      <!-- ── HERO STRIP: compact greeting + actions inline ── -->
+      <div class="hero-strip mb-6 fade-up">
+        <div class="min-w-0">
+          <p class="eyebrow mb-1.5 flex items-center gap-2">
+            <span class="text-base" id="greetingEmoji">☀️</span>
+            <span id="greetingDate" class="text-text-secondary font-semibold"></span>
+          </p>
+          <h1 class="text-2xl md:text-[28px] font-extrabold text-text-primary tracking-tight leading-tight" id="greetingText">Chào, bạn!</h1>
+          <p class="text-sm text-text-secondary mt-1" id="greetingSub">CNTT · Đang học tại EduGuide</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <a href="grades.html" class="btn btn-secondary btn-sm">
+            <span class="material-symbols-outlined msym text-[16px]">grade</span>
+            Bảng điểm
+          </a>
+          <a href="grades.html?sim=open" class="btn btn-secondary btn-sm" title="Mô phỏng GPA: nhập điểm dự kiến → tính GPA mới">
+            <span class="material-symbols-outlined msym text-[16px]" style="font-variation-settings:'FILL' 1">analytics</span>
+            Mô phỏng GPA
+          </a>
+          <a href="integrated-roadmap.html" class="btn btn-primary btn-sm">
+            <span class="material-symbols-outlined msym text-[16px]">route</span>
+            Mở lộ trình
+          </a>
+        </div>
+      </div>
+
+      <!-- ── KPI tiles row — soft tinted backgrounds, equal width ── -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5 fade-up-delay-1">
+        <!-- KPI: TC (indigo soft tint) -->
+        <div class="kpi-tile kpi-tile-primary">
+          <div class="flex items-start justify-between mb-3">
+            <p class="eyebrow">Tiến độ tín chỉ</p>
+            <div class="w-9 h-9 rounded-lg chip-primary flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined msym text-[18px]" style="font-variation-settings:'FILL' 1">school</span>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-1.5 mb-3">
+            <span class="stat-num-lg" id="kpiTC">—</span>
+            <span class="text-sm text-text-secondary font-medium" id="kpiTCSub">/ 153 TC</span>
+          </div>
+          <div class="h-1.5 w-full bg-white/60 dark:bg-black/20 rounded-full overflow-hidden">
+            <div id="kpiTCBar" class="h-full bg-accent transition-all duration-700" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- KPI: GPA (emerald soft tint) -->
+        <div class="kpi-tile kpi-tile-secondary">
+          <div class="flex items-start justify-between mb-3">
+            <p class="eyebrow">GPA hệ 4</p>
+            <div class="w-9 h-9 rounded-lg chip-secondary flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined msym text-[18px]" style="font-variation-settings:'FILL' 1">trending_up</span>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-1.5 mb-3">
+            <span class="stat-num-lg" id="kpiGPA">—</span>
+            <span class="text-sm text-text-secondary font-medium" id="kpiGPASub">Chưa có dữ liệu</span>
+          </div>
+          <div class="h-1.5 w-full bg-white/60 dark:bg-black/20 rounded-full overflow-hidden">
+            <div id="kpiGPABar" class="h-full bg-success transition-all duration-700" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- KPI: Career Fit (neutral) -->
+        <div class="kpi-tile kpi-tile-neutral">
+          <div class="flex items-start justify-between mb-3">
+            <p class="eyebrow">Career Fit</p>
+            <div class="w-9 h-9 rounded-lg chip-neutral flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined msym text-[18px]">rocket_launch</span>
+            </div>
+          </div>
+          <!-- Stack vertically so long career names ("Lập trình Backend") don't
+               overlap the 48px % number when on the same baseline row. -->
+          <div class="mb-3 min-w-0">
+            <span class="stat-num-lg leading-none" id="kpiFit">—</span>
+            <p class="text-sm text-text-secondary font-medium truncate mt-1.5" id="kpiFitSub" title="Chưa chọn nghề">Chưa chọn nghề</p>
+          </div>
+          <div class="h-1.5 w-full bg-surface-strong rounded-full overflow-hidden">
+            <div id="kpiFitBar" class="h-full bg-accent transition-all duration-700" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Stat strip (inline summary, between KPIs and bento) ── -->
+      <div class="stat-strip mb-5 fade-up-delay-2" id="statStrip">
+        <div class="stat-strip-item">
+          <span class="material-symbols-outlined msym text-[16px] text-success">check_circle</span>
+          <span><strong id="statPassedCount">—</strong> môn đã pass</span>
+        </div>
+        <div class="stat-strip-divider"></div>
+        <div class="stat-strip-item">
+          <span class="material-symbols-outlined msym text-[16px] text-accent">play_circle</span>
+          <span><strong id="statInProgCount">—</strong> đang học</span>
+        </div>
+        <div class="stat-strip-divider"></div>
+        <div class="stat-strip-item">
+          <span class="material-symbols-outlined msym text-[16px] text-text-tertiary">pending</span>
+          <span><strong id="statRemainCount">—</strong> TC còn lại để TN</span>
+        </div>
+        <div class="stat-strip-divider hidden md:block"></div>
+        <div class="stat-strip-item ml-auto">
+          <span class="material-symbols-outlined msym text-[16px] text-text-tertiary">schedule</span>
+          <span class="text-text-tertiary">Cập nhật <strong id="statUpdated">—</strong></span>
+        </div>
+      </div>
+
+      <!-- ── MAIN GRID: 8/12 main + 4/12 aside ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 fade-up-delay-2">
+
+        <!-- ─────── LEFT MAIN COLUMN ─────── -->
+        <div class="lg:col-span-8 space-y-5">
+
+          <!-- Banner: chọn định hướng (in main column when shown) -->
+          <div id="noCareerGoalBanner" class="hidden card-highlight p-5 items-start gap-4 sm:flex-row flex-col">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl chip-primary flex-shrink-0">
+              <span class="material-symbols-outlined msym text-[24px]" style="font-variation-settings:'FILL' 1">tips_and_updates</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="eyebrow text-accent mb-1">Bước đầu tiên · Khuyến nghị</p>
+              <h3 class="text-lg font-bold text-text-primary mb-1.5">Chọn định hướng nghề trước khi xây lộ trình</h3>
+              <p class="text-sm text-text-secondary leading-relaxed mb-3">
+                Định hướng nghề (vd: <span class="font-semibold text-text-primary">AI · Backend · Mobile · Data</span>) là cơ sở để hệ thống gợi ý môn TC chính xác.
+              </p>
+              <div class="flex items-center gap-2 flex-wrap">
+                <a href="career-goal.html" class="btn btn-primary">
+                  <span class="material-symbols-outlined msym text-[18px]">rocket_launch</span>
+                  Chọn định hướng ngay
+                </a>
+                <button onclick="document.getElementById('noCareerGoalBanner').classList.add('hidden');try{sessionStorage.setItem('hideCareerGoalBanner','1')}catch(_){}"
+                  class="btn btn-ghost btn-sm">Để sau</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tuần này cần làm -->
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg chip-primary flex items-center justify-center">
+                  <span class="material-symbols-outlined msym text-[18px]" style="font-variation-settings:'FILL' 1">checklist</span>
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-text-primary">Tuần này cần làm</h3>
+                  <p class="text-xs text-text-tertiary mt-0.5">Tổng hợp từ lộ trình + AI gợi ý</p>
+                </div>
+              </div>
+              <a href="integrated-roadmap.html" class="text-xs text-accent hover:text-accent-hover font-semibold flex items-center gap-1">
+                Xem lộ trình
+                <span class="material-symbols-outlined msym text-sm">arrow_forward</span>
+              </a>
+            </div>
+            <div id="weeklyTodos" class="space-y-1">
+              <p class="text-sm text-text-tertiary italic text-center py-3">Đang tải...</p>
+            </div>
+          </div>
+
+          <!-- Cảnh báo (chỉ hiện khi có) -->
+          <div id="warningsSection" class="hidden card p-5" style="border-color:var(--danger);background:var(--danger-soft)">
+            <div class="flex items-center gap-2 mb-2.5">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--surface)">
+                <span class="material-symbols-outlined msym text-[18px] text-danger">warning</span>
+              </div>
+              <h3 class="text-sm font-bold text-danger">Cảnh báo cần xử lý</h3>
+            </div>
+            <ul id="warningsList" class="space-y-2 text-sm text-text-primary"></ul>
+          </div>
+
+          <!-- Recommendations -->
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl chip-primary flex items-center justify-center">
+                  <span class="material-symbols-outlined msym text-[20px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-text-primary">Gợi ý đăng ký kỳ tới</h3>
+                  <p class="text-xs text-text-tertiary">AI cá nhân hóa theo lịch sử điểm + định hướng nghề</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="pill pill-accent">Top 5</span>
+                <span class="pill pill-neutral hidden sm:inline-flex">ML + LLM</span>
+              </div>
+            </div>
+            <div id="recList" class="space-y-1">
+              <p class="text-sm text-text-tertiary italic text-center py-4">Đang tải...</p>
+            </div>
+          </div>
+
+        </div><!-- /left main col -->
+
+        <!-- ─────── RIGHT ASIDE COLUMN ─────── -->
+        <aside class="lg:col-span-4 space-y-5">
+
+          <!-- Dự kiến tốt nghiệp (emerald wash, prominent) -->
+          <div class="aside-card relative overflow-hidden bg-mesh-emerald">
+            <div class="relative">
+              <div class="flex items-center gap-2 mb-3">
+                <div class="w-9 h-9 rounded-lg chip-secondary flex items-center justify-center">
+                  <span class="material-symbols-outlined msym text-[18px]" style="font-variation-settings:'FILL' 1">event_available</span>
+                </div>
+                <h3 class="text-sm font-bold text-text-primary">Dự kiến tốt nghiệp</h3>
+              </div>
+              <p class="text-[28px] font-extrabold text-text-primary tracking-tight leading-tight" id="dGradEst">—</p>
+              <p class="text-xs text-text-secondary mt-1.5" id="dGradEstSub">Đang tính toán...</p>
+            </div>
+          </div>
+
+          <!-- Career fit progress card (compact display) -->
+          <div class="aside-card" id="careerFitCard">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-9 h-9 rounded-lg chip-primary flex items-center justify-center">
+                <span class="material-symbols-outlined msym text-[18px]" style="font-variation-settings:'FILL' 1">workspace_premium</span>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-text-primary">Tiến độ học tập</h3>
+                <p class="text-[11px] text-text-tertiary mt-0.5">Toàn bộ chương trình</p>
+              </div>
+            </div>
+            <div class="flex items-baseline justify-between mb-2 mt-4">
+              <span class="text-[11px] text-text-tertiary uppercase tracking-wider font-bold">Hoàn thành</span>
+              <span class="text-sm font-bold text-text-primary" id="asidePctLabel">—</span>
+            </div>
+            <div class="h-2 w-full bg-surface-strong rounded-full overflow-hidden">
+              <div id="asidePctBar" class="h-full bg-accent transition-all duration-700" style="width:0%"></div>
+            </div>
+            <p class="text-xs text-text-secondary mt-3 leading-relaxed" id="asidePctNote">Đang tải dữ liệu...</p>
+          </div>
+
+          <!-- Quick links — compact button grid -->
+          <div class="aside-card">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-9 h-9 rounded-lg chip-neutral flex items-center justify-center">
+                <span class="material-symbols-outlined msym text-[18px]">apps</span>
+              </div>
+              <h3 class="text-sm font-bold text-text-primary">Truy cập nhanh</h3>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <a href="grades.html" class="group flex flex-col items-center gap-1.5 px-2 py-3 rounded-lg border border-border-subtle hover:border-accent hover:bg-accent-soft transition-all">
+                <span class="material-symbols-outlined msym text-[22px] text-text-secondary group-hover:text-accent transition-colors">grade</span>
+                <span class="text-xs font-semibold text-text-primary">Bảng điểm</span>
+              </a>
+              <a href="integrated-roadmap.html" class="group flex flex-col items-center gap-1.5 px-2 py-3 rounded-lg border border-border-subtle hover:border-accent hover:bg-accent-soft transition-all">
+                <span class="material-symbols-outlined msym text-[22px] text-text-secondary group-hover:text-accent transition-colors">route</span>
+                <span class="text-xs font-semibold text-text-primary">Lộ trình</span>
+              </a>
+              <a href="career-goal.html" class="group flex flex-col items-center gap-1.5 px-2 py-3 rounded-lg border border-border-subtle hover:border-accent hover:bg-accent-soft transition-all">
+                <span class="material-symbols-outlined msym text-[22px] text-text-secondary group-hover:text-accent transition-colors">rocket_launch</span>
+                <span class="text-xs font-semibold text-text-primary">Mục tiêu</span>
+              </a>
+              <a href="ai-chat.html" class="group flex flex-col items-center gap-1.5 px-2 py-3 rounded-lg border border-border-subtle hover:border-accent hover:bg-accent-soft transition-all">
+                <span class="material-symbols-outlined msym text-[22px] text-text-secondary group-hover:text-accent transition-colors">smart_toy</span>
+                <span class="text-xs font-semibold text-text-primary">Trợ lý AI</span>
+              </a>
+            </div>
+          </div>
+
+        </aside>
+
+      </div><!-- /main grid -->
+
+    </div><!-- /dashContent -->
+
+  </div>
+</main>
+
+<script>
+const API = window.API_BASE || (location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://127.0.0.1:8000':location.origin);
+let _token = null;
+let _user = null;
+// Phase-2 results cached at module level so render functions called from
+// _renderDashboardWithData can find them when re-painting from cache.
+let _lastFit = null;
+let _lastRecs = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof requireAuth === 'function') await requireAuth();
+  _token = (typeof getToken === 'function') ? getToken() : localStorage.getItem('access_token');
+  await initDashboard();
+  // Báo cho ajax-nav biết init xong → hide overlay
+  window.__initDone = true; try { window.dispatchEvent(new Event('page:ready')); } catch (_) {}
+});
+
+async function apiFetch(path, method='GET', body=null) {
+  try {
+    const opts = { method, headers: { 'Content-Type':'application/json', Authorization:'Bearer '+_token } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(API + path, opts);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+// Cache helpers — share keys with sidebar-init.js for stale-while-revalidate
+function _homeCacheGet(key) {
+  try { return JSON.parse(localStorage.getItem('sb_' + key) || 'null'); }
+  catch (_) { return null; }
+}
+function _homeCacheSet(key, value) {
+  try { localStorage.setItem('sb_' + key, JSON.stringify(value)); } catch (_) {}
+}
+
+function _renderDashboardWithData(me, progress) {
+  _user = me;
+  document.getElementById('dashLoading').classList.add('hidden');
+  document.getElementById('dashContent').classList.remove('hidden');
+
+  // Banner gợi ý chọn định hướng nghề trước (nếu user.career_goal null/general).
+  try {
+    const banner = document.getElementById('noCareerGoalBanner');
+    const hidden = sessionStorage.getItem('hideCareerGoalBanner') === '1';
+    const noGoal = !me?.career_goal || me.career_goal === 'general';
+    if (banner && noGoal && !hidden) {
+      banner.classList.remove('hidden');
+      banner.classList.add('flex');
+    } else if (banner) {
+      // Re-hide on re-render if no longer applicable (e.g. fresh data shows career_goal set)
+      banner.classList.add('hidden');
+      banner.classList.remove('flex');
+    }
+  } catch (_) {}
+
+  renderGreeting(me);
+  renderKPIs(progress, _lastFit);
+  renderStatStrip(progress);
+  renderAsideProgress(progress);
+  renderWeeklyTodos(progress, _lastFit, _lastRecs || []);
+  renderWarnings(progress, me);
+  renderGradEstimate(progress);
+  if (!_lastRecs) renderRecs(null);
+  updateTopbar(me);
+  updateSidebarProgress(progress);
+  loadNotifBadge();
+}
+
+async function initDashboard() {
+  // ── Stale-while-revalidate: paint from cache INSTANTLY if present ─────────
+  // Cache is shared with sidebar-init.js (sb_user / sb_progress keys). On
+  // subsequent navs the dashboard renders with no perceptible gap; only the
+  // first cold-start visit hits the 150-200ms network gap.
+  const cachedMe = _homeCacheGet('user');
+  const cachedProgress = _homeCacheGet('progress');
+  let renderedFromCache = false;
+  if (cachedMe && cachedProgress) {
+    _renderDashboardWithData(cachedMe, cachedProgress);
+    renderedFromCache = true;
+  }
+
+  // ── Phase 1: Fetch fresh data (background refresh if cache hit, else block) ─
+  // Use deduped /auth/me fetch nếu sidebar-init / floating-chat đang fetch
+  // song song → share 1 request thay vì 3.
+  const [me, progress] = await Promise.all([
+    (typeof window._dedupedAuthMeFetch === 'function')
+      ? window._dedupedAuthMeFetch(_token)
+      : apiFetch('/auth/me'),
+    apiFetch('/progress/me'),
+  ]);
+
+  // Persist fresh data for next nav
+  if (me) _homeCacheSet('user', me);
+  if (progress) _homeCacheSet('progress', progress);
+
+  // Re-render only if data changed materially OR we hadn't rendered yet.
+  // Cheap stringify check — both objects small (<2KB).
+  const meChanged = JSON.stringify(me) !== JSON.stringify(cachedMe);
+  const progressChanged = JSON.stringify(progress) !== JSON.stringify(cachedProgress);
+  if (!renderedFromCache || meChanged || progressChanged) {
+    _renderDashboardWithData(me || cachedMe, progress || cachedProgress);
+  }
+  // Save fresh data into closures used by phase 2 below
+  const finalMe = me || cachedMe;
+  const finalProgress = progress || cachedProgress;
+
+  // ── Phase 2: Deferred APIs (may hit AI / heavy compute) ───────────────────
+  // Run in parallel but don't block phase 1. Each fills its own section.
+  // Cache fit + recs too — same stale-while-revalidate pattern.
+  const cachedFit = _homeCacheGet('fit');
+  const cachedRecs = _homeCacheGet('recs');
+  if (cachedFit) {
+    _lastFit = cachedFit;
+    try { renderKPIs(finalProgress, cachedFit); } catch (_) {}
+  }
+  if (cachedRecs) {
+    _lastRecs = cachedRecs;
+    try { renderRecs(cachedRecs); } catch (_) {}
+    try { renderWeeklyTodos(finalProgress, _lastFit, cachedRecs); } catch (_) {}
+  }
+
+  apiFetch('/v2/career/fit/me')
+    .then(fit => {
+      if (fit) _homeCacheSet('fit', fit);
+      try { renderKPIs(finalProgress, fit); } catch (e) { console.warn('[home] renderKPIs(fit) failed:', e); }
+      _lastFit = fit;
+      if (_lastRecs) {
+        try { renderWeeklyTodos(finalProgress, fit, _lastRecs); } catch (_) {}
+      }
+    })
+    .catch(e => console.warn('[home] /v2/career/fit/me failed:', e.message));
+
+  apiFetch('/recommendations/me')
+    .then(recs => {
+      const recsList = Array.isArray(recs) ? recs : (recs?.recommendations || []);
+      if (recsList.length) _homeCacheSet('recs', recsList);
+      _lastRecs = recsList;
+      try { renderRecs(recsList); } catch (e) { console.warn('[home] renderRecs failed:', e); }
+      try { renderWeeklyTodos(finalProgress, _lastFit, recsList); } catch (_) {}
+    })
+    .catch(e => console.warn('[home] /recommendations/me failed:', e.message));
+}
+
+// (_lastFit / _lastRecs hoisted to top of script — used by _renderDashboardWithData)
+
+// ── Greeting ──────────────────────────────────────────────────────────────
+function renderGreeting(me) {
+  const h = new Date().getHours();
+  const greeting = h < 12 ? 'Chào buổi sáng' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+  const emoji = h < 12 ? '☀️' : h < 18 ? '🌤️' : '🌙';
+  const name = (me?.full_name || 'bạn').split(' ').pop();
+  document.getElementById('greetingText').textContent = `${greeting}, ${name}!`;
+  document.getElementById('greetingSub').textContent = `${me?.specialization ? specName(me.specialization) : 'CNTT'} · Đang học tại EduGuide`;
+  document.getElementById('greetingEmoji').textContent = emoji;
+  // Date eyebrow (Stripe-style: small uppercase context)
+  const dateEl = document.getElementById('greetingDate');
+  if (dateEl) {
+    const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+    const d = new Date();
+    dateEl.textContent = `${days[d.getDay()]} · ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  }
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────
+function renderKPIs(prog, fit) {
+  // TC
+  const earned = prog?.earned_credits || 0;
+  const total = 153;
+  const tcPct = Math.min(100, Math.round((earned / total) * 100));
+  document.getElementById('kpiTC').textContent = earned.toFixed(0);
+  document.getElementById('kpiTCSub').textContent = `/ ${total} TC (${tcPct}%)`;
+  document.getElementById('kpiTCBar').style.width = tcPct + '%';
+
+  // GPA
+  const gpa4 = prog?.avg_score4;
+  const gpa10 = prog?.avg_score10;
+  if (gpa4 != null) {
+    document.getElementById('kpiGPA').textContent = gpa4.toFixed(2);
+    const gpaLetter = gpa4 >= 3.6 ? 'Xuất sắc' : gpa4 >= 3.2 ? 'Giỏi' : gpa4 >= 2.5 ? 'Khá' : gpa4 >= 2.0 ? 'Trung bình' : 'Yếu';
+    document.getElementById('kpiGPASub').textContent = `${gpaLetter} · ${gpa10?.toFixed(1)||'—'}/10`;
+    document.getElementById('kpiGPABar').style.width = Math.min(100, (gpa4 / 4) * 100) + '%';
+  }
+
+  // Career Fit
+  const fitSub = document.getElementById('kpiFitSub');
+  if (fit?.has_blueprint) {
+    document.getElementById('kpiFit').textContent = (fit.fit_percent || 0) + '%';
+    const subText = fit.career_path_name || fit.career_name || 'Đã chọn nghề';
+    fitSub.textContent = subText;
+    fitSub.title = subText;  // tooltip when truncated
+    document.getElementById('kpiFitBar').style.width = (fit.fit_percent || 0) + '%';
+  } else if (fit?.career_path_name || fit?.career_name) {
+    document.getElementById('kpiFit').textContent = '—';
+    const subText = (fit.career_path_name || fit.career_name) + ' · Chưa có blueprint';
+    fitSub.textContent = subText;
+    fitSub.title = subText;
+  } else {
+    document.getElementById('kpiFit').textContent = '—';
+    fitSub.textContent = 'Chưa chọn nghề';
+    fitSub.title = 'Chưa chọn nghề';
+  }
+}
+
+// ── Weekly todos ──────────────────────────────────────────────────────────
+function renderWeeklyTodos(prog, fit, recs) {
+  const todos = [];
+
+  // From recommendations (top 2 school items)
+  if (recs && Array.isArray(recs)) {
+    recs.slice(0, 2).forEach(r => {
+      todos.push({
+        kind: 'school',
+        text: `Cân nhắc đăng ký: ${r.course_name} (${r.credits} TC)`,
+        icon: 'school',
+        tone: 'primary',
+        link: null,
+      });
+    });
+  }
+
+  // From career fit — external items
+  if (fit?.has_blueprint && fit.estimated_external_hours > 0) {
+    todos.push({
+      kind: 'external',
+      text: `Học ngoài trường: ~${Math.min(8, fit.estimated_external_hours)}h/tuần cho ${fit.career_path_name || fit.career_name || 'nghề mục tiêu'}`,
+      icon: 'self_improvement',
+      tone: 'secondary',
+      link: 'integrated-roadmap.html',
+    });
+  }
+
+  // Warning from progress (red ONLY because it IS a real warning)
+  if (prog?.avg_score4 != null && prog.avg_score4 < 2.5) {
+    todos.push({
+      kind: 'warning',
+      text: 'GPA dưới 2.5 — cần cải thiện để tăng số TC/kỳ tối đa',
+      icon: 'warning',
+      tone: 'danger',
+      link: 'grades.html',
+    });
+  }
+
+  if (!todos.length) {
+    document.getElementById('weeklyTodos').innerHTML =
+      '<div class="flex items-center gap-3 px-4 py-6 text-sm text-text-tertiary"><span class="material-symbols-outlined msym text-[20px]">check_circle</span>Chưa có nhiệm vụ. Tải bảng điểm hoặc chọn mục tiêu nghề để hệ thống gợi ý.</div>';
+    return;
+  }
+
+  const toneMap = {
+    primary:   { chip: 'chip-primary',   color: 'text-accent'  },
+    secondary: { chip: 'chip-secondary', color: 'text-success' },
+    neutral:   { chip: 'chip-neutral',   color: 'text-text-secondary' },
+    danger:    { chip: 'chip-neutral',   color: 'text-danger',  forceBg: 'background:var(--danger-soft);color:var(--danger)' },
+  };
+
+  document.getElementById('weeklyTodos').innerHTML = todos.map(t => {
+    const tone = toneMap[t.tone] || toneMap.primary;
+    const chipStyle = tone.forceBg ? `style="${tone.forceBg}"` : '';
+    return `
+    <div class="group flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-surface-subtle transition-colors text-sm
+         ${t.link ? 'cursor-pointer' : ''}"
+         ${t.link ? `onclick="location.href='${t.link}'"` : ''}>
+      <div class="w-9 h-9 rounded-lg ${tone.chip} flex items-center justify-center flex-shrink-0" ${chipStyle}>
+        <span class="material-symbols-outlined msym text-[18px]">${t.icon}</span>
+      </div>
+      <span class="flex-1 text-text-primary font-medium">${escHtml(t.text)}</span>
+      ${t.link ? '<span class="material-symbols-outlined msym text-base text-text-tertiary group-hover:text-text-primary transition-colors">arrow_forward</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Warnings ──────────────────────────────────────────────────────────────
+function renderWarnings(prog, me) {
+  const warnings = [];
+  if (!me?.specialization) warnings.push('Bạn chưa chọn chuyên ngành — nên xác nhận với cố vấn trước HK4.');
+  if (prog?.avg_score4 != null && prog.avg_score4 < 2.0) warnings.push(`GPA ${prog.avg_score4.toFixed(2)} dưới 2.0 — nguy cơ học lại, kiểm tra ngay.`);
+  if (prog?.gpa_trend === 'declining') warnings.push('GPA có xu hướng giảm 2 kỳ gần nhất — cần chú ý.');
+
+  const sec = document.getElementById('warningsSection');
+  if (!warnings.length) { sec.classList.add('hidden'); return; }
+  sec.classList.remove('hidden');
+  document.getElementById('warningsList').innerHTML = warnings.map(w =>
+    `<li class="flex items-start gap-2"><span class="material-symbols-outlined msym text-[16px] text-danger flex-shrink-0 mt-0.5">error</span><span>${escHtml(w)}</span></li>`
+  ).join('');
+}
+
+// ── Grad estimate ─────────────────────────────────────────────────────────
+function renderGradEstimate(prog) {
+  const el = document.getElementById('dGradEst');
+  const sub = document.getElementById('dGradEstSub');
+  if (!prog) {
+    el.textContent = '—';
+    sub.textContent = 'Không tải được dữ liệu';
+    return;
+  }
+  if (prog.estimated_graduation) {
+    el.textContent = prog.estimated_graduation;
+    sub.textContent = prog.estimated_graduation_detail || '';
+  } else if (prog.earned_credits >= 153) {
+    el.textContent = 'Đủ điều kiện TN ✓';
+    sub.textContent = 'Kiểm tra điều kiện khác với cố vấn';
+  } else {
+    const remaining = Math.max(0, 153 - (prog.earned_credits || 0));
+    el.textContent = '—';
+    sub.textContent = `Còn ~${remaining.toFixed(0)} TC nữa`;
+  }
+}
+
+// ── Recommendations ───────────────────────────────────────────────────────
+function renderRecs(recs) {
+  const el = document.getElementById('recList');
+  // Distinguish null (still loading) from empty array (loaded, no results)
+  if (recs === null) {
+    el.innerHTML = `<div class="space-y-2">
+      ${[1,2,3].map(() => `<div class="skeleton h-14"></div>`).join('')}
+    </div>`;
+    return;
+  }
+  if (!Array.isArray(recs) || !recs.length) {
+    el.innerHTML = '<p class="text-sm text-text-tertiary italic text-center py-4">Chưa có gợi ý — cần có bảng điểm để tính toán.</p>';
+    return;
+  }
+  // Modern minimal rows: top-1 badge primary, others neutral; score in primary or success.
+  // Click row → navigate sang lộ trình + auto-open course detail modal (?focus=<code>).
+  el.innerHTML = recs.slice(0, 5).map((r, idx) => {
+    const reasons = (r.reasons || []).slice(0, 2);
+    const score = Math.round(r.recommendation_score || 0);
+    const scoreColor = score >= 80 ? 'text-success' : score >= 60 ? 'text-accent' : 'text-text-tertiary';
+    const rankCls = idx === 0 ? 'rank-top' : 'rank-other';
+    const code = escHtml(r.course_code || '');
+    return `
+    <a href="integrated-roadmap.html?focus=${encodeURIComponent(r.course_code || '')}"
+       class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-surface-subtle transition-colors group cursor-pointer no-underline"
+       title="Mở lộ trình + chi tiết môn ${code}">
+      <div class="rank-badge ${rankCls}">${idx + 1}</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-sm font-semibold text-text-primary">${escHtml(r.course_name)}</span>
+          <span class="pill pill-neutral">${r.category || '—'}</span>
+          <span class="text-xs text-text-tertiary">${r.credits || 0} TC</span>
+        </div>
+        ${reasons.length ? `<p class="text-xs text-text-secondary mt-1 line-clamp-1">${reasons.map(escHtml).join(' · ')}</p>` : ''}
+      </div>
+      <div class="text-right flex-shrink-0">
+        <p class="text-xl font-extrabold ${scoreColor} leading-none tracking-tight">${score}<span class="text-xs font-medium text-text-tertiary">/100</span></p>
+        <p class="text-[10px] text-text-tertiary uppercase tracking-wider mt-1 font-semibold">Match</p>
+      </div>
+      <span class="material-symbols-outlined msym text-base text-text-tertiary group-hover:text-text-primary transition-colors">arrow_forward</span>
+    </a>`;
+  }).join('');
+}
+
+// ── Stat strip (decorative inline summary under KPIs) ─────────────────────
+function renderStatStrip(prog) {
+  if (!prog) return;
+  const passed = prog.passed_count || 0;
+  const inProg = prog.in_progress_count || 0;
+  const remaining = Math.max(0, 153 - (prog.earned_credits || 0));
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setEl('statPassedCount', passed || '—');
+  setEl('statInProgCount', inProg || '—');
+  setEl('statRemainCount', remaining);
+  setEl('statUpdated', new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+}
+
+// ── Aside: tiến độ học tập (compact progress card) ───────────────────────
+function renderAsideProgress(prog) {
+  if (!prog) return;
+  const earned = prog.earned_credits || 0;
+  const pct = Math.min(100, Math.round((earned / 153) * 100));
+  const lbl = document.getElementById('asidePctLabel');
+  const bar = document.getElementById('asidePctBar');
+  const note = document.getElementById('asidePctNote');
+  if (lbl) lbl.textContent = pct + '%';
+  if (bar) bar.style.width = pct + '%';
+  if (note) {
+    if (earned >= 153) note.textContent = 'Đủ tín chỉ — kiểm tra điều kiện TN khác với cố vấn.';
+    else if (pct >= 75) note.textContent = `Còn ${153 - earned} TC nữa là về đích — sắp tốt nghiệp!`;
+    else if (pct >= 50) note.textContent = `Đã đi được hơn nửa chặng đường (${earned}/153 TC).`;
+    else if (pct > 0) note.textContent = `Đang xây nền — đã hoàn thành ${earned} TC.`;
+    else note.textContent = 'Tải bảng điểm để theo dõi tiến độ chính xác.';
+  }
+}
+
+// ── Topbar ────────────────────────────────────────────────────────────────
+function updateTopbar(me) {
+  if (!me) return;
+  const initials = (me.full_name || '?').split(' ').map(s=>s[0]).slice(-2).join('').toUpperCase();
+  document.getElementById('topbarAvatar').textContent = initials;
+  document.getElementById('topbarUserName').textContent = me.full_name || me.username;
+  document.getElementById('avatarDropName').textContent = me.full_name || me.username;
+  document.getElementById('avatarDropRole').textContent = 'Sinh viên · ' + specName(me.specialization);
+}
+
+function updateSidebarProgress(prog) {
+  if (!prog) return;
+  // Sidebar đã tự cập nhật qua sidebar-init.js (Task 21).
+  // Hàm này giữ lại làm fallback nếu sidebar-init chưa load.
+  if (typeof window.refreshSidebarUserInfo === 'function') {
+    window.refreshSidebarUserInfo(false);
+  }
+}
+
+async function loadNotifBadge() {
+  const r = await apiFetch('/notifications/me/unread-count');
+  if (!r) return;
+  const cnt = r.count || 0;
+  const bubble = document.getElementById('notifBubble');
+  const sideBadge = document.getElementById('sidebarNotifBadge');
+  if (bubble) { bubble.textContent = cnt; bubble.classList.toggle('hidden', cnt === 0); }
+  if (sideBadge) { sideBadge.textContent = cnt; sideBadge.classList.toggle('hidden', cnt === 0); }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function specName(code) {
+  const m = {
+    '7480201_07':'KHMT','7480201_06':'MMT','7480201_05':'CNPM',
+    '7480201_09':'HTTT','7480201_04':'THKT','7480201_08':'CNTTDH',
+  };
+  return m[code] || (code || 'Chưa chọn CN');
+}
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Bell / Avatar dropdown ────────────────────────────────────────────────
+let _notifLoaded = false;
+
+function toggleNotifDropdown() {
+  const d = document.getElementById('notifDropdown');
+  if (!d) return;
+  const willOpen = d.classList.contains('hidden');
+  d.classList.toggle('hidden');
+  // Fetch on first open + every subsequent open (to stay fresh)
+  if (willOpen) loadNotifDropdown();
+}
+
+const _NOTIF_META = {
+  urgent:  { icon: 'priority_high',  bg: 'bg-red-50',    text: 'text-red-600',    bar: 'bg-red-500'    },
+  warning: { icon: 'warning',        bg: 'bg-amber-50',  text: 'text-amber-600',  bar: 'bg-amber-500'  },
+  info:    { icon: 'info',           bg: 'bg-sky-50',    text: 'text-sky-600',    bar: 'bg-sky-500'    },
+  success: { icon: 'check_circle',   bg: 'bg-emerald-50',text: 'text-emerald-600',bar: 'bg-emerald-500'},
+};
+
+function _notifTimeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60)        return 'vừa xong';
+  if (sec < 3600)      return `${Math.floor(sec/60)} phút`;
+  if (sec < 86400)     return `${Math.floor(sec/3600)} giờ`;
+  if (sec < 86400 * 7) return `${Math.floor(sec/86400)} ngày`;
+  return d.toLocaleDateString('vi-VN');
+}
+
+async function loadNotifDropdown() {
+  const list = document.getElementById('notifDropdownList');
+  if (!list) return;
+  // Keep skeletons on first open while loading; replace them with empty/items after fetch.
+  const data = await apiFetch('/notifications/me');
+  if (!Array.isArray(data)) {
+    list.innerHTML = `
+      <div class="px-4 py-8 text-center">
+        <span class="material-symbols-outlined text-3xl text-text-tertiary">cloud_off</span>
+        <p class="text-xs text-text-secondary mt-2">Không tải được thông báo. Thử lại sau.</p>
+      </div>`;
+    return;
+  }
+  if (data.length === 0) {
+    list.innerHTML = `
+      <div class="px-4 py-8 text-center">
+        <span class="material-symbols-outlined text-3xl text-text-tertiary">inbox</span>
+        <p class="text-xs text-text-secondary mt-2">Chưa có thông báo nào.</p>
+      </div>`;
+    return;
+  }
+  // Top 6 — newest first (server already sorts; double-sort defensively)
+  const top = [...data]
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 6);
+  list.innerHTML = top.map(n => {
+    const meta = _NOTIF_META[n.severity] || _NOTIF_META.info;
+    const unread = !n.is_read;
+    return `
+      <button type="button" data-notif-id="${n.id}"
+        class="w-full text-left px-4 py-3 flex gap-3 hover:bg-surface-subtle transition-colors relative"
+        onclick="_dropdownNotifClick(${n.id})">
+        <div class="absolute left-0 top-0 bottom-0 w-1 ${unread ? meta.bar : 'bg-transparent'}"></div>
+        <div class="flex-shrink-0 w-8 h-8 rounded-full ${meta.bg} flex items-center justify-center">
+          <span class="material-symbols-outlined msym text-base ${meta.text}" style="font-variation-settings:'FILL' 1">${meta.icon}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2">
+            <p class="text-xs ${unread ? 'font-bold text-text-primary' : 'font-semibold text-text-secondary'} line-clamp-2">${escHtml(n.title || '')}</p>
+            <span class="text-[10px] text-text-tertiary whitespace-nowrap flex-shrink-0">${_notifTimeAgo(n.created_at)}</span>
+          </div>
+          ${n.body ? `<p class="text-[11px] text-text-secondary line-clamp-2 mt-0.5">${escHtml(n.body)}</p>` : ''}
+        </div>
+        ${unread ? '<span class="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-accent"></span>' : ''}
+      </button>`;
+  }).join('');
+}
+
+async function _dropdownNotifClick(id) {
+  // Mark read in background, then navigate to full page
+  apiFetch(`/notifications/${id}/mark-read`, 'POST');
+  window.location.href = 'notifications.html';
+}
+
+function toggleAvatarMenu() {
+  const d = document.getElementById('avatarDropdown');
+  if (d) d.classList.toggle('hidden');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#bellBtn') && !e.target.closest('#notifDropdown'))
+    document.getElementById('notifDropdown')?.classList.add('hidden');
+  if (!e.target.closest('#avatarMenu'))
+    document.getElementById('avatarDropdown')?.classList.add('hidden');
+});
+async function markAllNotifsRead() {
+  await apiFetch('/notifications/me/mark-all-read', 'POST');
+  loadNotifBadge();
+  loadNotifDropdown();
+}
+</script>
+</body>
+</html>

@@ -7,28 +7,38 @@ from backend.db.db import engine, Base
 from backend.db import models  # noqa: F401 — ensures all models are registered
 
 MIGRATIONS = [
-    # ── users: new profile columns ───────────────────────────────────────────
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS career_goal TEXT",
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS career_skills JSONB",
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS difficulty_preference TEXT",
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS max_credits_per_term NUMERIC(4,1)",
-
     # ── users: role column (admin vs student) ────────────────────────────────
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'student'",
 
-    # ── grade integrity: khoá bảng điểm + nguồn xác thực ─────────────────────
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS grades_locked BOOLEAN NOT NULL DEFAULT FALSE",
-    "ALTER TABLE user_grades ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'self'",
-    "CREATE INDEX IF NOT EXISTS ix_user_grades_source ON user_grades(source)",
-
-    # ── user_quiz_results: kết quả Holland-lite (auto-create qua create_all) ─
-    # Bảng được tạo bởi Base.metadata.create_all — không cần ALTER
+    # ── Refactor 2026-05-05: cleanup DB ─────────────────────────────────────
+    # Tool nội bộ — bỏ admin grades import + bỏ profile customization + bỏ OAuth.
+    # Drop columns đã dead. Migration idempotent (IF EXISTS).
+    "ALTER TABLE user_grades DROP COLUMN IF EXISTS source",
+    "ALTER TABLE users DROP COLUMN IF EXISTS grades_locked",
+    "ALTER TABLE users DROP COLUMN IF EXISTS official_earned_credits",
+    "ALTER TABLE users DROP COLUMN IF EXISTS email_edu",  # merged → email
+    "ALTER TABLE users DROP COLUMN IF EXISTS career_skills",
+    "ALTER TABLE users DROP COLUMN IF EXISTS career_goal",
+    "ALTER TABLE users DROP COLUMN IF EXISTS max_credits_per_term",
+    "ALTER TABLE users DROP COLUMN IF EXISTS difficulty_preference",
+    "ALTER TABLE users DROP COLUMN IF EXISTS google_sub",
+    # Drop dead tables
+    "DROP TABLE IF EXISTS risk_cases CASCADE",
+    "DROP TABLE IF EXISTS user_quiz_results CASCADE",
+    "DROP TABLE IF EXISTS career_journeys CASCADE",
+    "DROP TABLE IF EXISTS journey_milestones CASCADE",
+    "DROP TABLE IF EXISTS case_actions CASCADE",
+    "DROP TABLE IF EXISTS case_comments CASCADE",
+    "DROP TABLE IF EXISTS risk_history CASCADE",
+    "DROP TABLE IF EXISTS learning_contracts CASCADE",
+    "DROP TABLE IF EXISTS contract_checkins CASCADE",
+    "DROP TABLE IF EXISTS skill_resources CASCADE",
+    "DROP TABLE IF EXISTS user_messages CASCADE",
 
     # ── chat: thread support ─────────────────────────────────────────────────
     "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS thread_id TEXT REFERENCES chat_threads(id) ON DELETE CASCADE",
 
-    # ── users: google oauth ──────────────────────────────────────────────────
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT UNIQUE",
+    # google_sub đã DROP 2026-05-05 — không dùng OAuth nữa
 
     # ── users: managed_specialization for advisors ───────────────────────────
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS managed_specialization TEXT",
@@ -152,22 +162,6 @@ MIGRATIONS = [
         PRIMARY KEY (user_id, skill_id)
     )
     """,
-
-    # ── user_messages: tin nhắn cá nhân từ admin → sinh viên ─────────────────
-    """
-    CREATE TABLE IF NOT EXISTS user_messages (
-        id BIGSERIAL PRIMARY KEY,
-        sender_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-        sender_username TEXT,
-        recipient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        title TEXT NOT NULL,
-        body TEXT NOT NULL,
-        type TEXT NOT NULL DEFAULT 'info',
-        is_read BOOLEAN NOT NULL DEFAULT FALSE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-    """,
-    "CREATE INDEX IF NOT EXISTS ix_user_messages_recipient ON user_messages(recipient_id)",
 
     # ── graduation threshold: CTDT 7480201 = 153 TC (bao gồm TT + ĐATN) ─────
     """
@@ -315,8 +309,9 @@ MIGRATIONS = [
     # ── users: default_password (plain-text, cleared on first password change) ─
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS default_password TEXT",
 
-    # ── users: is_head_of_department — trưởng bộ môn cho advisor ───────────────
-    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_head_of_department BOOLEAN NOT NULL DEFAULT FALSE",
+    # ── users: is_head_of_department đã DROP (2026-05-05) — concept Trưởng BM
+    # bị bỏ. Schema mới quản lý SV ↔ GV qua Lớp (ClassGroup).
+    # Migration drop nằm ở migration_2026_05_05_class_groups.sql.
 
     # ── planned_electives: môn tự chọn SV đã plan trong lộ trình ─────────────
     """
@@ -681,6 +676,44 @@ MIGRATIONS = [
 
     "ALTER TABLE career_paths ADD COLUMN IF NOT EXISTS last_blueprint_at TIMESTAMPTZ",
     "ALTER TABLE career_paths ADD COLUMN IF NOT EXISTS blueprint_model TEXT",
+
+    # ── 2026-05-05: ClassGroup model + email_edu + soft-delete reviews ──────
+    # Schema refactor: bỏ is_head_of_department, thêm Lớp (class_groups), thêm
+    # email_edu cho forgot password, thêm soft-delete (hidden) cho course_ratings.
+    # Code SQL nằm ở file migration_2026_05_05_class_groups.sql — đảm bảo idempotent.
+    """
+    CREATE TABLE IF NOT EXISTS class_groups (
+        id BIGSERIAL PRIMARY KEY,
+        code VARCHAR(20) NOT NULL UNIQUE,
+        name VARCHAR(100) NOT NULL,
+        cohort VARCHAR(10) NOT NULL,
+        specialization VARCHAR(20) NOT NULL,
+        advisor_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_class_groups_advisor_id ON class_groups(advisor_id)",
+    "CREATE INDEX IF NOT EXISTS idx_class_groups_specialization ON class_groups(specialization)",
+    "CREATE INDEX IF NOT EXISTS idx_class_groups_cohort ON class_groups(cohort)",
+
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_edu VARCHAR(255)",
+    """
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS class_group_id BIGINT
+        REFERENCES class_groups(id) ON DELETE SET NULL
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_users_class_group_id ON users(class_group_id)",
+    "CREATE INDEX IF NOT EXISTS idx_users_email_edu ON users(email_edu)",
+
+    # Drop is_head_of_department PHẢI sau khi tất cả code đã ngừng đọc cột này.
+    "ALTER TABLE users DROP COLUMN IF EXISTS is_head_of_department",
+
+    "ALTER TABLE course_ratings ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT FALSE",
+    """
+    ALTER TABLE course_ratings ADD COLUMN IF NOT EXISTS hidden_by BIGINT
+        REFERENCES users(id) ON DELETE SET NULL
+    """,
+    "ALTER TABLE course_ratings ADD COLUMN IF NOT EXISTS hidden_at TIMESTAMP",
+    "CREATE INDEX IF NOT EXISTS idx_course_ratings_hidden ON course_ratings(hidden) WHERE hidden = FALSE",
 ]
 
 

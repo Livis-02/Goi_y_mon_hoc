@@ -1,0 +1,32 @@
+Tổng prereq pairs trong CTDT_CHUAN: 16
+  từ 16 môn có prereq
+Loaded 2 SV: ['2', 'Hoai Nam']
+  2: 60 rows, 57 passed
+  Hoai Nam: 63 rows, 59 passed
+
+========== KẾT QUẢ ==========
+✓ Confirmed: 15
+⚠ Suspect (SV pass course mà không có prereq): 0
+✗ Invalid (SV học prereq SAU course): 1
+? Unknown (không đủ data): 0
+
+--- CONFIRMED (15) ---
+  ✓ 7010104 ← 7010103 (Giải tích 2)
+  ✓ 7010602 ← 7010601 (Tiếng Anh 2)
+  ✓ 7010702 ← 7010701 (Giáo dục thể chất 2)
+  ✓ 7020302 ← 7020105 (Kinh tế chính trị Mác - Lênin)
+  ✓ 7010703 ← 7010702 (Giáo dục thể chất 3)
+  ✓ 7020202 ← 7020302 (Chủ nghĩa xã hội khoa học)
+  ✓ 7080216 ← 7080208 (Kỹ thuật LT hướng đối tượng C+)
+  ✓ 7020201 ← 7020202 (Tư tưởng Hồ Chí Minh)
+  ✓ 7080211 ← 7080207 (Hệ quản trị cơ sở dữ liệu)
+  ✓ 7080512 ← 7080208 (Lập trình hướng đối tượng Java)
+  ✓ 7080111 ← 7080226 (Mã nguồn mở)
+  ✓ 7080116 ← 7080207 (Phát triển ứng dụng Web + BTL)
+  ✓ 7080509 ← 7080514 (Khoa học dữ liệu)
+  ✓ 7080703 ← 7080717 (Cơ sở an ninh mạng)
+  ✓ 7080122 ← 7080717 (Trí tuệ nhân tạo + BTL)
+
+--- INVALID (đề xuất BỎ) (1) ---
+  ✗ 7080717 ← 7080216 (Mạng máy tính + BTL)
+      2=OK, Hoai Nam=REVERSED

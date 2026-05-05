@@ -4,81 +4,35 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>Cổng Cố vấn Học tập · CNTT</title>
-  <style>
-    /* Critical baseline — matches Tailwind bg-slate-50 / text-slate-800 */
-    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
-  </style>
-  
-  <!-- Smooth page transitions (Chrome 111+, Safari 18+) -->
-  <style>
-    @view-transition { navigation: auto; }
-    ::view-transition-old(root), ::view-transition-new(root) {
-      animation-duration: 0.15s;
-      animation-timing-function: ease-out;
-    }
-    /* Keep sidebar + header stable across transitions (no fade on persistent UI) */
-    #sidebarMount, #sidebarDrawer, #adminSidebar, #adminSidebarMount, header {
-      view-transition-name: none;
-    }
-  </style>
-
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="theme.css?v=11"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-  <script src="auth.js"></script>
+  <script src="theme.js?v=6"></script>
+  <script src="theme-switcher.js?v=2"></script>
+  <script src="app-core.js?v=1"></script>
+  <script src="nav-prefetch.js?v=1" defer></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="auth.js?v=5"></script>
+  <script src="utils.js?v=2"></script>
+  <script src="_curriculum_chart.js"></script>
+  <!-- floating-chat.js removed: AI tư vấn chỉ áp dụng cho role student.
+       GV dùng messaging.html với SV phụ trách. -->
+
   <style>
-    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
-    body { font-family:'Inter',sans-serif; }
-    .pri-grad { background: linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .spin { animation:spin .8s linear infinite; display:inline-block; }
+    /* Advisor page-specific only — shared styles live in theme.css */
     .adv-nav-btn        { color: #474651; }
     .adv-nav-btn:hover  { background: #eff4ff; color: #0b1c30; }
     .adv-nav-btn.active { background: #e2dfff; color: #1a146b; font-weight: 600; border-right: 3px solid #1a146b; }
-    .adv-nav-btn.active .material-symbols-outlined { font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24; }
+    .adv-nav-btn.active .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     /* legacy names kept so code not touched yet still works */
-    .nav-active   { background: #e2dfff; color: #1a146b; font-weight:600; }
-    .nav-inactive { color:#474651; }
-    ::-webkit-scrollbar { width:5px; }
-    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
-    .status-high_risk       { background:#fef2f2; color:#b91c1c; border-color:#fca5a5; }
-    .status-needs_attention { background:#fffbeb; color:#92400e; border-color:#fcd34d; }
-    .status-normal          { background:#f0fdf4; color:#166534; border-color:#86efac; }
-    .chip-high_risk         { background:#fee2e2; color:#b91c1c; }
-    .chip-needs_attention   { background:#fef9c3; color:#92400e; }
-    .chip-normal            { background:#dcfce7; color:#166534; }
-  </style>
-  <script>
-    tailwind.config = {
-      darkMode:'class',
-      theme:{ extend:{ colors:{
-        primary:'#1a146b','primary-fixed':'#e0e7ff','primary-container':'#312e81',
-        'on-primary':'#ffffff','on-surface':'#191c1d','on-surface-variant':'#414754',
-        'outline-variant':'#c1c6d6',surface:'#f8f9fa','surface-container':'#edeeef',
-        'surface-container-low':'#f3f4f5','surface-container-lowest':'#ffffff',
-        outline:'#727785',error:'#ba1a1a',
-      }}}
-    }
-  </script>
-
-  <script src="_curriculum_chart.js"></script>
-  <script defer src="floating-chat.js?v=5"></script>
-  <style>
-    /* disable browser autofill yellow highlight */
-    input:-webkit-autofill,
-    input:-webkit-autofill:hover,
-    input:-webkit-autofill:focus,
-    input:-webkit-autofill:active,
-    textarea:-webkit-autofill,
-    textarea:-webkit-autofill:hover,
-    textarea:-webkit-autofill:focus,
-    select:-webkit-autofill,
-    select:-webkit-autofill:hover,
-    select:-webkit-autofill:focus {
-      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
-      -webkit-text-fill-color: inherit !important;
-      transition: background-color 5000s ease-in-out 0s;
-    }
+    .nav-active   { background: #e2dfff; color: #1a146b; font-weight: 600; }
+    .nav-inactive { color: #474651; }
+    .status-high_risk       { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+    .status-needs_attention { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+    .status-normal          { background: #f0fdf4; color: #166534; border-color: #86efac; }
+    .chip-high_risk         { background: #fee2e2; color: #b91c1c; }
+    .chip-needs_attention   { background: #fef9c3; color: #92400e; }
+    .chip-normal            { background: #dcfce7; color: #166534; }
 
     /* ════════ CTDT Sequence Map (read-only, port từ integrated-roadmap) ════════ */
     .ctdt-adv-canvas {
@@ -144,14 +98,15 @@
     .ctdt-adv-canvas .slot-empty.tc-c { border-color: #a78bfa; }
   </style>
   <script defer src="scroll-helpers.js?v=v2"></script>
-  <script defer src="ajax-nav.js?v=6"></script>
+  <script defer src="ajax-nav.js?v=16"></script>
+  <script defer src="nav-prefetch.js?v=1"></script>
   <script>
     // sidebar-init.js needs API_BASE in scope
     window.API_BASE = (window.VITE_API_BASE || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://127.0.0.1:8000' : location.origin));
   </script>
-  <script defer src="sidebar-init.js?v=8"></script>
+  <script defer src="sidebar-init.js?v=13"></script>
 </head>
-<body class="bg-[#f8f9ff] text-[#191c1d] antialiased">
+<body class="bg-canvas text-text-primary antialiased min-h-screen">
 
 <!-- ── TOAST ──────────────────────────────────────────────────────────────── -->
 <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
@@ -159,39 +114,50 @@
 <!-- ── SIDEBAR (mounted by sidebar-init.js) ──────────────────────── -->
 <div id="sidebarMount"></div>
 
-
-<!-- ── HEADER ────────────────────────────────────────────────────────────── -->
-<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm">
-  <div class="flex items-center gap-3">
-    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container transition-colors" aria-label="Menu">
-      <span class="material-symbols-outlined msym text-xl text-on-surface-variant">menu</span>
+<!-- ── TOPBAR ────────────────────────────────────────────────────────────── -->
+<header class="topbar flex items-center justify-between px-4 lg:px-6">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-md hover:bg-surface-subtle transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-text-secondary">menu</span>
     </button>
-    <h2 class="text-base font-bold text-on-surface" id="pageTitle">Tổng quan</h2>
+    <nav class="flex items-center gap-1.5 text-[13px] min-w-0">
+      <span class="text-text-tertiary font-medium">Cố vấn</span>
+      <span class="material-symbols-outlined msym text-base text-text-tertiary">chevron_right</span>
+      <span class="text-text-primary font-semibold" id="pageTitle">Tổng quan</span>
+    </nav>
   </div>
-  <div class="flex items-center gap-2">
-    <button onclick="refreshAll()" aria-label="Làm mới" class="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-all">
+  <div class="flex items-center gap-1">
+    <button onclick="refreshAll()" aria-label="Làm mới" class="btn btn-ghost btn-sm">
       <span class="material-symbols-outlined msym text-base">refresh</span><span class="hidden sm:inline">Làm mới</span>
+    </button>
+    <button class="theme-toggle" data-tooltip="Sáng/Tối">
+      <span class="material-symbols-outlined msym text-[18px] icon-moon">dark_mode</span>
+      <span class="material-symbols-outlined msym text-[18px] icon-sun">light_mode</span>
     </button>
     <!-- Bell notification -->
     <div class="relative">
       <button id="bellBtn" onclick="toggleNotifDropdown()" aria-label="Thông báo"
-        class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors relative">
-        <span class="material-symbols-outlined msym text-xl">notifications</span>
-        <span id="notifBubble" class="hidden absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-error text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">0</span>
+        class="w-9 h-9 flex items-center justify-center rounded-md text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors relative">
+        <span class="material-symbols-outlined msym text-[20px]">notifications</span>
+        <span id="notifBubble" class="hidden absolute top-1 right-1 min-w-[16px] h-4 bg-danger text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none ring-2 ring-surface">0</span>
       </button>
       <div id="notifDropdown"
-        class="hidden absolute right-0 top-10 w-80 rounded-xl shadow-2xl border border-outline-variant flex flex-col max-h-[420px] overflow-hidden"
-        style="background:#ffffff;z-index:9500">
-        <div class="px-4 py-3 border-b border-outline-variant flex items-center justify-between flex-shrink-0" style="background:#ffffff">
-          <span class="text-sm font-bold text-on-surface">Thông báo</span>
-          <button onclick="markAllNotifsRead()" class="text-[11px] text-primary hover:underline font-semibold">Đánh dấu tất cả đã đọc</button>
+        class="hidden absolute right-0 top-11 w-80 rounded-xl border border-border-default flex flex-col max-h-[420px] overflow-hidden bg-surface shadow-pop"
+        style="z-index:9500">
+        <div class="px-4 py-3 border-b border-border-subtle flex items-center justify-between flex-shrink-0">
+          <span class="text-sm font-bold text-text-primary">Thông báo</span>
+          <button onclick="markAllNotifsRead()" class="text-[11px] text-accent hover:underline font-semibold">Đánh dấu tất cả đã đọc</button>
         </div>
-        <div id="notifDropdownList" class="overflow-y-auto flex-1 divide-y divide-outline-variant" style="background:#ffffff">
-          <p class="px-4 py-6 text-xs text-outline text-center">Đang tải…</p>
+        <div id="notifDropdownList" class="overflow-y-auto flex-1 divide-y divide-border-subtle">
+          <!-- Skeleton thay text "Đang tải…" — looks more polished -->
+          <div class="px-4 py-3 space-y-3">
+            <div class="skeleton h-12 rounded-md"></div>
+            <div class="skeleton h-12 rounded-md"></div>
+            <div class="skeleton h-12 rounded-md"></div>
+          </div>
         </div>
         <a href="notifications.html"
-          class="px-4 py-3 border-t border-outline-variant text-xs font-bold text-white hover:opacity-90 text-center transition-all flex items-center justify-center gap-1"
-          style="background:linear-gradient(135deg,#1a146b,#312e81)">
+          class="px-4 py-2.5 border-t border-border-subtle text-xs font-semibold text-accent hover:bg-accent-soft text-center transition-colors flex items-center justify-center gap-1">
           Xem tất cả thông báo
           <span class="material-symbols-outlined msym text-sm">arrow_forward</span>
         </a>
@@ -200,21 +166,21 @@
     <!-- Avatar dropdown -->
     <div class="relative" id="avatarMenu">
       <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
-        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
-        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md hover:bg-surface-subtle transition-colors">
+        <div class="w-7 h-7 rounded-full pri-grad flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-[11px] font-bold" id="topbarAvatar">?</span>
         </div>
-        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
-        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+        <span class="text-sm font-semibold text-text-primary hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-text-tertiary hidden sm:block">expand_more</span>
       </button>
-      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
-        <div class="px-4 py-3 border-b border-outline-variant">
-          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
-          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Cố vấn học tập</p>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface rounded-xl border border-border-default shadow-pop z-50 overflow-hidden">
+        <div class="px-4 py-3 border-b border-border-subtle">
+          <p class="text-sm font-bold text-text-primary truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-text-tertiary mt-0.5" id="avatarDropRole">Cố vấn học tập</p>
         </div>
         <div class="py-1">
-          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
-            <span class="material-symbols-outlined msym text-lg">logout</span>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger-soft transition-colors">
+            <span class="material-symbols-outlined msym text-[18px]">logout</span>
             Đăng xuất
           </button>
         </div>
@@ -409,7 +375,7 @@
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-wrap gap-3 items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="material-symbols-outlined msym text-indigo-600 text-xl" style="font-variation-settings:'FILL' 1">manage_accounts</span>
-          <span class="font-semibold text-sm">Phân công cố vấn cho sinh viên trong bộ môn</span>
+          <span class="font-semibold text-sm">Phân công cố vấn cho sinh viên trong chuyên ngành</span>
         </div>
         <button onclick="loadAssignSection()"
           class="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all">
@@ -619,25 +585,73 @@ if (!window._advisorErrorHandlersAttached) {
 // ── AUTH GUARD ────────────────────────────────────────────────────────────────
 (async function() {
   if (!token) { location.replace('index.html'); return; }
-  let me;
-  try {
-    const res = await fetch((window.VITE_API_BASE || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://127.0.0.1:8000' : location.origin)) + '/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      if (res.status === 401) localStorage.removeItem('access_token');
-      location.replace('index.html'); return;
+
+  // Stale-while-revalidate: hiện ngay từ cache nếu có (sb_user shared với
+  // sidebar-init), fetch fresh trong background. Trước đây block toàn bộ page
+  // đợi /auth/me → cold start hoặc network chậm → page trắng "rất lâu".
+  const apiBase = window.VITE_API_BASE || (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://127.0.0.1:8000' : location.origin);
+  let me = null;
+  try { me = JSON.parse(localStorage.getItem('sb_user') || 'null'); } catch (_) {}
+
+  // Render header + initPage cho user. Sidebar fragment mount async qua
+  // sidebar-init.js (sau khi script này chạy) → guard null cho getElementById
+  // để khi cache-hit chạy sync, không crash vì sidebar chưa tồn tại.
+  // Sidebar-init đọc sb_user từ localStorage nên sẽ tự render đúng tên.
+  const _renderInit = (user) => {
+    if (user.role !== 'advisor' && user.role !== 'admin') {
+      location.replace('home.html'); return false;
     }
-    me = await res.json();
-  } catch (_) { return; }
-  if (me.role !== 'advisor' && me.role !== 'admin') {
-    location.replace('home.html'); return;
+    const name = user.full_name || user.username || 'Cố vấn';
+    const sName = document.getElementById('sidebarUserName');
+    const sAvatar = document.getElementById('avatarCircle');
+    if (sName) sName.textContent = name;
+    if (sAvatar) sAvatar.textContent = name[0].toUpperCase();
+    if (typeof updateTopbarUser === 'function') updateTopbarUser(user);
+    if (typeof initPage === 'function') initPage(user);
+    return true;
+  };
+
+  // Wait for DOMContentLoaded để đảm bảo:
+  //   1. Toàn bộ script body evaluated (const VALID_SECTIONS, etc. khởi tạo xong)
+  //   2. Sidebar fragment mounted (sidebar-init.js có mount bằng innerHTML)
+  // Tránh TDZ + null-element errors khi cache-hit chạy quá sớm.
+  if (document.readyState === 'loading') {
+    await new Promise(res => document.addEventListener('DOMContentLoaded', res, { once: true }));
   }
-  const name = me.full_name || me.username || 'Cố vấn';
-  document.getElementById('sidebarUserName').textContent = name;
-  document.getElementById('avatarCircle').textContent = name[0].toUpperCase();
-  updateTopbarUser(me);
-  initPage(me);
+
+  let renderedFromCache = false;
+  if (me && (me.role === 'advisor' || me.role === 'admin')) {
+    if (_renderInit(me)) renderedFromCache = true;
+  }
+
+  // Background: fetch fresh để verify token còn hợp lệ + update nếu data đổi
+  (async () => {
+    try {
+      const fresh = (typeof window._dedupedAuthMeFetch === 'function')
+        ? await window._dedupedAuthMeFetch(token)
+        : await fetch(apiBase + '/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null);
+      if (!fresh) {
+        // 401 hoặc network die → nếu chưa render từ cache thì redirect login
+        if (!renderedFromCache) location.replace('index.html');
+        return;
+      }
+      try { localStorage.setItem('sb_user', JSON.stringify(fresh)); } catch (_) {}
+      // Nếu chưa render (cache miss) thì render lần đầu
+      if (!renderedFromCache) {
+        _renderInit(fresh);
+      } else if (JSON.stringify(fresh) !== JSON.stringify(me)) {
+        // Data đổi (vd admin update name) → re-render header với null guard
+        const name = fresh.full_name || fresh.username || 'Cố vấn';
+        const sName = document.getElementById('sidebarUserName');
+        const sAvatar = document.getElementById('avatarCircle');
+        if (sName) sName.textContent = name;
+        if (sAvatar) sAvatar.textContent = name[0].toUpperCase();
+        if (typeof updateTopbarUser === 'function') updateTopbarUser(fresh);
+      }
+    } catch (_) {
+      if (!renderedFromCache) location.replace('index.html');
+    }
+  })();
 })();
 
 // ── API HELPER ────────────────────────────────────────────────────────────────
@@ -662,16 +676,7 @@ async function api(path, opts = {}) {
   return res.json();
 }
 
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-function toast(msg, type = 'info') {
-  const c = document.getElementById('toastContainer');
-  const colors = { info:'bg-blue-600', success:'bg-green-600', error:'bg-red-600', warn:'bg-yellow-500' };
-  const el = document.createElement('div');
-  el.className = `pointer-events-auto text-white text-sm px-4 py-3 rounded-xl shadow-lg ${colors[type]||colors.info} flex items-center gap-2 animate-bounce`;
-  el.innerHTML = `<span>${msg}</span>`;
-  c.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
-}
+// ── TOAST — migrated 2026-05-05 dùng App.toast qua window.toast shim ────────
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 const TITLES = { overview: 'Cần chú ý', students: 'Sinh viên của tôi', notes: 'Ghi chú Tư vấn', assign: 'Phân công Sinh viên', ctdt: 'Sơ đồ CTĐT' };
@@ -1027,7 +1032,15 @@ async function loadStudentGrades(sid) {
       if (!byTerm[t]) byTerm[t] = [];
       byTerm[t].push(g);
     }
-    const terms = Object.keys(byTerm).sort();
+    // Sort theo (year_start, sem) numeric — newest first.
+    // Bug cũ: .sort() string-compare → "HK2 2021-2022" lên trên "HK1 2022-2023" sai chronological.
+    const _termSortKey = (term) => {
+      if (!term) return 0;
+      const yr = String(term).match(/(\d{4})\s*[-–]\s*\d{4}/);
+      const sm = String(term).match(/(?:H[Kk]|Học\s*k[ỳy])\s*(\d+)/i);
+      return (yr ? parseInt(yr[1], 10) : 0) * 10 + (sm ? parseInt(sm[1], 10) : 0);
+    };
+    const terms = Object.keys(byTerm).sort((a, b) => _termSortKey(b) - _termSortKey(a));
 
     let html = '<div class="space-y-4">';
     for (const term of terms) {
@@ -1335,6 +1348,24 @@ function renderStudentModal(prog, rec) {
       Đủ điều kiện thực tập
     </div>` : ''}
 
+    <!-- A6: AI risk analysis — on-demand, advisor click button để tiết kiệm token -->
+    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-4">
+      <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined msym text-indigo-600" style="font-variation-settings:'FILL' 1">psychology</span>
+          <p class="text-sm font-bold text-indigo-900">Phân tích AI rủi ro học tập</p>
+        </div>
+        <button onclick="loadAiRiskAnalysis(${activeStudentId})"
+          class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition flex items-center gap-1.5">
+          <span class="material-symbols-outlined msym text-sm">auto_awesome</span>
+          <span id="aiRiskBtnLabel">Phân tích AI</span>
+        </button>
+      </div>
+      <div id="aiRiskBody">
+        <p class="text-xs text-slate-500 italic">Bấm "Phân tích AI" để AI đánh giá chi tiết rủi ro dựa trên GPA trend, môn trượt, ghi chú cố vấn… Mỗi click tiêu thụ ít token AI — chỉ chạy khi cần đào sâu.</p>
+      </div>
+    </div>
+
     ${topRecs.length ? `
     <div>
       <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Gợi ý môn học kỳ tới</p>
@@ -1380,6 +1411,97 @@ function closeStudentModal() {
   activeStudentId = null;
   _activeStudentNotes = [];
 }
+
+// A6: AI risk analysis — gọi /advisor/students/{id}/risk-analysis, render result.
+// Cache theo activeStudentId để re-open modal cùng SV không phải gọi LLM lại.
+const _aiRiskCache = {};
+async function loadAiRiskAnalysis(sid) {
+  if (!sid) return;
+  const body = document.getElementById('aiRiskBody');
+  const labelEl = document.getElementById('aiRiskBtnLabel');
+  if (!body) return;
+
+  // Cache hit → re-render instant
+  if (_aiRiskCache[sid]) {
+    _renderAiRiskResult(_aiRiskCache[sid]);
+    return;
+  }
+
+  body.innerHTML = `<div class="flex items-center gap-2 py-2 text-indigo-700">
+    <span class="material-symbols-outlined msym spin">psychology</span>
+    <span class="text-sm">AI đang phân tích dữ liệu học tập của SV…</span>
+  </div>`;
+  if (labelEl) labelEl.textContent = 'Đang phân tích…';
+
+  try {
+    const res = await api(`/advisor/students/${sid}/risk-analysis`);
+    if (!res || res._error) {
+      body.innerHTML = `<p class="text-xs text-red-600">Lỗi: ${escHtml(res?._error || 'Không thể phân tích lúc này')}</p>`;
+      if (labelEl) labelEl.textContent = 'Thử lại';
+      return;
+    }
+    _aiRiskCache[sid] = res;
+    _renderAiRiskResult(res);
+    if (labelEl) labelEl.textContent = 'Phân tích lại';
+  } catch (e) {
+    body.innerHTML = `<p class="text-xs text-red-600">Lỗi: ${escHtml(e.message || 'Unknown')}</p>`;
+    if (labelEl) labelEl.textContent = 'Thử lại';
+  }
+}
+
+function _renderAiRiskResult(r) {
+  const body = document.getElementById('aiRiskBody');
+  if (!body) return;
+  const lvl = (r.risk_level || 'medium').toLowerCase();
+  const cfg = {
+    high:   { label: 'CAO',         cls: 'bg-red-100 text-red-700 border-red-300',         icon: 'error' },
+    medium: { label: 'TRUNG BÌNH',  cls: 'bg-amber-100 text-amber-700 border-amber-300',   icon: 'warning' },
+    low:    { label: 'THẤP',        cls: 'bg-green-100 text-green-700 border-green-300',   icon: 'check_circle' },
+  }[lvl] || { label: lvl.toUpperCase(), cls: 'bg-slate-100 text-slate-700 border-slate-300', icon: 'help' };
+
+  const factorsHtml = (r.factors && r.factors.length)
+    ? `<ul class="space-y-1.5 mt-2">
+        ${r.factors.map(f => `<li class="flex items-start gap-2 text-xs text-slate-700">
+          <span class="material-symbols-outlined msym text-amber-500 flex-shrink-0" style="font-size:14px">label_important</span>
+          <span class="flex-1">${escHtml(f)}</span>
+        </li>`).join('')}
+       </ul>`
+    : '';
+
+  const recsHtml = (r.recommendations && r.recommendations.length)
+    ? `<ul class="space-y-1.5 mt-2">
+        ${r.recommendations.map(rec => `<li class="flex items-start gap-2 text-xs text-slate-700">
+          <span class="material-symbols-outlined msym text-emerald-600 flex-shrink-0" style="font-size:14px">check_circle</span>
+          <span class="flex-1">${escHtml(rec)}</span>
+        </li>`).join('')}
+       </ul>`
+    : '';
+
+  const conf = r.confidence || 'medium';
+  const confLabel = {high: 'cao', medium: 'trung bình', low: 'thấp'}[conf] || conf;
+
+  body.innerHTML = `
+    <div class="space-y-3">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-bold uppercase ${cfg.cls}">
+          <span class="material-symbols-outlined msym" style="font-size:12px;font-variation-settings:'FILL' 1">${cfg.icon}</span>
+          Rủi ro ${cfg.label}
+        </span>
+        <span class="text-[10px] text-slate-500">Độ tin cậy: ${escHtml(confLabel)}</span>
+      </div>
+      ${r.summary ? `<p class="text-sm text-slate-700 leading-relaxed">${escHtml(r.summary)}</p>` : ''}
+      ${factorsHtml ? `<div>
+        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Yếu tố rủi ro</p>
+        ${factorsHtml}
+      </div>` : ''}
+      ${recsHtml ? `<div>
+        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hành động khuyến nghị</p>
+        ${recsHtml}
+      </div>` : ''}
+    </div>
+  `;
+}
+window.loadAiRiskAnalysis = loadAiRiskAnalysis;
 
 function toggleQuickNote() {
   document.getElementById('quickNoteForm').classList.toggle('hidden');
@@ -1547,7 +1669,7 @@ window.addEventListener('ajax:navigated', () => {
 }, { once: true });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ASSIGN SECTION (trưởng bộ môn)
+// ASSIGN SECTION (GVCN)
 // ═══════════════════════════════════════════════════════════════════════════════
 let deptAdvisors = [];
 let deptStudents = [];
@@ -1577,23 +1699,23 @@ function renderAssignSection() {
 
   // Advisor chips (legend)
   chipsEl.innerHTML = deptAdvisors.map(a => {
-    const badge = a.is_head_of_department
-      ? '<span class="ml-1 text-[9px] bg-amber-100 text-amber-700 px-1 rounded">Trưởng BM</span>' : '';
+    const badge = false
+      ? '<span class="ml-1 text-[9px] bg-amber-100 text-amber-700 px-1 rounded">GVCN</span>' : '';
     return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
       <span class="material-symbols-outlined msym text-sm">person</span>
       ${escHtml(a.full_name || a.username)}${badge}
       <span class="text-blue-400">(${a.student_count} SV)</span>
     </span>`;
   }).join('');
-  if (!deptAdvisors.length) chipsEl.innerHTML = '<p class="text-xs text-slate-400 italic">Bộ môn chưa có cố vấn nào.</p>';
+  if (!deptAdvisors.length) chipsEl.innerHTML = '<p class="text-xs text-slate-400 italic">Chuyên ngành chưa có cố vấn nào.</p>';
 
   if (!deptStudents.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-400 py-10 text-sm">Bộ môn chưa có sinh viên nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-400 py-10 text-sm">Chuyên ngành chưa có sinh viên nào.</td></tr>`;
     return;
   }
 
   const advOpts = deptAdvisors.map(a =>
-    `<option value="${a.id}">${escHtml(a.full_name || a.username)}${a.is_head_of_department ? ' ★' : ''}</option>`
+    `<option value="${a.id}">${escHtml(a.full_name || a.username)}${false ? ' ★' : ''}</option>`
   ).join('');
 
   tbody.innerHTML = deptStudents.map(sv => {
@@ -1646,8 +1768,8 @@ async function reassignAdvisor(studentId, newAdvisorId, selectEl) {
 function renderAdvChips() {
   const chipsEl = document.getElementById('deptAdvisorChips');
   chipsEl.innerHTML = deptAdvisors.map(a => {
-    const badge = a.is_head_of_department
-      ? '<span class="ml-1 text-[9px] bg-amber-100 text-amber-700 px-1 rounded">Trưởng BM</span>' : '';
+    const badge = false
+      ? '<span class="ml-1 text-[9px] bg-amber-100 text-amber-700 px-1 rounded">GVCN</span>' : '';
     return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
       <span class="material-symbols-outlined msym text-sm">person</span>
       ${escHtml(a.full_name || a.username)}${badge}

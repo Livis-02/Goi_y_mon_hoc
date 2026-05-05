@@ -4,89 +4,29 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>EduGuide — Bảng điểm</title>
-  <style>
-    html, body { background:#f8f9ff; color:#0b1c30; font-family:'Inter',system-ui,-apple-system,sans-serif; margin:0; }
-  </style>
-  
-  <!-- Smooth page transitions (Chrome 111+, Safari 18+) -->
-  <style>
-    @view-transition { navigation: auto; }
-    ::view-transition-old(root), ::view-transition-new(root) {
-      animation-duration: 0.15s;
-      animation-timing-function: ease-out;
-    }
-    /* Keep sidebar + header stable across transitions (no fade on persistent UI) */
-    #sidebarMount, #sidebarDrawer, #adminSidebar, #adminSidebarMount, header {
-      view-transition-name: none;
-    }
-  </style>
-
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <script>
-    tailwind.config = {
-
-      theme: {
-        extend: {
-          colors: {
-            "background": "#f8f9ff", "on-background": "#0b1c30",
-            "surface": "#f8f9ff", "on-surface": "#0b1c30",
-            "surface-container-lowest": "#ffffff", "surface-container-low": "#eff4ff",
-            "surface-container": "#e5eeff", "surface-container-high": "#dce9ff",
-            "surface-container-highest": "#d3e4fe", "surface-variant": "#d3e4fe",
-            "outline": "#777682", "outline-variant": "#c8c5d3",
-            "on-surface-variant": "#474651", "surface-bright": "#f8f9ff",
-            "primary": "#1a146b", "on-primary": "#ffffff",
-            "primary-container": "#312e81", "on-primary-container": "#9c9af4",
-            "secondary": "#006c49", "on-secondary": "#ffffff",
-            "secondary-container": "#6cf8bb", "on-secondary-container": "#00714d",
-            "error": "#ba1a1a", "on-error": "#ffffff",
-            "error-container": "#ffdad6", "on-error-container": "#93000a"
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="theme.css?v=11"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-  <script src="auth.js"></script>
-  <script src="sidebar-init.js"></script>
+  <script src="theme.js?v=6"></script>
+  <script src="theme-switcher.js?v=2"></script>
+  <script src="app-core.js?v=1"></script>
+  <script src="nav-prefetch.js?v=1" defer></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="auth.js?v=5"></script>
+  <script src="utils.js?v=2"></script>
+  <script src="sidebar-init.js?v=13"></script>
   <script defer src="scroll-helpers.js?v=v2"></script>
-  <script defer src="ajax-nav.js?v=6"></script>
+  <script defer src="ajax-nav.js?v=16"></script>
+  <script defer src="nav-prefetch.js?v=1"></script>
   <style>
-    .msym { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
-    body { font-family:'Inter',sans-serif; }
-    .pri-grad { background:linear-gradient(135deg,#1a146b 0%,#312e81 100%); }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .spin { animation:spin .8s linear infinite; display:inline-block; }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-    .fade-in { animation:fadeIn .2s ease both; }
-    ::-webkit-scrollbar { width:5px; }
-    ::-webkit-scrollbar-thumb { background:#c1c6d6; border-radius:10px; }
-    mark { background:#fef08a; border-radius:2px; padding:0 1px; }
-    .tab-btn.active { background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#1a146b; font-weight:600; }
-    .tab-btn { color:#474651; }
-    .tab-btn:hover:not(.active) { color:#0b1c30; }
-  </style>
-
-  <style>
-    /* disable browser autofill yellow highlight */
-    input:-webkit-autofill,
-    input:-webkit-autofill:hover,
-    input:-webkit-autofill:focus,
-    input:-webkit-autofill:active,
-    textarea:-webkit-autofill,
-    textarea:-webkit-autofill:hover,
-    textarea:-webkit-autofill:focus,
-    select:-webkit-autofill,
-    select:-webkit-autofill:hover,
-    select:-webkit-autofill:focus {
-      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
-      -webkit-text-fill-color: inherit !important;
-      transition: background-color 5000s ease-in-out 0s;
-    }
+    /* Grades page-specific only — shared styles live in theme.css */
+    mark { background: #fef08a; border-radius: 2px; padding: 0 1px; }
+    .tab-btn.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.1); color: #1a146b; font-weight: 600; }
+    .tab-btn { color: #474651; }
+    .tab-btn:hover:not(.active) { color: #0b1c30; }
   </style>
 </head>
-<body class="bg-background text-on-background antialiased">
+<body class="bg-canvas text-text-primary antialiased min-h-screen">
 
 <!-- ── TOAST ─────────────────────────────────────────────────────────────── -->
 <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
@@ -95,37 +35,43 @@
 <div id="sidebarMount"></div>
 
 <!-- ── HEADER ────────────────────────────────────────────────────────────── -->
-<header class="fixed top-0 left-0 lg:left-60 right-0 h-[60px] bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm">
-  <div class="flex items-center gap-3">
-    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-container" aria-label="Menu">
-      <span class="material-symbols-outlined msym text-xl text-on-surface-variant">menu</span>
+<header class="topbar flex items-center justify-between px-4 lg:px-6">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-md hover:bg-surface-subtle transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-text-secondary">menu</span>
     </button>
-    <span class="material-symbols-outlined msym text-lg text-primary">grade</span>
-    <h2 class="text-base font-bold text-on-background">Bảng điểm</h2>
+    <nav class="flex items-center gap-1.5 text-[13px] min-w-0">
+      <span class="text-text-tertiary font-medium">Sinh viên</span>
+      <span class="material-symbols-outlined msym text-base text-text-tertiary">chevron_right</span>
+      <span class="text-text-primary font-semibold">Bảng điểm</span>
+    </nav>
   </div>
-  <div class="flex items-center gap-2">
-    <!-- Avatar dropdown -->
+  <div class="flex items-center gap-1">
+    <button class="theme-toggle" data-tooltip="Sáng/Tối">
+      <span class="material-symbols-outlined msym text-[18px] icon-moon">dark_mode</span>
+      <span class="material-symbols-outlined msym text-[18px] icon-sun">light_mode</span>
+    </button>
     <div class="relative" id="avatarMenu">
       <button onclick="toggleAvatarMenu()" aria-label="Tài khoản"
-        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-surface-container transition-colors">
-        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-          <span class="text-on-primary text-xs font-bold" id="topbarAvatar">?</span>
+        class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md hover:bg-surface-subtle transition-colors">
+        <div class="w-7 h-7 rounded-full pri-grad flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-[11px] font-bold" id="topbarAvatar">?</span>
         </div>
-        <span class="text-sm font-semibold text-on-surface hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
-        <span class="material-symbols-outlined msym text-sm text-on-surface-variant hidden sm:block">expand_more</span>
+        <span class="text-sm font-semibold text-text-primary hidden sm:block max-w-[120px] truncate" id="topbarUserName">...</span>
+        <span class="material-symbols-outlined msym text-sm text-text-tertiary hidden sm:block">expand_more</span>
       </button>
-      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface-container-lowest rounded-xl shadow-2xl border border-outline-variant z-50">
-        <div class="px-4 py-3 border-b border-outline-variant">
-          <p class="text-sm font-bold text-on-surface truncate" id="avatarDropName">...</p>
-          <p class="text-xs text-outline mt-0.5" id="avatarDropRole">Sinh viên</p>
+      <div id="avatarDropdown" class="hidden absolute right-0 top-11 w-56 bg-surface rounded-xl border border-border-default shadow-pop z-50 overflow-hidden">
+        <div class="px-4 py-3 border-b border-border-subtle">
+          <p class="text-sm font-bold text-text-primary truncate" id="avatarDropName">...</p>
+          <p class="text-xs text-text-tertiary mt-0.5" id="avatarDropRole">Sinh viên</p>
         </div>
         <div class="py-1">
-          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors">
-            <span class="material-symbols-outlined msym text-lg text-on-surface-variant">settings</span>
+          <a href="settings.html" class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-surface-subtle transition-colors">
+            <span class="material-symbols-outlined msym text-[18px] text-text-tertiary">settings</span>
             Cài đặt tài khoản
           </a>
-          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error-container transition-colors rounded-b-xl">
-            <span class="material-symbols-outlined msym text-lg">logout</span>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger-soft transition-colors">
+            <span class="material-symbols-outlined msym text-[18px]">logout</span>
             Đăng xuất
           </button>
         </div>
@@ -242,9 +188,10 @@
         </p>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
-        <button onclick="openSimulator()" title="Mô phỏng điểm + đánh giá target GPA"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#7c3aed] text-[#7c3aed] bg-white hover:bg-[#f5f3ff] text-sm font-semibold transition-colors">
-          <span class="material-symbols-outlined msym text-base">analytics</span>
+        <button onclick="openSimulator()" title="Mô phỏng GPA: nhập điểm dự kiến → tính GPA mới · đánh giá target tốt nghiệp"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 hover:shadow-lg"
+          style="background:linear-gradient(135deg,var(--accent),var(--accent-hover));box-shadow:0 1px 3px rgba(99,91,255,0.3)">
+          <span class="material-symbols-outlined msym text-base" style="font-variation-settings:'FILL' 1">analytics</span>
           Mô phỏng GPA
         </button>
         <button id="uploadGradesBtn" onclick="openUploadModal()" style="display:none"
@@ -436,7 +383,6 @@
                 <th class="text-left px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide">Tên môn học</th>
                 <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-12">TC</th>
                 <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-20">HK</th>
-                <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-28">Nhóm</th>
                 <th class="text-center px-4 py-3 text-xs font-medium text-[#474651] uppercase tracking-wide w-36">Tiên quyết</th>
               </tr>
             </thead>
@@ -720,7 +666,7 @@
 </div>
 
 <!-- ── FLOATING CHAT ───────────────────────────────────────────────────────── -->
-<script src="floating-chat.js?v=5"></script>
+<script src="floating-chat.js?v=12"></script>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
@@ -737,22 +683,50 @@ const H = () => ({ Authorization: `Bearer ${getToken()}` });
 // ── Init ───────────────────────────────────────────────────────────────────
 checkAuth();
 (async function init() {
-  // Sidebar is injected synchronously by sidebar-init.js
+  // ── Render shell INSTANTLY từ cache (sb_user/sb_progress shared với sidebar)
+  // Trước đây block 5 endpoints Promise.all → page trống ~300-500ms khi chuyển
+  // tab. Giờ cache hit → sidebar+topbar populate ngay, chỉ phần "Bảng điểm"
+  // vẫn skeleton cho đến khi /grades/me trả về.
+  let cachedUser = null, cachedProgress = null;
+  try { cachedUser = JSON.parse(localStorage.getItem('sb_user') || 'null'); } catch (_) {}
+  try { cachedProgress = JSON.parse(localStorage.getItem('sb_progress') || 'null'); } catch (_) {}
 
-  // Fetch user and data in parallel
+  if (cachedUser) {
+    _user = cachedUser;
+    if (typeof updateTopbarUser === 'function') updateTopbarUser(cachedUser);
+    const sName = document.getElementById('sidebarUserName');
+    const sAvatar = document.getElementById('avatarCircle');
+    if (sName) sName.textContent = cachedUser.full_name || cachedUser.username || '';
+    if (sAvatar) sAvatar.textContent = (cachedUser.full_name || cachedUser.username || '?')[0].toUpperCase();
+  }
+  if (cachedProgress) _progress = cachedProgress;
+
+  // Fetch user (deduped) + grades-specific data in parallel.
+  // Mỗi fetch wrap thêm .catch để 1 endpoint fail không kill cả Promise.all
+  // (trước đây JSON parse lỗi → reject → cả page stuck "Đang tải...")
+  const _safeFetch = (path, fallback) =>
+    fetch(`${API}${path}`, { headers: H() })
+      .then(r => r.ok ? r.json() : fallback)
+      .catch(err => { console.warn('[grades.html] fetch failed', path, err); return fallback; });
+
   const [user, grades, catalog, analytics, progress] = await Promise.all([
-    fetch(`${API}/auth/me`, { headers: H() }).then(r => r.ok ? r.json() : null),
-    fetch(`${API}/grades/me`, { headers: H() }).then(r => r.ok ? r.json() : []),
-    fetch(`${API}/courses/catalog/me`, { headers: H() }).then(r => r.ok ? r.json() : []),
-    fetch(`${API}/analytics/me`, { headers: H() }).then(r => r.ok ? r.json() : null),
-    fetch(`${API}/progress/me`, { headers: H() }).then(r => r.ok ? r.json() : null),
+    (typeof window._dedupedAuthMeFetch === 'function')
+      ? window._dedupedAuthMeFetch(getToken()).catch(() => null)
+      : _safeFetch('/auth/me', null),
+    _safeFetch('/grades/me',          []),
+    _safeFetch('/courses/catalog/me', []),
+    _safeFetch('/analytics/me',       null),
+    _safeFetch('/progress/me',        null),
   ]);
 
-  _user = user;
+  _user = user || cachedUser;
   _grades = grades || [];
   _catalog = catalog || [];
   _analytics = analytics;
-  _progress = progress;
+  _progress = progress || cachedProgress;
+  // Persist fresh cache cho lần nav sau
+  if (user) { try { localStorage.setItem('sb_user', JSON.stringify(user)); } catch (_) {} }
+  if (progress) { try { localStorage.setItem('sb_progress', JSON.stringify(progress)); } catch (_) {} }
 
   // Update sidebar user info
   if (user) {
@@ -762,10 +736,12 @@ checkAuth();
     document.getElementById('avatarCircle') &&
       (document.getElementById('avatarCircle').textContent = (user.full_name || user.username || '?')[0].toUpperCase());
 
-    // Approach C: 3 trạng thái cho SV
-    //  (1) grades_locked=true → admin đã đồng bộ chính thức → KHÔNG cho upload, banner xanh "đã xác minh"
-    //  (2) grades_locked=false + có grades → SV đã tự upload, chưa có data trường → banner vàng "tự khai", cho upload đè
-    //  (3) grades_locked=false + KHÔNG grades → SV mới → banner xám "chưa có điểm", cho upload tạm
+    // Sau Phase 2-3 (2026-05-05): EduGuide là tool cá nhân — SV TỰ upload bảng điểm
+    // (xuất từ cổng SIS), app phân tích lộ trình. KHÔNG còn admin sync, không khoá,
+    // không phân biệt source admin/self (cột source đã DROP).
+    // Logic chỉ còn 2 banner:
+    //  (a) Có grades  → "Bảng điểm cá nhân — N môn" + nút upload đè
+    //  (b) Không có   → "Chưa có bảng điểm" + nút upload lần đầu
     if (user.role === 'admin' || user.role === 'advisor') {
       document.getElementById('uploadGradesBtn').style.display = '';
       document.getElementById('emptyUploadBtn').style.display = '';
@@ -776,44 +752,48 @@ checkAuth();
       const uploadBtn = document.getElementById('uploadGradesBtn');
       const emptyUploadBtn = document.getElementById('emptyUploadBtn');
       const hasGrades = (_grades || []).length > 0;
-      const isLocked = !!user.grades_locked;
 
       if (banner) banner.classList.remove('hidden');
 
-      if (isLocked) {
-        // (1) Admin đã đồng bộ
+      if (hasGrades) {
+        // (a) Có grades — SV đã tự upload
         if (banner) banner.className = 'mb-4 bg-[#dcfce7] border border-[#86efac] rounded-xl px-4 py-3 flex items-start gap-3';
-        if (titleEl) titleEl.textContent = '✓ Bảng điểm chính thức (đã xác minh)';
-        if (msgEl) msgEl.textContent = `Phòng đào tạo đã đồng bộ ${_grades.length} môn. Mọi cập nhật phải thực hiện ở web trường, app này không tự sửa được.`;
-        if (uploadBtn) uploadBtn.style.display = 'none';
-        if (emptyUploadBtn) emptyUploadBtn.style.display = 'none';
-      } else if (hasGrades) {
-        // (2) SV tự khai, chưa có admin
-        if (banner) banner.className = 'mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3';
-        if (titleEl) titleEl.textContent = '⚠ Bảng điểm tự khai — chưa xác minh';
-        if (msgEl) msgEl.textContent = `Đây là dữ liệu bạn tự upload (${_grades.length} môn). Cố vấn không xem nguồn này. Khi phòng đào tạo đồng bộ chính thức, bản tự khai sẽ bị thay thế.`;
-        // Cho upload đè (re-upload)
+        if (titleEl) titleEl.textContent = `📋 Bảng điểm cá nhân — ${_grades.length} môn`;
+        if (msgEl) msgEl.textContent = 'Dữ liệu bạn tự upload từ cổng SIS để app phân tích lộ trình. Upload lại sẽ thay toàn bộ. Kết quả tốt nghiệp chính thức xem ở SIS của trường.';
         if (uploadBtn) uploadBtn.style.display = '';
-        if (emptyUploadBtn) emptyUploadBtn.style.display = '';
+        if (emptyUploadBtn) emptyUploadBtn.style.display = 'none';
       } else {
-        // (3) Chưa có gì
+        // (b) Chưa có grades
         if (banner) banner.className = 'mb-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-start gap-3';
         if (titleEl) titleEl.textContent = 'Chưa có bảng điểm';
-        if (msgEl) msgEl.textContent = 'Bạn có thể tạm upload bảng điểm cá nhân để dùng AI advisor + lập kế hoạch. Khi phòng đào tạo đồng bộ chính thức, bản tự khai sẽ bị thay thế.';
+        if (msgEl) msgEl.textContent = 'Upload bảng điểm cá nhân (xuất từ cổng SIS của trường) để app phân tích tiến độ và gợi ý lộ trình. Đây là tool cá nhân, không thay thế hệ thống chính thức.';
         if (uploadBtn) uploadBtn.style.display = '';
         if (emptyUploadBtn) emptyUploadBtn.style.display = '';
       }
     }
   }
 
-  buildHeaderSubtitle();
-  renderProgressKPIs();
-  renderTab1();
-  buildCharts();
-  // Pre-render tab "Chưa học" để khi user click sang đã có dữ liệu sẵn
-  _initRemSpecFilter();
-  applyRemainingFilters();
+  // Render all sections — wrap MỖI cái try/catch để 1 fail không kill các phần khác
+  const _safeCall = (label, fn) => {
+    try { fn(); }
+    catch (e) { console.error(`[grades.html] ${label} failed`, e); }
+  };
+  _safeCall('buildHeaderSubtitle', buildHeaderSubtitle);
+  _safeCall('renderProgressKPIs',  renderProgressKPIs);
+  _safeCall('renderTab1',          renderTab1);
+  _safeCall('buildCharts',         buildCharts);
+  _safeCall('initRemSpecFilter',   _initRemSpecFilter);
+  _safeCall('applyRemainingFilters', applyRemainingFilters);
   _remTabInitialized = true;
+  // Báo cho ajax-nav biết init xong → hide overlay
+  window.__initDone = true; try { window.dispatchEvent(new Event('page:ready')); } catch (_) {}
+  // Auto-open simulator nếu URL có ?sim=open (hỗ trợ deep link từ home/roadmap)
+  try {
+    const params = new URLSearchParams(location.search);
+    if (params.get('sim') === 'open' && typeof openSimulator === 'function') {
+      setTimeout(openSimulator, 400);
+    }
+  } catch (_) {}
 })();
 
 // ── Progress KPI cards (TỔNG TC + 4 nhóm tự chọn) ──────────────────────────
@@ -962,6 +942,22 @@ function getCategoryLabel(cat, code) {
   return m[cat] || { label: cat, cls: 'bg-[#e5eeff] text-[#474651]' };
 }
 
+// Parse term string thành numeric sort key — fix bug "HK2 năm trước nhảy lên trên HK1 năm sau".
+// String sort không hiểu year+sem, nên cần extract (year_start, sem) tuple → numeric.
+//   "Học kỳ 1 - Năm học 2021-2022"  → 20211
+//   "Học kỳ 2 - Năm học 2021-2022"  → 20212
+//   "Học kỳ 1 - Năm học 2022-2023"  → 20221  (lớn hơn 20212 → mới hơn ✓)
+//   "HK1 2022-2023"                 → 20221
+//   null/empty/"Không rõ học kỳ"    → 0  (fallback đẩy xuống cuối)
+function termSortKey(term) {
+  if (!term) return 0;
+  const yr = String(term).match(/(\d{4})\s*[-–]\s*\d{4}/);
+  const sm = String(term).match(/(?:H[Kk]|Học\s*k[ỳy])\s*(\d+)/i);
+  const year = yr ? parseInt(yr[1], 10) : 0;
+  const sem  = sm ? parseInt(sm[1], 10) : 0;
+  return year * 10 + sem;
+}
+
 // ── Tab 1 render ───────────────────────────────────────────────────────────
 function applyFilters() { renderTab1(); }
 
@@ -980,7 +976,8 @@ function renderTab1() {
   const codeCount = {};
   for (const g of _grades) codeCount[g.course_code] = (codeCount[g.course_code] || 0) + 1;
   // Mark each grade as retake = it's a duplicate AND there's a later passing attempt
-  const gradesSorted = [..._grades].sort((a, b) => (a.term || '').localeCompare(b.term || ''));
+  // Sort ascending theo (year_start, sem) numeric — không dùng localeCompare vì sai khi cross-year.
+  const gradesSorted = [..._grades].sort((a, b) => termSortKey(a.term) - termSortKey(b.term));
   const lastPassedTerm = {};
   for (const g of gradesSorted) {
     if (g.passed) lastPassedTerm[g.course_code] = g.term;
@@ -1008,7 +1005,9 @@ function renderTab1() {
   // Populate term dropdown if empty
   const termSel = document.getElementById('filterTerm');
   if (termSel.options.length === 1) {
-    const terms = [...new Set(_grades.map(g => g.term).filter(Boolean))].sort().reverse();
+    // Sort descending theo (year_start, sem) — newest first cho dropdown.
+    const terms = [...new Set(_grades.map(g => g.term).filter(Boolean))]
+      .sort((a, b) => termSortKey(b) - termSortKey(a));
     for (const t of terms) {
       const opt = document.createElement('option');
       opt.value = t; opt.textContent = t;
@@ -1070,7 +1069,9 @@ function renderTab1() {
     if (!byTerm[k]) byTerm[k] = [];
     byTerm[k].push(g);
   }
-  const sortedTerms = Object.keys(byTerm).sort().reverse();
+  // Sort descending theo (year_start, sem) — newest first cho display.
+  // Bug cũ: .sort().reverse() làm "HK2 2021-2022" lên trên "HK1 2022-2023" (sai chronological).
+  const sortedTerms = Object.keys(byTerm).sort((a, b) => termSortKey(b) - termSortKey(a));
 
   let html = '';
   for (const term of sortedTerms) {
@@ -1081,17 +1082,30 @@ function renderTab1() {
       ? (termGpas.reduce((s, g) => s + g.score4 * (g.credits || 3), 0) / termGpas.reduce((s, g) => s + (g.credits || 3), 0)).toFixed(2)
       : null;
     const isSummer = term.includes('HK3') || term.toLowerCase().includes('hè');
+    // A5: Show "Trao đổi về kỳ này" CTA cho SV (khi floating-chat đã loaded).
+    const _isStudent = (_user?.role === 'student') && (typeof window.openAdvisorChat === 'function');
+    const askBtn = _isStudent
+      ? `<button onclick="askAdvisorAboutTerm('${escHtml(term).replace(/'/g, "\\'")}', ${termGpa || 'null'})"
+           class="text-xs px-2 py-0.5 rounded-full bg-[#dcfce7] text-[#16a34a] hover:bg-[#bbf7d0] transition flex items-center gap-1"
+           title="Hỏi cố vấn về kỳ này">
+           <span class="material-symbols-outlined msym" style="font-size:13px">support_agent</span>
+           Trao đổi
+         </button>`
+      : '';
 
     html += `
     <div>
-      <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
         <div class="flex items-center gap-3">
           <h3 class="text-sm font-bold text-[#0b1c30]">${hl(term, search)}</h3>
           <span class="text-xs text-[#777682]">${rows.length} môn · ${termCredits} TC${termGpa ? ` · GPA ${termGpa}` : ''}</span>
         </div>
-        <span class="text-xs px-2 py-0.5 rounded-full ${isSummer ? 'bg-amber-100 text-amber-600' : 'bg-[#e5eeff] text-[#474651]'}">
-          ${isSummer ? 'Học kỳ hè' : 'Học kỳ chính'}
-        </span>
+        <div class="flex items-center gap-2">
+          ${askBtn}
+          <span class="text-xs px-2 py-0.5 rounded-full ${isSummer ? 'bg-amber-100 text-amber-600' : 'bg-[#e5eeff] text-[#474651]'}">
+            ${isSummer ? 'Học kỳ hè' : 'Học kỳ chính'}
+          </span>
+        </div>
       </div>
       <div class="bg-[#ffffff] rounded-xl border border-[#c8c5d3] overflow-hidden mb-1">
         <div class="overflow-x-auto">
@@ -1456,12 +1470,15 @@ function gradeRow(g, search) {
     nameBadges += `<span class="text-[10px] bg-[#e5eeff] text-[#474651] px-1.5 py-0.5 rounded-full font-medium" title="Điểm do bạn tự upload">Tự nhập</span>`;
   }
 
-  // Click row → hiển thị toast (chi tiết môn — tính năng đang phát triển)
-  const linkAttr = !notInCtdt
-    ? `onclick="if(event.target.closest('button')||event.target.closest('input'))return;showToast('Chi tiết môn — tính năng đang phát triển', 'info')"`
+  // Click row → mở rating modal cho môn có thể rate (đã pass, không GDTC, không retake).
+  // UX: click anywhere ngoài button → đánh giá. Click trên button con → button xử lý riêng.
+  const canRate = g.passed && !isGdtc && !g.isRetake && !notInCtdt;
+  const rowOnclick = canRate
+    ? `onclick="if(event.target.closest('button'))return;openRatingModal('${escHtml(g.course_code)}', 0)"`
     : '';
-  const cursorCls = !notInCtdt ? 'cursor-pointer' : '';
-  return `<tr class="${rowCls} ${cursorCls}" ${linkAttr}>
+  const rowCursor = canRate ? 'cursor-pointer hover:bg-[#f1f5ff] transition' : '';
+  return `<tr class="${rowCls} ${rowCursor}" ${rowOnclick}
+    title="${canRate ? 'Click để đánh giá môn này' : ''}">
     <td class="px-4 py-3 text-xs text-[#777682] font-mono hidden sm:table-cell">${hl(g.course_code, search)}</td>
     <td class="px-4 py-3">
       <div class="flex items-center gap-2 flex-wrap">
@@ -1484,6 +1501,21 @@ function letterFromScore4(s4) {
   if (s4 >= 0.5) return 'D';
   return 'F';
 }
+
+// A5: "Trao đổi về kỳ này" CTA — mở floating chat tab Cố vấn với prefill message.
+// Gọi từ button trong term header row (chỉ render cho SV, đã guard ở renderTab1).
+window.askAdvisorAboutTerm = function (term, gpa) {
+  if (typeof window.openAdvisorChat !== 'function') {
+    console.warn('[grades] openAdvisorChat not loaded');
+    return;
+  }
+  let text = `Em muốn trao đổi với cô/thầy về ${term}`;
+  if (gpa && gpa !== 'null') {
+    text += ` (GPA ${gpa})`;
+  }
+  text += '. Cô/thầy có nhận xét gì để em cải thiện kỳ tới không ạ?';
+  window.openAdvisorChat(text);
+};
 
 // Lọc theo bộ lọc tab "Chưa học" + render. Gọi từ search/select onchange.
 function applyRemainingFilters() {
@@ -1571,78 +1603,132 @@ function _remShowAll() {
   applyRemainingFilters();
 }
 
+// Render 1 row of course in remaining table (extracted để tái sử dụng cho group view)
+function _renderRemainingRow(c) {
+  const prereqsMet = c.prereqs_met !== false;
+  const prereqNames = (c.prerequisites || []).filter(p => !p.completed).map(p => p.course_code).join(', ');
+  const sem = c.curriculum_semester ? `HK ${c.curriculum_semester}` : '—';
+  const specBadge = c.required_specialization
+    ? `<span class="ml-1 text-[9px] font-bold uppercase bg-amber-100 text-amber-700 px-1 py-0.5 rounded">${_specShort(c.required_specialization)}</span>`
+    : '';
+  return `<tr class="hover:bg-[#eef2ff]">
+    <td class="px-4 py-3 text-xs text-[#777682] font-mono">${escHtml(c.course_code)}</td>
+    <td class="px-4 py-3">
+      ${prereqsMet
+        ? `<span class="text-sm font-medium text-[#0b1c30]">${escHtml(c.course_name)}</span>${specBadge}`
+        : `<div>
+             <p class="text-sm text-[#474651]">${escHtml(c.course_name)}${specBadge}</p>
+             <p class="text-xs text-[#777682] mt-0.5">Cần học trước: ${escHtml(prereqNames)}</p>
+           </div>`
+      }
+    </td>
+    <td class="px-4 py-3 text-center text-sm text-[#474651]">${c.credits || '—'}</td>
+    <td class="px-4 py-3 text-center text-xs text-[#474651]">${sem}</td>
+    <td class="px-4 py-3 text-center">
+      ${prereqsMet
+        ? `<span class="text-xs text-green-600 flex items-center justify-center gap-1">
+             <span class="material-symbols-outlined msym text-sm">check_circle</span>Đủ điều kiện
+           </span>`
+        : `<span class="text-xs text-[#777682] flex items-center justify-center gap-1">
+             <span class="material-symbols-outlined msym text-sm">lock</span>Bị khóa
+           </span>`
+      }
+    </td>
+  </tr>`;
+}
+
+// Group courses by block: BB chung / CN của tôi / Tự chọn A/B/C / GDTC / Khác
+function _groupRemainingCourses(courses) {
+  const userSpec = _user?.specialization || '';
+  const groups = {
+    bb_common: { label: 'Bắt buộc đại cương', icon: 'menu_book', color: 'sky', courses: [] },
+    bb_my_spec: { label: `Cơ sở ngành ${_specShort(userSpec) || 'của bạn'}`, icon: 'school', color: 'amber', courses: [] },
+    bb_other_spec: { label: 'Cơ sở ngành khác (preview)', icon: 'visibility', color: 'slate', courses: [] },
+    elective_a: { label: 'Tự chọn A', icon: 'tune', color: 'violet', courses: [] },
+    elective_b: { label: 'Tự chọn B', icon: 'tune', color: 'violet', courses: [] },
+    elective_c: { label: 'Tự chọn C', icon: 'tune', color: 'fuchsia', courses: [] },
+    gdtc: { label: 'GDTC / QPAN', icon: 'fitness_center', color: 'slate', courses: [] },
+  };
+
+  for (const c of courses) {
+    if (isGdtcQpan(c.course_code)) {
+      groups.gdtc.courses.push(c);
+    } else if (c.elective_group === 'A') {
+      groups.elective_a.courses.push(c);
+    } else if (c.elective_group === 'B') {
+      groups.elective_b.courses.push(c);
+    } else if (c.elective_group === 'C') {
+      groups.elective_c.courses.push(c);
+    } else if (!c.required_specialization) {
+      groups.bb_common.courses.push(c);
+    } else if (c.required_specialization === userSpec) {
+      groups.bb_my_spec.courses.push(c);
+    } else {
+      groups.bb_other_spec.courses.push(c);
+    }
+  }
+
+  // Sort within each group by typical_semester (curriculum_semester) ASC, then code
+  for (const k in groups) {
+    groups[k].courses.sort((a, b) => {
+      const sa = a.curriculum_semester || 99;
+      const sb = b.curriculum_semester || 99;
+      if (sa !== sb) return sa - sb;
+      return (a.course_code || '').localeCompare(b.course_code || '');
+    });
+  }
+
+  return groups;
+}
+
 function renderRemaining(filtered) {
-  const tbody = document.getElementById('remainingTableBody');
+  const container = document.getElementById('remainingTableBody');  // reused as container
   const noRes = document.getElementById('remNoResult');
   const pager = document.getElementById('remPager');
-  if (!tbody) return;
+  if (!container) return;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '';
+    container.innerHTML = '';
     noRes.classList.remove('hidden');
     pager.classList.add('hidden');
     return;
   }
   noRes.classList.add('hidden');
+  pager.classList.add('hidden');  // pagination removed in group view (groups self-contained)
 
-  const PAGE = 50;
-  const showAll = _remShowingAll;
-  const visible = showAll ? filtered : filtered.slice(0, PAGE);
-  const hidden = filtered.length - visible.length;
+  const groups = _groupRemainingCourses(filtered);
+  // Color → Tailwind class mapping (precomputed để tránh bg-${color}-50 dynamic break Tailwind JIT)
+  const COLOR_BG = { sky:'bg-sky-50', amber:'bg-amber-50', violet:'bg-violet-50', fuchsia:'bg-fuchsia-50', slate:'bg-slate-50' };
+  const COLOR_TEXT = { sky:'text-sky-700', amber:'text-amber-700', violet:'text-violet-700', fuchsia:'text-fuchsia-700', slate:'text-slate-700' };
+  const COLOR_BORDER = { sky:'border-sky-200', amber:'border-amber-200', violet:'border-violet-200', fuchsia:'border-fuchsia-200', slate:'border-slate-200' };
 
-  tbody.innerHTML = visible.map(c => {
-    const isGdtc = isGdtcQpan(c.course_code);
-    const eg = c.elective_group;
-    let groupBadge;
-    if (isGdtc) groupBadge = { label: 'GDTC/QPAN', cls: 'bg-[#e5eeff] text-[#474651]' };
-    else if (eg === 'A') groupBadge = { label: 'Tự chọn A', cls: 'bg-violet-100 text-violet-700' };
-    else if (eg === 'B') groupBadge = { label: 'Tự chọn B', cls: 'bg-violet-100 text-violet-700' };
-    else if (eg === 'C') groupBadge = { label: 'Tự chọn C', cls: 'bg-fuchsia-100 text-fuchsia-700' };
-    else groupBadge = { label: 'Bắt buộc', cls: 'bg-sky-100 text-sky-700' };
-
-    const prereqsMet = c.prereqs_met !== false;
-    const prereqNames = (c.prerequisites || []).filter(p => !p.completed).map(p => p.course_code).join(', ');
-    const sem = c.curriculum_semester ? `HK ${c.curriculum_semester}` : '—';
-    const specBadge = c.required_specialization
-      ? `<span class="ml-1 text-[9px] font-bold uppercase bg-amber-100 text-amber-700 px-1 py-0.5 rounded">${_specShort(c.required_specialization)}</span>`
-      : '';
-
-    return `<tr class="hover:bg-[#eef2ff] cursor-pointer"
-      onclick="showToast('Chi tiết môn — tính năng đang phát triển', 'info')">
-      <td class="px-4 py-3 text-xs text-[#777682] font-mono">${escHtml(c.course_code)}</td>
-      <td class="px-4 py-3">
-        ${prereqsMet
-          ? `<span class="text-sm font-medium text-[#0b1c30]">${escHtml(c.course_name)}</span>${specBadge}`
-          : `<div>
-               <p class="text-sm text-[#474651]">${escHtml(c.course_name)}${specBadge}</p>
-               <p class="text-xs text-[#777682] mt-0.5">Cần học trước: ${escHtml(prereqNames)}</p>
-             </div>`
-        }
-      </td>
-      <td class="px-4 py-3 text-center text-sm text-[#474651]">${c.credits || '—'}</td>
-      <td class="px-4 py-3 text-center text-xs text-[#474651]">${sem}</td>
-      <td class="px-4 py-3 text-center">
-        <span class="text-xs ${groupBadge.cls} px-2 py-0.5 rounded-full whitespace-nowrap">${groupBadge.label}</span>
-      </td>
-      <td class="px-4 py-3 text-center">
-        ${prereqsMet
-          ? `<span class="text-xs text-green-600 flex items-center justify-center gap-1">
-               <span class="material-symbols-outlined msym text-sm">check_circle</span>Đủ điều kiện
-             </span>`
-          : `<span class="text-xs text-[#777682] flex items-center justify-center gap-1">
-               <span class="material-symbols-outlined msym text-sm">lock</span>Bị khóa
-             </span>`
-        }
+  // Render mỗi group có courses thành 1 section với header row colspan
+  let html = '';
+  for (const k of Object.keys(groups)) {
+    const g = groups[k];
+    if (g.courses.length === 0) continue;
+    const totalTc = g.courses.reduce((s, c) => s + (c.credits || 0), 0);
+    const readyCount = g.courses.filter(c => c.prereqs_met !== false).length;
+    const bgCls = COLOR_BG[g.color] || 'bg-slate-50';
+    const textCls = COLOR_TEXT[g.color] || 'text-slate-700';
+    const borderCls = COLOR_BORDER[g.color] || 'border-slate-200';
+    // Group header — row spanning full width
+    html += `<tr class="${bgCls} border-y ${borderCls}">
+      <td colspan="5" class="px-4 py-2.5">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2 ${textCls}">
+            <span class="material-symbols-outlined msym text-base" style="font-variation-settings:'FILL' 1">${g.icon}</span>
+            <span class="text-xs font-bold uppercase tracking-wider">${escHtml(g.label)}</span>
+            <span class="text-xs font-medium opacity-75">· ${g.courses.length} môn còn · ${totalTc} TC</span>
+          </div>
+          <span class="text-[10px] ${textCls} opacity-75">${readyCount}/${g.courses.length} đủ điều kiện học</span>
+        </div>
       </td>
     </tr>`;
-  }).join('');
-
-  if (hidden > 0) {
-    pager.classList.remove('hidden');
-    document.getElementById('remHiddenCount').textContent = hidden;
-  } else {
-    pager.classList.add('hidden');
+    // Course rows
+    html += g.courses.map(_renderRemainingRow).join('');
   }
+  container.innerHTML = html;
 }
 
 // ── Charts ─────────────────────────────────────────────────────────────────
@@ -2040,7 +2126,15 @@ async function doConfirmUpload() {
     if (!res.ok) throw new Error(data.detail || 'Lỗi khi lưu điểm');
 
     closeUploadModal();
-    showToast('Cập nhật điểm thành công!', 'success');
+    // Build success message với chi tiết merge: inserted + skipped (admin verified)
+    let msg = 'Cập nhật điểm thành công';
+    const ins = data.inserted || 0;
+    const skipAdmin = data.skipped_admin_verified || 0;
+    const skipUnknown = data.skipped_unknown || 0;
+    if (ins > 0) msg += ` · ${ins} môn được lưu`;
+    if (skipAdmin > 0) msg += ` · ${skipAdmin} môn giữ bản xác thực`;
+    if (skipUnknown > 0) msg += ` · ${skipUnknown} môn ngoài CTĐT bị bỏ`;
+    showToast(msg, 'success');
     // Refresh data
     const [grades, catalog, analytics, progress] = await Promise.all([
       fetch(`${API}/grades/me`, { headers: H() }).then(r => r.ok ? r.json() : []),
@@ -2061,17 +2155,7 @@ async function doConfirmUpload() {
   }
 }
 
-// ── Toast ──────────────────────────────────────────────────────────────────
-function showToast(msg, type = 'success') {
-  const c = document.getElementById('toastContainer');
-  const el = document.createElement('div');
-  const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-indigo-600' };
-  el.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium ${colors[type] || colors.info} fade-in`;
-  const icons = { success: 'check_circle', error: 'error', info: 'info' };
-  el.innerHTML = `<span class="material-symbols-outlined msym text-base">${icons[type] || 'info'}</span>${escHtml(msg)}`;
-  c.appendChild(el);
-  setTimeout(() => el.remove(), 4000);
-}
+// ── Toast — migrated 2026-05-05: dùng App.toast qua window.showToast shim ──
 
 // Redraw charts when tab switches (needs dimensions)
 window.addEventListener('resize', () => {

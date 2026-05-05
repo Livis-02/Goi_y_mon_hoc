@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EduGuide — Mục tiêu nghề</title>
+  <link rel="stylesheet" href="theme.css?v=11"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="theme.js?v=6"></script>
+  <script src="theme-switcher.js?v=2"></script>
+  <script src="app-core.js?v=1"></script>
+  <script src="nav-prefetch.js?v=1" defer></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="auth.js?v=5"></script>
+  <script src="utils.js?v=2"></script>
+  <script src="sidebar-init.js?v=13"></script>
+  <script src="accessibility.js?v=1"></script>
+  <script defer src="scroll-helpers.js?v=v2"></script>
+  <script defer src="ajax-nav.js?v=16"></script>
+  <script defer src="nav-prefetch.js?v=1"></script>
+  <script defer src="floating-chat.js?v=12"></script>
+  <style>
+    /* Career-goal page-specific only — shared styles live in theme.css */
+    .career-card { transition: all .15s; cursor: pointer; border: 2px solid #e5eeff; }
+    .career-card:hover { border-color: #312e81; background: #eff4ff; }
+    .career-card.selected { border-color: #1a146b; background: #e2dfff; }
+    .skill-group-header { cursor: pointer; user-select: none; }
+    .skill-group-body { transition: max-height .3s ease, opacity .3s ease; overflow: hidden; }
+    .pill-completed   { background: #dcfce7; color: #166534; }
+    .pill-in_progress { background: #fef9c3; color: #854d0e; }
+    .pill-planned     { background: #f1f5f9; color: #475569; }
+    .pill-skipped     { background: #fee2e2; color: #991b1b; }
+    .fit-bar-fill { transition: width .8s cubic-bezier(.4,0,.2,1); }
+    .ring { transform: rotate(-90deg); }
+  </style>
+</head>
+<body class="bg-canvas text-text-primary antialiased min-h-screen">
+<div id="sidebarMount"></div>
+
+<!-- Topbar -->
+<header class="topbar flex items-center justify-between px-4 lg:px-6">
+  <div class="flex items-center gap-3 min-w-0">
+    <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-md hover:bg-surface-subtle transition-colors" aria-label="Menu">
+      <span class="material-symbols-outlined msym text-xl text-text-secondary">menu</span>
+    </button>
+    <nav class="flex items-center gap-1.5 text-[13px] min-w-0">
+      <span class="text-text-tertiary font-medium">Sinh viên</span>
+      <span class="material-symbols-outlined msym text-base text-text-tertiary">chevron_right</span>
+      <span class="text-text-primary font-semibold">Mục tiêu nghề</span>
+    </nav>
+  </div>
+  <div class="flex items-center gap-1">
+    <button class="theme-toggle" data-tooltip="Sáng/Tối">
+      <span class="material-symbols-outlined msym text-[18px] icon-moon">dark_mode</span>
+      <span class="material-symbols-outlined msym text-[18px] icon-sun">light_mode</span>
+    </button>
+  </div>
+</header>
+
+<!-- Main content -->
+<div class="lg:pl-60">
+  <main class="min-h-screen pt-[60px]">
+    <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
+
+      <!-- ── HEADER ── -->
+      <div class="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h2 class="text-2xl font-extrabold text-[#1a146b]">Mục tiêu nghề</h2>
+          <p class="text-sm text-[#474651] mt-1">Chọn nghề bạn muốn hướng tới — hệ thống sẽ xây dựng bộ kỹ năng và tài liệu học cho bạn.</p>
+        </div>
+        <div id="fitSummaryBadge" class="hidden items-center gap-3 bg-white rounded-2xl shadow-sm border border-[#e5eeff] px-4 py-3">
+          <div>
+            <p class="text-xs text-[#474651]">Career Fit</p>
+            <p class="text-2xl font-extrabold text-[#1a146b]" id="fitPctBig">0%</p>
+          </div>
+          <div>
+            <p class="text-xs text-[#474651]" id="fitSkillSummary">0/0 kỹ năng</p>
+            <p class="text-xs text-[#474651]" id="fitHoursSummary">~0h còn lại</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PICKER (hidden after choice made) ── -->
+      <section id="pickerSection">
+        <div class="bg-white rounded-2xl shadow-sm border border-[#e5eeff] p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-[#1a146b] flex items-center gap-2">
+              <span class="material-symbols-outlined msym text-lg">work</span>
+              Chọn nghề mục tiêu
+            </h3>
+            <div class="relative">
+              <input id="careerSearch" type="text" placeholder="Tìm nghề..."
+                class="text-sm border border-[#c8c5d3] rounded-lg px-3 py-1.5 w-48 focus:outline-none focus:border-[#1a146b]">
+            </div>
+          </div>
+          <div id="careerGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div class="col-span-full flex justify-center py-8">
+              <span class="material-symbols-outlined msym spin text-3xl text-[#c8c5d3]">progress_activity</span>
+            </div>
+          </div>
+          <div class="mt-5 flex items-center justify-between">
+            <p class="text-xs text-[#474651]" id="pickerHint">Chọn 1 nghề để bắt đầu</p>
+            <button id="confirmPickBtn" disabled
+              class="px-5 py-2 rounded-xl text-sm font-semibold text-white pri-grad opacity-40 transition-opacity disabled:cursor-not-allowed">
+              Xác nhận chọn nghề
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CURRENT CAREER HEADER (shown after choice) ── -->
+      <section id="currentCareerSection" class="hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-[#e5eeff] p-5">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+              <div id="careerIconBig" class="w-12 h-12 rounded-xl flex items-center justify-center text-white pri-grad">
+                <span class="material-symbols-outlined msym-fill text-2xl">work</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-extrabold text-[#1a146b]" id="careerNameBig">—</h3>
+                <p class="text-sm text-[#474651]" id="careerDescBig">—</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button id="regenBtn"
+                class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border border-[#c8c5d3] text-[#474651] hover:border-[#1a146b] hover:text-[#1a146b] transition-all">
+                <span class="material-symbols-outlined msym text-base">autorenew</span>Sinh lại blueprint
+              </button>
+              <button id="changeCareerBtn"
+                class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border border-[#c8c5d3] text-[#474651] hover:border-[#1a146b] hover:text-[#1a146b] transition-all">
+                <span class="material-symbols-outlined msym text-base">edit</span>Đổi nghề
+              </button>
+            </div>
+          </div>
+
+          <!-- Fit bar -->
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-semibold text-[#474651]">Career Fit</span>
+              <span class="text-xs font-bold text-[#1a146b]" id="fitPctBar">0%</span>
+            </div>
+            <div class="h-3 bg-[#e5eeff] rounded-full overflow-hidden">
+              <div id="fitBar" class="h-full rounded-full fit-bar-fill pri-grad" style="width:0%"></div>
+            </div>
+            <div class="flex items-center justify-between mt-1.5">
+              <span class="text-xs text-[#474651]" id="fitDetailText">Chưa có dữ liệu</span>
+              <span class="text-xs text-[#474651]" id="fitHoursText"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── NO BLUEPRINT STATE ── -->
+      <section id="noBlueprintSection" class="hidden">
+        <div class="bg-white rounded-2xl border border-dashed border-[#c8c5d3] p-10 text-center">
+          <span class="material-symbols-outlined msym text-4xl text-[#c8c5d3] mb-3 block">auto_awesome</span>
+          <h4 class="font-semibold text-[#1a146b] mb-2">Chưa có bộ kỹ năng</h4>
+          <p class="text-sm text-[#474651] mb-5">Nhấn "Sinh blueprint" để AI tạo danh sách kỹ năng cần học cho nghề này.</p>
+          <button id="generateFirstBtn"
+            class="px-6 py-2.5 rounded-xl text-sm font-semibold text-white pri-grad hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto">
+            <span class="material-symbols-outlined msym text-base">auto_awesome</span>Sinh blueprint (AI)
+          </button>
+        </div>
+      </section>
+
+      <!-- ── GENERATING SPINNER ── -->
+      <section id="generatingSection" class="hidden">
+        <div class="bg-white rounded-2xl border border-[#e5eeff] p-10 text-center">
+          <span class="material-symbols-outlined msym spin text-4xl text-[#1a146b] mb-3 block">progress_activity</span>
+          <p class="font-semibold text-[#1a146b]">AI đang xây dựng bộ kỹ năng...</p>
+          <p class="text-sm text-[#474651] mt-1">Mất khoảng 15-30 giây. Đừng đóng trang này.</p>
+        </div>
+      </section>
+
+      <!-- ── BLUEPRINT GROUPS ── -->
+      <section id="blueprintSection" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-[#1a146b] flex items-center gap-2">
+            <span class="material-symbols-outlined msym text-lg">checklist</span>
+            Bộ kỹ năng cần đạt
+          </h3>
+          <div class="flex items-center gap-2 text-xs text-[#474651]">
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400 inline-block"></span>Bắt buộc</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>Nên có</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>Nice-to-have</span>
+          </div>
+        </div>
+        <div id="groupsContainer" class="space-y-3"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 z-50 bg-[#1a146b] text-white text-sm px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 max-w-sm">
+  <span class="material-symbols-outlined msym text-base" id="toastIcon">check_circle</span>
+  <span id="toastMsg">OK</span>
+</div>
+
+<!-- ── CAREER DETAIL MODAL ─────────────────────────────────────────────────── -->
+<div id="careerDetailModal" class="hidden fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/60">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+    <!-- Header (gradient) -->
+    <div id="cdHeader" class="px-6 py-5 text-white flex items-start gap-4" style="background:linear-gradient(135deg,#1a146b,#312e81)">
+      <div id="cdIcon" class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined msym text-3xl" style="font-variation-settings:'FILL' 1">work</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h3 id="cdName" class="text-lg font-extrabold leading-tight">—</h3>
+        <p id="cdShortDesc" class="text-sm opacity-90 mt-0.5">—</p>
+      </div>
+      <button onclick="closeCareerDetail()" class="p-1.5 rounded-lg hover:bg-white/20 transition-colors flex-shrink-0">
+        <span class="material-symbols-outlined msym text-xl">close</span>
+      </button>
+    </div>
+
+    <!-- Body (scrollable) -->
+    <div id="cdBody" class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+      <div id="cdLoading" class="text-center py-8 text-[#474651]">
+        <span class="spin material-symbols-outlined msym text-3xl text-[#1a146b]">progress_activity</span>
+        <p class="text-sm mt-2">AI đang phân tích nghề...</p>
+        <p class="text-xs text-[#777682] mt-0.5">Có thể mất 5-10 giây lần đầu, lần sau sẽ instant</p>
+      </div>
+      <div id="cdContent" class="hidden space-y-5"></div>
+      <div id="cdError" class="hidden p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-3 border-t border-[#e5eeff] bg-[#f8f9ff] flex justify-between items-center flex-wrap gap-2">
+      <p class="text-xs text-[#777682]" id="cdSourceLabel">Dữ liệu sinh bởi AI — có thể có sai sót, kiểm tra lại với cố vấn</p>
+      <div class="flex gap-2 flex-wrap">
+        <button id="cdAskAdvisorBtn" onclick="askAdvisorAboutCareer()"
+          class="hidden px-4 py-2 rounded-xl text-sm font-semibold bg-[#10b981] text-white hover:bg-[#059669] transition flex items-center gap-1.5">
+          <span class="material-symbols-outlined msym" style="font-size:16px">support_agent</span>
+          Trao đổi với cố vấn
+        </button>
+        <button onclick="closeCareerDetail()"
+          class="px-4 py-2 rounded-xl text-sm font-semibold border border-[#c8c5d3] text-[#474651] hover:bg-white transition-all">
+          Đóng
+        </button>
+        <button id="cdSelectBtn" onclick="selectCareerFromModal()"
+          class="px-5 py-2 rounded-xl text-sm font-bold text-white pri-grad hover:opacity-90 transition-opacity">
+          Chọn nghề này
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.API_BASE || (location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://127.0.0.1:8000':location.origin);
+let _token = null;
+let _allCareers = [];
+let _selectedPathId = null;
+let _currentChoice = null;
+let _blueprint = null;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  checkAuth();
+  _token = (typeof getToken === 'function') ? getToken() : localStorage.getItem('access_token');
+
+  await Promise.all([loadCareers(), loadCurrentChoice()]);
+  bindEvents();
+  window.__initDone = true; try { window.dispatchEvent(new Event('page:ready')); } catch (_) {}
+});
+
+// ── Data ──────────────────────────────────────────────────────────────────
+async function loadCareers() {
+  const r = await apiFetch('/v2/careers');
+  _allCareers = r || [];
+  renderCareerGrid(_allCareers);
+}
+
+async function loadCurrentChoice() {
+  const r = await apiFetch('/v2/careers/my-choice');
+  _currentChoice = r;
+  if (r && r.primary) {
+    showCurrentCareer(r.primary);
+    await loadBlueprint();
+  } else {
+    showPicker();
+  }
+}
+
+async function loadBlueprint() {
+  const r = await apiFetch('/v2/career/blueprint/me');
+  _blueprint = r;
+  if (!r) return;
+
+  // Update fit
+  updateFitUI(r);
+
+  if (!r.path) return showPicker();
+
+  if (r.total_skills === 0) {
+    showNoBlueprintState();
+  } else {
+    renderBlueprint(r);
+  }
+}
+
+// ── Render career grid ────────────────────────────────────────────────────
+function renderCareerGrid(careers) {
+  const grid = document.getElementById('careerGrid');
+  if (!careers.length) {
+    grid.innerHTML = '<p class="col-span-full text-sm text-[#474651] text-center py-8">Không có dữ liệu nghề nghiệp.</p>';
+    return;
+  }
+  grid.innerHTML = careers.map(c => `
+    <div class="career-card relative rounded-xl p-3 text-left ${_currentChoice?.primary?.id === c.id ? 'selected' : ''}"
+         data-id="${c.id}" onclick="selectCareer(${c.id})">
+      <button onclick="event.stopPropagation();openCareerDetail(${c.id})"
+        title="Xem chi tiết nghề"
+        class="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white border border-[#c8c5d3] hover:border-[#1a146b] flex items-center justify-center text-[#474651] hover:text-[#1a146b] transition-all">
+        <span class="material-symbols-outlined msym text-sm">info</span>
+      </button>
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-2 text-white"
+           style="background:${colorToGrad(c.color)}">
+        <span class="material-symbols-outlined msym-fill text-lg">${c.icon||'work'}</span>
+      </div>
+      <p class="text-xs font-semibold text-[#1a146b] leading-tight pr-7">${c.name}</p>
+      ${c.has_blueprint ? '<p class="text-[10px] text-green-600 mt-1 flex items-center gap-0.5"><span class="material-symbols-outlined msym text-xs">check_circle</span>Có blueprint</p>' : ''}
+    </div>
+  `).join('');
+}
+
+function colorToGrad(color) {
+  const map = {
+    indigo:'linear-gradient(135deg,#1a146b,#312e81)',
+    blue:'linear-gradient(135deg,#1e40af,#2563eb)',
+    emerald:'linear-gradient(135deg,#065f46,#059669)',
+    violet:'linear-gradient(135deg,#4c1d95,#7c3aed)',
+    teal:'linear-gradient(135deg,#134e4a,#0d9488)',
+    amber:'linear-gradient(135deg,#78350f,#d97706)',
+    rose:'linear-gradient(135deg,#881337,#e11d48)',
+    cyan:'linear-gradient(135deg,#164e63,#0891b2)',
+    slate:'linear-gradient(135deg,#1e293b,#475569)',
+    fuchsia:'linear-gradient(135deg,#701a75,#c026d3)',
+  };
+  return map[color] || map.indigo;
+}
+
+function selectCareer(id) {
+  _selectedPathId = id;
+  document.querySelectorAll('.career-card').forEach(c => {
+    c.classList.toggle('selected', parseInt(c.dataset.id) === id);
+  });
+  const career = _allCareers.find(c => c.id === id);
+  const btn = document.getElementById('confirmPickBtn');
+  if (btn) {
+    btn.disabled = false;
+    btn.classList.remove('opacity-40');
+  }
+  const hint = document.getElementById('pickerHint');
+  if (hint && career) hint.textContent = `Đã chọn: ${career.name}`;
+}
+
+// ── Show/hide sections ────────────────────────────────────────────────────
+function showPicker() {
+  document.getElementById('pickerSection').classList.remove('hidden');
+  document.getElementById('currentCareerSection').classList.add('hidden');
+  document.getElementById('noBlueprintSection').classList.add('hidden');
+  document.getElementById('blueprintSection').classList.add('hidden');
+}
+
+function showCurrentCareer(path) {
+  document.getElementById('pickerSection').classList.add('hidden');
+  document.getElementById('currentCareerSection').classList.remove('hidden');
+  const career = _allCareers.find(c => c.id === path.id) || path;
+  document.getElementById('careerNameBig').textContent = career.name || path.name;
+  document.getElementById('careerDescBig').textContent = career.short_description || '';
+  const iconEl = document.getElementById('careerIconBig');
+  if (iconEl) {
+    iconEl.style.background = colorToGrad(career.color);
+    iconEl.querySelector('span').textContent = career.icon || 'work';
+  }
+}
+
+function showNoBlueprintState() {
+  document.getElementById('noBlueprintSection').classList.remove('hidden');
+  document.getElementById('generatingSection').classList.add('hidden');
+  document.getElementById('blueprintSection').classList.add('hidden');
+}
+
+function showGenerating() {
+  document.getElementById('noBlueprintSection').classList.add('hidden');
+  document.getElementById('generatingSection').classList.remove('hidden');
+  document.getElementById('blueprintSection').classList.add('hidden');
+}
+
+function showBlueprint() {
+  document.getElementById('noBlueprintSection').classList.add('hidden');
+  document.getElementById('generatingSection').classList.add('hidden');
+  document.getElementById('blueprintSection').classList.remove('hidden');
+}
+
+// ── Update Fit UI ─────────────────────────────────────────────────────────
+function updateFitUI(bp) {
+  if (!bp) return;
+  const pct = bp.fit_percent || 0;
+  ['fitPctBig','fitPctBar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = pct + '%';
+  });
+  const bar = document.getElementById('fitBar');
+  if (bar) bar.style.width = pct + '%';
+
+  const detail = document.getElementById('fitDetailText');
+  if (detail) detail.textContent = `${bp.completed_skills||0}/${bp.total_skills||0} kỹ năng đã đạt`;
+  const hours = document.getElementById('fitHoursText');
+  if (hours && bp.estimated_external_hours) hours.textContent = `~${bp.estimated_external_hours}h học ngoài còn lại`;
+
+  const summBadge = document.getElementById('fitSummaryBadge');
+  if (summBadge && bp.total_skills > 0) {
+    summBadge.classList.remove('hidden');
+    summBadge.classList.add('flex');
+    document.getElementById('fitSkillSummary').textContent = `${bp.completed_skills||0}/${bp.total_skills} kỹ năng`;
+    document.getElementById('fitHoursSummary').textContent = `~${bp.estimated_external_hours||0}h còn lại`;
+  }
+}
+
+// ── Render blueprint ──────────────────────────────────────────────────────
+function renderBlueprint(bp) {
+  showBlueprint();
+  const container = document.getElementById('groupsContainer');
+  if (!bp.groups || !bp.groups.length) {
+    container.innerHTML = '<p class="text-sm text-[#474651]">Chưa có dữ liệu kỹ năng.</p>';
+    return;
+  }
+
+  container.innerHTML = bp.groups.map((g, gi) => {
+    const pct = g.total > 0 ? Math.round((g.completed / g.total) * 100) : 0;
+    const statusLabel = g.completed === g.total ? 'Hoàn thành' : `${g.completed}/${g.total} đã đạt`;
+    const statusColor = g.completed === g.total ? 'text-green-600' : 'text-[#474651]';
+
+    const skillsHtml = g.skills.map(s => renderSkillRow(s)).join('');
+
+    return `
+    <div class="bg-white rounded-2xl border border-[#e5eeff] overflow-hidden">
+      <div class="skill-group-header flex items-center justify-between px-5 py-4"
+           onclick="toggleGroup(${gi})">
+        <div class="flex items-center gap-3">
+          <div class="w-2 h-10 rounded-full ${pct===100?'bg-green-500':pct>0?'bg-yellow-400':'bg-slate-200'}"></div>
+          <div>
+            <h4 class="font-semibold text-[#1a146b] text-sm">${escHtml(g.group_name)}</h4>
+            <p class="text-xs ${statusColor}">${statusLabel} · ${pct}%</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-24 h-1.5 bg-[#e5eeff] rounded-full overflow-hidden">
+            <div class="h-full rounded-full ${pct===100?'bg-green-500':'bg-[#1a146b]'}" style="width:${pct}%"></div>
+          </div>
+          <span class="material-symbols-outlined msym text-[#474651] text-lg" id="chevron${gi}">expand_more</span>
+        </div>
+      </div>
+      <div class="skill-group-body" id="groupBody${gi}" style="max-height:9999px;opacity:1">
+        <div class="border-t border-[#e5eeff] divide-y divide-[#f1f5f9]">
+          ${skillsHtml}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSkillRow(s) {
+  const statusPill = {
+    completed: '<span class="pill-completed text-xs font-semibold px-2 py-0.5 rounded-full">✓ Đã đạt</span>',
+    in_progress: '<span class="pill-in_progress text-xs font-semibold px-2 py-0.5 rounded-full">⏳ Đang học</span>',
+    planned: '<span class="pill-planned text-xs font-semibold px-2 py-0.5 rounded-full">Chưa học</span>',
+    skipped: '<span class="pill-skipped text-xs font-semibold px-2 py-0.5 rounded-full">Bỏ qua</span>',
+  }[s.status] || '';
+
+  const schoolBadge = s.school_covered
+    ? `<span class="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-medium">📚 Trong CTĐT</span>`
+    : '';
+
+  const resourceLink = (!s.school_covered && s.source_url)
+    ? `<a href="${s.source_url}" target="_blank" rel="noopener"
+          class="inline-flex items-center gap-1 text-xs text-[#1a146b] underline hover:opacity-70">
+         <span class="material-symbols-outlined msym text-sm">${sourceIcon(s.source_type)}</span>
+         ${escHtml(s.source_name || 'Xem tài liệu')}
+         ${s.estimated_hours ? `<span class="text-[#474651] no-underline">&nbsp;·&nbsp;~${s.estimated_hours}h</span>` : ''}
+       </a>`
+    : '';
+
+  const levelLabel = {basic:'Cơ bản',intermediate:'Trung cấp',advanced:'Nâng cao'}[s.level] || '';
+  const priorityDot = s.priority === 1
+    ? '<span class="w-2 h-2 rounded-full bg-red-400 inline-block flex-shrink-0 mt-1" title="Bắt buộc"></span>'
+    : s.priority === 2
+    ? '<span class="w-2 h-2 rounded-full bg-yellow-400 inline-block flex-shrink-0 mt-1" title="Nên có"></span>'
+    : '<span class="w-2 h-2 rounded-full bg-slate-300 inline-block flex-shrink-0 mt-1" title="Nice-to-have"></span>';
+
+  // Status select (chỉ cho mục ngoài trường)
+  const actionSelect = s.school_covered ? '' : `
+    <select onchange="updateSkillStatus(${s.id}, this.value)"
+      class="text-xs border border-[#c8c5d3] rounded-lg px-2 py-1 bg-white text-[#474651] focus:outline-none focus:border-[#1a146b] transition-colors">
+      <option value="planned" ${s.status==='planned'?'selected':''}>Chưa học</option>
+      <option value="in_progress" ${s.status==='in_progress'?'selected':''}>Đang học</option>
+      <option value="completed" ${s.status==='completed'?'selected':''}>Đã xong</option>
+      <option value="skipped" ${s.status==='skipped'?'selected':''}>Bỏ qua</option>
+    </select>`;
+
+  return `
+  <div class="px-5 py-3.5 flex items-start gap-3" id="skillRow${s.id}">
+    ${priorityDot}
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 flex-wrap mb-1">
+        <span class="text-sm font-medium text-[#0b1c30]">${escHtml(s.skill_name)}</span>
+        ${levelLabel ? `<span class="text-[10px] text-[#474651] bg-[#f1f5f9] px-1.5 py-0.5 rounded">${levelLabel}</span>` : ''}
+        ${schoolBadge}
+        ${statusPill}
+      </div>
+      ${s.description ? `<p class="text-xs text-[#474651] mb-1">${escHtml(s.description)}</p>` : ''}
+      ${resourceLink}
+      ${s.school_covered && s.school_courses?.length
+        ? `<p class="text-[11px] text-indigo-600 mt-1">Học qua môn: ${s.school_courses.join(', ')}</p>`
+        : ''}
+    </div>
+    <div class="flex-shrink-0">${actionSelect}</div>
+  </div>`;
+}
+
+function sourceIcon(type) {
+  return {course:'menu_book',book:'book',project:'code',practice:'fitness_center',video:'play_circle',docs:'description',official_docs:'description',cert:'workspace_premium'}[type] || 'link';
+}
+
+// ── Accordion toggle ──────────────────────────────────────────────────────
+function toggleGroup(gi) {
+  const body = document.getElementById('groupBody' + gi);
+  const chev = document.getElementById('chevron' + gi);
+  if (!body) return;
+  const isOpen = body.style.maxHeight !== '0px' && body.style.maxHeight !== '';
+  body.style.maxHeight = isOpen ? '0px' : '9999px';
+  body.style.opacity = isOpen ? '0' : '1';
+  if (chev) chev.style.transform = isOpen ? 'rotate(-90deg)' : '';
+}
+
+// ── Confirm career pick ───────────────────────────────────────────────────
+async function confirmPick() {
+  if (!_selectedPathId) return;
+  const r = await apiFetch('/v2/careers/my-choice', 'POST', { primary_path_id: _selectedPathId });
+  if (!r) {
+    // Show real cause if available — giúp user biết là 401/403/500/network
+    const err = window.__lastApiError;
+    let msg = 'Không thể lưu lựa chọn.';
+    if (err) {
+      if (err.status === 401) msg = 'Phiên đăng nhập hết hạn. Vui lòng login lại.';
+      else if (err.status === 403) msg = 'Không có quyền chọn nghề (admin/cố vấn không dùng tính năng này).';
+      else if (err.status === 0) msg = 'Mất kết nối tới server. Kiểm tra mạng + backend đang chạy không.';
+      else if (err.status >= 500) msg = `Lỗi server (${err.status}). Thử lại sau ít phút.`;
+      else msg = `Lỗi ${err.status}: ${(err.body || err.error || '').slice(0, 100)}`;
+    }
+    showToast(msg, 'error');
+    return;
+  }
+  _currentChoice = { primary: _allCareers.find(c => c.id === _selectedPathId) };
+  showCurrentCareer(_currentChoice.primary);
+  if (!r.blueprint_ready) {
+    showNoBlueprintState();
+  } else {
+    await loadBlueprint();
+  }
+  showToast('Đã chọn nghề thành công!');
+}
+
+// ── Regenerate blueprint ──────────────────────────────────────────────────
+async function generateBlueprint(force = false) {
+  if (!_currentChoice?.primary?.id) return;
+  showGenerating();
+  const r = await apiFetch('/v2/career/blueprint/regenerate', 'POST', {
+    path_id: _currentChoice.primary.id,
+    force,
+  });
+  if (!r) { showToast('AI không phản hồi. Thử lại sau.', 'error'); showNoBlueprintState(); return; }
+  if (!r.generated && !force) {
+    // Blueprint already exists
+    await loadBlueprint();
+    return;
+  }
+  showToast(`Đã sinh ${r.skill_count} kỹ năng!`);
+  await loadBlueprint();
+}
+
+// ── Update skill status ───────────────────────────────────────────────────
+async function updateSkillStatus(skillId, status) {
+  const r = await apiFetch(`/v2/career/blueprint/skill/${skillId}/status`, 'PUT', { status });
+  if (!r?.ok) { showToast('Cập nhật thất bại', 'error'); return; }
+  // Refresh fit UI without full reload
+  const fitR = await apiFetch('/v2/career/fit/me');
+  if (fitR) {
+    updateFitUI({ fit_percent: fitR.fit_percent, completed_skills: fitR.completed_skills,
+                  total_skills: fitR.total_skills, in_progress_skills: fitR.in_progress_skills,
+                  estimated_external_hours: fitR.estimated_external_hours });
+    // Update sidebar badge
+    const badge = document.getElementById('sidebarCareerFitBadge');
+    if (badge && fitR.has_blueprint) {
+      badge.textContent = fitR.fit_percent + '%';
+      badge.classList.remove('hidden');
+    }
+  }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────
+function filterCareers(q) {
+  const filtered = q
+    ? _allCareers.filter(c => (c.name + ' ' + (c.short_description||'')).toLowerCase().includes(q.toLowerCase()))
+    : _allCareers;
+  renderCareerGrid(filtered);
+}
+
+// ── Events ────────────────────────────────────────────────────────────────
+function bindEvents() {
+  document.getElementById('confirmPickBtn')?.addEventListener('click', confirmPick);
+  document.getElementById('generateFirstBtn')?.addEventListener('click', () => generateBlueprint(false));
+  document.getElementById('regenBtn')?.addEventListener('click', () => generateBlueprint(true));
+  document.getElementById('changeCareerBtn')?.addEventListener('click', () => {
+    document.getElementById('noBlueprintSection').classList.add('hidden');
+    document.getElementById('blueprintSection').classList.add('hidden');
+    showPicker();
+    if (_currentChoice?.primary) {
+      _selectedPathId = _currentChoice.primary.id;
+      selectCareer(_currentChoice.primary.id);
+    }
+  });
+  document.getElementById('careerSearch')?.addEventListener('input', e => filterCareers(e.target.value));
+}
+
+// ── API helper ────────────────────────────────────────────────────────────
+async function apiFetch(path, method = 'GET', body = null) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _token } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(API + path, opts);
+    if (!r.ok) {
+      // Lưu lý do thật trong window để debug — toast generic vẫn hiện cho user
+      let bodyText = '';
+      try { bodyText = await r.text(); } catch (_) {}
+      window.__lastApiError = { status: r.status, path, method, body: bodyText.slice(0, 400) };
+      console.warn(`[career-goal apiFetch] ${method} ${path} → ${r.status}: ${bodyText.slice(0, 200)}`);
+      return null;
+    }
+    return await r.json();
+  } catch (e) {
+    window.__lastApiError = { status: 0, path, method, error: String(e).slice(0, 200) };
+    console.warn(`[career-goal apiFetch] ${method} ${path} → exception:`, e);
+    return null;
+  }
+}
+
+// ── Toast — migrated 2026-05-05 dùng App.toast (window.showToast shim) ──
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── CAREER DETAIL MODAL ────────────────────────────────────────────────────
+let _cdActivePathId = null;
+
+async function openCareerDetail(pathId) {
+  _cdActivePathId = pathId;
+  const career = _allCareers.find(c => c.id === pathId);
+  if (!career) return;
+
+  // Populate header
+  document.getElementById('cdName').textContent = career.name || '—';
+  document.getElementById('cdShortDesc').textContent = career.short_description || '';
+  document.getElementById('cdHeader').style.background = colorToGrad(career.color);
+  const iconEl = document.getElementById('cdIcon').querySelector('span');
+  if (iconEl) iconEl.textContent = career.icon || 'work';
+
+  // A4: Show "Trao đổi với cố vấn" button (chỉ cho SV, khi floating-chat đã loaded)
+  const askBtn = document.getElementById('cdAskAdvisorBtn');
+  if (askBtn) {
+    let role = '';
+    try { role = (localStorage.getItem('user_role') || '').toLowerCase(); } catch {}
+    const canAsk = role === 'student' && typeof window.openAdvisorChat === 'function';
+    askBtn.classList.toggle('hidden', !canAsk);
+  }
+
+  // Reset state
+  document.getElementById('cdLoading').classList.remove('hidden');
+  document.getElementById('cdContent').classList.add('hidden');
+  document.getElementById('cdError').classList.add('hidden');
+  document.getElementById('careerDetailModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Fetch detail (direct fetch — apiFetch swallows error detail by returning null)
+  try {
+    const resp = await fetch(API + `/v2/career/${pathId}/detail`, {
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _token },
+    });
+    document.getElementById('cdLoading').classList.add('hidden');
+    let body = null;
+    try { body = await resp.json(); } catch (_) {}
+    if (!resp.ok) {
+      const msg = body?.detail || `HTTP ${resp.status}`;
+      _showCdError(`${msg}\n\nNếu lỗi 503: AI tạm thời không phản hồi (Gemini hết quota / Groq down). Thử lại sau 1-2 phút hoặc nghề khác.`);
+      return;
+    }
+    if (body?.detail) {
+      _renderCareerDetail(body.detail);
+      document.getElementById('cdContent').classList.remove('hidden');
+      const srcLabel = document.getElementById('cdSourceLabel');
+      if (srcLabel) {
+        srcLabel.textContent = body.from_cache
+          ? 'Dữ liệu đã lưu (instant). Có thể có sai sót, kiểm tra với cố vấn.'
+          : `Sinh mới bởi AI (${body.provider || 'unknown'}). Có thể có sai sót.`;
+      }
+    } else {
+      _showCdError('Server trả về dữ liệu rỗng. Thử lại sau.');
+    }
+  } catch (e) {
+    document.getElementById('cdLoading').classList.add('hidden');
+    _showCdError(`Lỗi mạng: ${e?.message || 'unknown'}. Kiểm tra backend còn chạy?`);
+  }
+}
+
+function _showCdError(msg) {
+  const el = document.getElementById('cdError');
+  // Hỗ trợ multi-line bằng cách giữ whitespace
+  el.style.whiteSpace = 'pre-line';
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function _renderCareerDetail(d) {
+  const sec = (icon, title, body) => `
+    <div>
+      <p class="text-sm font-bold text-[#1a146b] flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined msym text-base">${icon}</span>${title}
+      </p>
+      ${body}
+    </div>`;
+  const list = (items, color) => `
+    <ul class="space-y-1">
+      ${(items || []).map(it => `
+        <li class="text-sm text-[#0b1c30] flex items-start gap-2 leading-relaxed">
+          <span class="text-[${color}] mt-0.5">•</span><span>${escHtml(it)}</span>
+        </li>`).join('')}
+    </ul>`;
+
+  const salary = d.salary_vn || {};
+  const salaryHtml = `
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      ${[
+        ['Junior (0-2 năm)', salary.junior, '#10b981'],
+        ['Mid (3-5 năm)', salary.mid, '#3b82f6'],
+        ['Senior (5+ năm)', salary.senior, '#7c3aed'],
+      ].map(([lbl, val, c]) => `
+        <div class="rounded-xl border border-[#e5eeff] bg-[#fafbff] p-3">
+          <p class="text-[10px] uppercase tracking-wider font-bold" style="color:${c}">${lbl}</p>
+          <p class="text-sm font-bold text-[#0b1c30] mt-0.5">${escHtml(val || '—')}</p>
+        </div>`).join('')}
+    </div>`;
+
+  document.getElementById('cdContent').innerHTML = `
+    ${d.overview ? sec('description', 'Tổng quan công việc',
+      `<p class="text-sm text-[#0b1c30] leading-relaxed">${escHtml(d.overview)}</p>`) : ''}
+
+    ${d.is_suitable_for ? `
+      <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
+        <span class="material-symbols-outlined msym text-amber-600 flex-shrink-0 mt-0.5" style="font-variation-settings:'FILL' 1">person_check</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-amber-900 mb-0.5">Phù hợp với sinh viên thế nào?</p>
+          <p class="text-sm text-amber-800 leading-relaxed">${escHtml(d.is_suitable_for)}</p>
+        </div>
+      </div>` : ''}
+
+    ${(d.responsibilities && d.responsibilities.length) ? sec('checklist', 'Đầu việc thường ngày',
+      list(d.responsibilities, '#1a146b')) : ''}
+
+    ${(d.required_hard_skills && d.required_hard_skills.length) ? sec('code', 'Kỹ năng kỹ thuật cần có',
+      list(d.required_hard_skills, '#1e40af')) : ''}
+
+    ${(d.required_soft_skills && d.required_soft_skills.length) ? sec('groups', 'Kỹ năng mềm',
+      list(d.required_soft_skills, '#059669')) : ''}
+
+    ${(d.personality_traits && d.personality_traits.length) ? sec('psychology', 'Tố chất / Tính cách phù hợp',
+      list(d.personality_traits, '#d97706')) : ''}
+
+    ${sec('payments', 'Mức lương VN (2025)', salaryHtml)}
+
+    ${(d.growth_paths && d.growth_paths.length) ? sec('trending_up', 'Cơ hội phát triển',
+      list(d.growth_paths, '#7c3aed')) : ''}
+  `;
+}
+
+function closeCareerDetail() {
+  document.getElementById('careerDetailModal').classList.add('hidden');
+  document.body.style.overflow = '';
+  _cdActivePathId = null;
+}
+
+// A4: "Trao đổi với cố vấn" CTA — open floating chat advisor tab với prefill.
+// Cần thiết vì AI có thể sai sót, SV cần xác nhận hướng nghề với người thật.
+window.askAdvisorAboutCareer = function () {
+  if (_cdActivePathId == null) return;
+  if (typeof window.openAdvisorChat !== 'function') return;
+  const career = _allCareers.find(c => c.id === _cdActivePathId);
+  if (!career) return;
+  const text = `Em đang cân nhắc theo hướng "${career.name}". Cô/thầy có thể tư vấn em nên ưu tiên môn gì kỳ tới và làm sao để chuẩn bị tốt cho hướng này không ạ?`;
+  closeCareerDetail();
+  setTimeout(() => window.openAdvisorChat(text), 150);
+};
+
+function selectCareerFromModal() {
+  if (_cdActivePathId == null) return;
+  selectCareer(_cdActivePathId);
+  closeCareerDetail();
+  // Scroll lên picker để user thấy nút "Xác nhận chọn nghề" highlighted
+  document.getElementById('confirmPickBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
+</body>
+</html>

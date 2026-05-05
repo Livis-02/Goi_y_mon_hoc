@@ -1,0 +1,555 @@
+# CLAUDE.md — Hướng dẫn làm việc với project này
+
+> Đọc file này TRƯỚC KHI làm bất cứ việc gì.
+> Cập nhật: 2026-05-02 (design system v3 — Stripe-inspired + dark mode)
+
+---
+
+## 1. Project là gì
+
+**EduGuide** — Web app gợi ý môn học và theo dõi tiến độ học tập cho sinh viên ngành CNTT (mã 7480201).
+
+**Repo:** `E:\Do_an\Goi-y-mon-hoc`
+
+**Stack:** FastAPI (Python 3.11+) + PostgreSQL + HTML/CSS/JS thuần + Tailwind CDN + ML (GradientBoosting) + LLM chain (Gemini → Groq → OpenAI → Claude)
+
+**Không đề cập:** HUMG, Mỏ-Địa chất (đã bỏ khỏi branding).
+
+---
+
+## 2. Tài liệu cần đọc (theo thứ tự)
+
+| File | Nội dung | Độ ưu tiên |
+|------|---------|-----------|
+| `docs/MASTER_SPEC.md` | Nguồn sự thật duy nhất — nghiệp vụ, chức năng, luồng, API | **Đọc trước tiên** |
+| `data/ctdt/CTDT_CHUAN.md` | CTĐT thực tế 6 chuyên ngành, quy tắc tính TC, tiên quyết | Đọc khi cần logic học vụ |
+| `docs/DEFENSE_DEMO.md` | Script demo 15-20' cho hội đồng bảo vệ — đi qua mọi feature chính | Bảo vệ trước hội đồng |
+| `data/demo/README.md` | Bộ dữ liệu Excel demo: 10 SV (3 khoá) + 10 GV + 10 phân công + 10 file điểm | Setup data + upload thủ công qua admin UI |
+
+---
+
+## 3. Trạng thái hiện tại (đọc kỹ trước khi code)
+
+### 3.1 Đã hoàn thiện và đang chạy tốt (310 tests collected — chạy `pytest` để verify pass-rate)
+
+**Backend (`backend/main.py` — ~12.000 dòng, 232 routes):**
+
+**Auth & Users:**
+- `/auth/*`: login case-insensitive, setup-account lần đầu, reset qua email, change-password
+- Mã SV: 10 số (2 đầu = khóa). Mã GV: prefix bộ môn (KHMT001, MMT001...)
+- Default password 6 số, admin xem được khi user chưa đổi
+
+**Admin:**
+- CRUD users, courses, prerequisites, advisors
+- `/admin/users/import`, `/admin/grades/import` (có savepoint + rollback atomicity)
+- `/admin/advisors/bulk-import` phân công GV↔SV
+- `/admin/advisors/{id}/transfer-head`: chuyển chức trưởng bộ môn
+- `/admin/dashboard/stats`: 8 stats + cohort/spec distribution + warnings (gồm overdue >5 năm)
+- `/admin/config/graduation-threshold` GET/PUT
+- `/admin/logs`: audit log
+
+**Notifications (8 target types):**
+- POST `/admin/notifications` với target: all / all_students / all_advisors / cohort / specialization / students / advisors / department
+- Severity: info / warning / urgent
+- `/admin/notifications/estimate-reach`: đếm số user
+- `/notifications/me`, `/notifications/me/unread-count`, `/notifications/{id}/mark-read`
+- Bảng `notification_reads` track đã đọc
+
+**Courses & Curriculum:**
+- `/admin/courses/grouped`: courses theo 4 nhóm BB/TC-A/B/C cho 1 spec
+- `/admin/courses/all-ctdt`: tất cả môn
+- `/courses/standard-plan`: sơ đồ kế hoạch chuẩn theo CN
+- `/admin/prerequisites` POST/DELETE: thêm/xóa tiên quyết (cycle check)
+- CRUD courses với `count_toward_credits`, `required_specialization`
+
+**Student:**
+- Grades: upload/preview/me (có 6 cải tiến upload: throttle, copy MK all, retry file lỗi, popup môn lạ, summary bar, rollback)
+- Progress: `/progress/me` — TC, GPA, điều kiện TN
+- Recommendations: ML + LLM
+- Roadmap: cá nhân, what-if
+- Career, Analytics, Chat AI
+
+**Advisor:**
+- `/advisor/students`: DS SV phụ trách
+- `/advisor/students/{id}/roadmap`: lộ trình SV
+- `/advisor/notes`: CRUD ghi chú
+- Messaging với SV (advisor↔student, KHÔNG cho admin)
+
+### 3.2 Frontend đã có
+
+Tất cả ở `frontend/pages/`. Cập nhật 2026-05-02 sau dọn dẹp & đồng bộ design system v3.
+
+| File | Mô tả |
+|------|-------|
+| `index.html` | Login + role-based redirect |
+| `home.html` | Dashboard SV — **prototype layout v3** (1280px, 8/12 main + 4/12 aside) |
+| `integrated-roadmap.html` | Lộ trình tích hợp (gộp cả CTĐT + drag-drop) |
+| `grades.html` | Bảng điểm + charts |
+| `messaging.html` | Chat (SV ↔ cố vấn) |
+| `ai-chat.html` | AI chat threads |
+| `career-goal.html` | Mục tiêu nghề + skill tree |
+| `notifications.html` | Trung tâm thông báo |
+| `settings.html`, `reset-password.html` | Cài đặt, đặt lại MK |
+| `advisor.html` | Cổng cố vấn (5 tab) |
+| `admin.html` | Admin (6 tab) |
+| `landing.html` | Trang giới thiệu (root `/` redirect tới đây) |
+| `sidebar-admin.html` | Fragment sidebar admin (inject runtime) |
+| `theme.css` (v7) | **Shared design system** — CSS vars (light + dark), Stripe-style components, scrollbar, autofill, anti-FOUC sidebar strip |
+| `theme.js` (v3) | Tailwind tokens trỏ vào CSS vars — markup cũ tự flip màu khi đổi mode |
+| `theme-switcher.js` (v2) | **Light/Dark/Auto toggle** — persist `localStorage.eduguide_theme`, system preference, sessionStorage flag để chống animation replay |
+| `sidebar-init.js` (v10) | Sidebar render sync, **scoped dark navy CSS vars** trên `#sidebarDrawer` / `#adminSidebar` (sidebar luôn đậm dù page sáng/tối) |
+| `ajax-nav.js` (v6) | ⚠️ **DISABLED** (line 17 `return`) — multi-page nav truyền thống cho stability. Code dead bên dưới giữ để revert nếu cần |
+| `_curriculum_chart.js` | Component sơ đồ CTĐT dùng chung 3 role |
+| `auth.js`, `floating-chat.js`, `accessibility.js`, `scroll-helpers.js` | Shared utilities |
+| `api.js` | ⚠️ ORPHAN — `apiFetch()` wrapper không file nào load. Cân nhắc xóa hoặc adopt |
+
+**Design system convention v3** (chốt 2026-05-02):
+
+Order load trong `<head>` (BẮT BUỘC theo thứ tự):
+```html
+<link rel="stylesheet" href="theme.css?v=7"/>
+<script src="theme.js?v=3"></script>            <!-- Tailwind config — TRƯỚC CDN -->
+<script src="theme-switcher.js?v=2"></script>   <!-- Đặt .dark sync, chống FOUC -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+```
+
+**3 màu chủ đạo** (không thêm màu trang trí):
+- Slate (neutral) — UI chrome, surfaces, text, borders
+- Indigo `#635bff` (primary) — CTA, accent, KPI primary, hero blob
+- Emerald `#00ba88` (secondary) — success, growth, positive states
+- Status (red/amber) chỉ khi có data thực sự cảnh báo, không decorative.
+
+**Layout pattern v3** (đã apply ở `home.html`, các page khác giữ markup cũ + đổi topbar):
+- Container `class="container-app"` → max-width 1280px, padding responsive.
+- Topbar `class="topbar"` → fixed 60px, blur backdrop, breadcrumb + theme toggle + bell + avatar.
+- Main grid `lg:grid-cols-12` → main `lg:col-span-8` + aside `lg:col-span-4`.
+- Body `class="bg-canvas text-text-primary antialiased min-h-screen"`.
+
+**Component primitives có sẵn** (gọi qua className, đừng tự build lại):
+- `.card`, `.card-hover`, `.card-flat`, `.card-elevated`, `.card-feature`, `.card-highlight`
+- `.btn` + variants: `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`, `.btn-sm`, `.btn-lg`
+- `.input` (form input với focus ring)
+- `.pill` + variants: `.pill-success`, `.pill-warn`, `.pill-danger`, `.pill-info`, `.pill-neutral`, `.pill-accent`
+- `.eyebrow` (small uppercase label trên heading)
+- `.stat-num`, `.stat-num-lg` (KPI numbers với tabular-nums)
+- `.kpi-tile` + variants: `.kpi-tile-primary`, `.kpi-tile-secondary`, `.kpi-tile-neutral` (tinted backgrounds)
+- `.aside-card` (panel bên phải)
+- `.cta-dashed` (upload-style CTA box)
+- `.hero-card`, `.hero-strip` (greeting block)
+- `.chip-primary`, `.chip-secondary`, `.chip-neutral` (icon background chips)
+- `.theme-toggle` (button đổi sáng/tối, auto-wired qua theme-switcher.js)
+- `.skeleton` (loading shimmer)
+- `.stat-strip`, `.stat-strip-item`, `.stat-strip-divider` (dòng số liệu inline)
+- Animations: `.fade-up`, `.fade-up-delay-1..4` — **chỉ chạy lần đầu/session** (sessionStorage flag), không replay khi full reload.
+
+**Cấm**:
+- KHÔNG inline `tailwind.config = ...` ở từng page (đã consolidate vào theme.js).
+- KHÔNG duplicate `@view-transition`, `.msym`, `.pri-grad`, autofill kill, scrollbar (đã trong theme.css).
+- KHÔNG thêm chip màu mới (amber/rose/sky) — strict 3-color discipline.
+- KHÔNG bật lại view-transitions khi `ajax-nav` còn DISABLED — gây jitter ở full reload.
+
+### 3.3 Quyết định thiết kế đã chốt
+
+| Quyết định | Chi tiết |
+|-----------|----------|
+| Tên app | EduGuide (không nhắc HUMG) |
+| Mã SV | 10 số, 2 đầu = khóa (VD: 2100000001 = K21) |
+| Mã GV | Prefix bộ môn + 3 số (KHMT001, MMT001, CNPM001, HTTT001, THKT001, CNTTDH001, GV001 cho đại cương) |
+| Họ tên | Auto title case qua `normalize_vietnamese_name()` |
+| File điểm format | Dòng 1: `Mã sinh viên: ...`, dòng 2: `Họ và tên: ...` |
+| QPAN | 4 môn 7300103/104/202/203, không tính TC |
+| Trưởng bộ môn | GV đầu tiên của BM tự động là trưởng. Không có checkbox trong form. Có nút "Chuyển chức" |
+| Auto-assign SV | Tự động gán trưởng BM cùng CN khi SV mới (không round-robin) |
+| Mật khẩu | Default 6 số. Admin xem qua icon 👁. User đổi MK → `default_password=NULL` tự động |
+| Username login | Case-insensitive |
+| Setup-account lần đầu | **Bắt buộc** điền email + đổi mật khẩu trước khi vào app. Modal trigger ngay sau login (HOẶC khi auto-redirect phát hiện `is_first_login=true`). Sau khi setup xong: token cũ vẫn dùng, đi thẳng vào trang theo role — KHÔNG bắt login lại. Email dùng cho quên-mật-khẩu (Gmail integration). Demo accounts có `is_first_login=false` sẵn để bypass. |
+| Setup gate trên mọi trang | `auth.js#getCurrentUser()` check `user.is_first_login` — nếu true thì bounce về `index.html` để bắt setup. Trang chính không tin token một mình. |
+| Admin KHÔNG có | Tab Tin nhắn (dùng Notifications broadcast). Advisor VẪN có messaging với SV |
+| Admin Dashboard | READ-ONLY — chỉ stats + biểu đồ + cảnh báo. Không có nút shortcut |
+| SV không đổi CN | Trong app (quyết định CN là việc của trường) |
+| SV quá hạn | Học > 5 năm và (TC < threshold hoặc null) |
+
+### 3.4 Pattern UI đã chốt
+
+- **Tab Sinh viên admin:** Master-Detail + Filter header (table grouped khóa + side panel slide-in)
+- **Tab Cố vấn admin:** Grid Cards grouped theo bộ môn, trưởng BM có border vàng
+- **Tab Môn học admin:** Table + Side Panel, 4 accordion BB/TC-A/B/C, 7 tab (Đại cương + 6 CN) + 2 sub-tab (Danh sách / Kế hoạch chuẩn)
+- **Sơ đồ kế hoạch:** Lưới HK × STT, SVG arrows, click môn → highlight upstream/downstream. Admin có toggle edit mode → +/- tiên quyết
+- **SV xem sơ đồ:** Highlight môn đã học (xanh) / đang học (vàng) / chưa (bình thường)
+
+### 3.4b Layout backend đã tái cấu trúc (quan trọng — không break)
+
+```
+backend/
+├── main.py              ── ~12.000 dòng, 232 routes, 59 helpers
+├── core/                ── logic nghiệp vụ tách module
+│   ├── academic_engine.py     (2675 dòng — progress, recommendations, roadmap, analytics)
+│   ├── chat_assistant.py      (1282 — LLM chain + chat history)
+│   ├── ai_advisor.py          (281  — Gemini/Groq/Claude/OpenAI rerank — gọi qua `backend.core.ai_advisor`)
+│   ├── risk_engine.py         (523  — risk score + cases)
+│   ├── curriculum_graph.py    (415  — đồ thị tiên quyết)
+│   ├── ml_trainer.py          (328  — train GradientBoosting → rec_model.joblib)
+│   ├── grade_predictor.py, parser.py, career_data.py, career_journey_resources.py
+│   └── __init__.py
+├── db/                  ── tách rõ persistence
+│   ├── db.py            (engine + SessionLocal + get_db)
+│   ├── models.py        (50 SQLAlchemy classes)
+│   ├── schemas.py       (~120 Pydantic classes)
+│   ├── migrate.py       (idempotent runner — chạy lúc startup)
+│   └── migrations/      (9 file SQL versioning)
+└── scripts/             ── CLI tools, seeders, importers
+    ├── generate_demo_data.py     ⭐ MAIN: tạo bộ demo (10 SV + 10 GV + 10 phân công + 10 file điểm)
+    ├── curriculum_importer.py    (parse docx/xlsx/csv → DB CTĐT)
+    ├── import_curriculum.py      (CLI wrapper cho curriculum_importer)
+    ├── seed_careers.py           (seed careers + paths data)
+    ├── synthetic_data.py         (generate training data từ DB cho ML trainer)
+    └── generate_assignment_templates.py (used internally by main.py download endpoints)
+```
+
+**Cảnh báo import:** module `backend.ai_advisor` đã chuyển sang `backend.core.ai_advisor` — không còn alias. Mọi `from backend.<old_name>` import (academic_engine, chat_assistant, parser, models, schemas, db, curriculum_importer, ai_advisor) đều phải dùng path mới.
+
+### 3.4c Code dead/legacy đang sống chung (chưa xóa — sẽ dọn theo plan)
+
+| Loại | Vị trí | Trạng thái |
+|------|--------|-----------|
+| Hệ Notification v1 | `main.py:4158-4219` (4 routes `/system-notifications*`, `/admin/system-notifications*`) | Thay bởi v2 `/admin/notifications` từ line 4295. **0 frontend caller**. Có thể xóa |
+| Hệ admin↔SV messaging cũ | `main.py:4517-4663` (5 routes `/admin/messages/*`, `/messages/me*`) + model `UserMessage` + 2 schema | CLAUDE.md đã chốt "Admin KHÔNG có Tab Tin nhắn". **0 frontend caller**. Đã được thay bởi `/notifications/*` (broadcast) + `/messages/direct/*` (advisor↔SV). Có thể xóa |
+| Model SQLAlchemy chưa dùng | `LearningContract`, `ContractCheckin`, `SkillResource` | Khai báo nhưng không có route/test. Có thể xóa cùng bảng DB |
+| Pydantic schema orphan | `CourseWithGroupOut`, `SemesterOfferingIn/Out`, `BulkOfferingIn`, `ActiveSemesterIn/Out`, `NotificationListItem`, `NotificationUserItem`, `UnreadCountOut`, `EstimateReachOut`, `AdvisorAssignmentOut`, `GradesImportError` | 12 cái — khai báo trong schemas.py nhưng không xuất hiện ở route hay nested. Có thể xóa |
+
+→ Khi sửa code, **không thêm caller mới cho các thứ trong bảng này**. Nếu cần feature tương tự → dùng API v2.
+
+### 3.5 Còn thiếu / cần làm tiếp
+
+> Cập nhật 2026-04-24. Thứ tự = thứ tự implement.
+
+#### ĐÃ HOÀN THÀNH (admin audit 2026-04-24)
+- [x] Admin tab Notifications: modal tạo/xem, bảng list đầy đủ
+- [x] Bug deactivateNotif gọi sai endpoint → fix
+- [x] Button color hierarchy nhất quán (blue=create, emerald=import, violet=system)
+- [x] Terminology: breadcrumb dynamic, _adminTabTitles đồng bộ sidebar
+- [x] Border radius chuẩn hóa (card=rounded-xl, modal=rounded-2xl)
+- [x] Graduation threshold UI trong tab Nhật ký
+- [x] Fix import `backend.ai_advisor` → `backend.core.ai_advisor` ở `main.py:474` + `academic_engine.py:1829` (2026-04-30 — khôi phục LLM rerank)
+
+#### ĐÃ HOÀN THÀNH (Design system v3 — 2026-05-02)
+- [x] Xóa 7 file thừa: `roadmap.html`, `ctdt.html`, `tailwind-config.js`, 4 file `_fix_*.py`/`_restore_encoding.py` (~100KB dead code)
+- [x] Backend reference fix: `main.py:5278` `roadmap.html` → `integrated-roadmap.html`; `chat_assistant.py:1245` prompt cập nhật page paths
+- [x] Tạo `theme.css` (v7) + `theme.js` (v3) với CSS variables — single source of truth, light + dark mode, ~60+ design tokens
+- [x] Tạo `theme-switcher.js` (v2) — toggle 3 mode (auto/light/dark), persist localStorage, sessionStorage flag chống animation replay
+- [x] Sidebar dark navy `#131829` (scoped CSS vars trên `#sidebarDrawer` / `#adminSidebar`) — luôn đậm bất kể page sáng/tối, contrast strong với main content
+- [x] Topbar pattern mới (`class="topbar"`) — slim 60px, blur backdrop, breadcrumb + theme toggle + bell + avatar — apply cho 10 page có sidebar
+- [x] Body bg đổi `bg-background` → `bg-canvas` toàn bộ 13 page
+- [x] 3-color palette discipline (slate + indigo + emerald) — bỏ chip-amber/rose/sky decorative
+- [x] Layout v3 prototype (`home.html`): hero strip + 3 KPI tiles tinted + stat strip + 8/12 main + 4/12 aside
+- [x] Component primitives: `.card`, `.btn`, `.pill`, `.eyebrow`, `.stat-num`, `.kpi-tile-*`, `.aside-card`, `.cta-dashed`, `.hero-card`, `.card-highlight`
+- [x] Anti-FOUC: `html::before` pseudo reserves 240px dark navy strip → sidebar không flash trắng khi reload
+- [x] Animation throttle: `.fade-up*` chỉ chạy lần đầu mỗi session (sessionStorage `eduguide_visited`) → không replay khi full reload
+- [x] Disable `@view-transition` (gây jitter khi `ajax-nav.js` đã disabled từ v6)
+- [x] Cập nhật `sidebar-init.js` (v10) render sync + theme toggle button ở footer + active link gradient indicator
+- [x] Tạo `COWORK_TEST_PROMPT.md` ở root — 4 prompt test manual (Setup + SV + GV + Admin + Regression)
+
+#### CẦN LÀM — theo thứ tự ưu tiên
+
+**F1 — Bell dropdown thông báo** (`home.html` + `advisor.html`)
+- HTML shell đã có (`#bellBtn`, `#notifDropdown`, `#notifBubble`) — chỉ cần JS
+- Gọi `GET /notifications/me` → điền dropdown, badge số chưa đọc
+- `PATCH /notifications/{id}/mark-read` khi click
+- Auto-refresh 60s khi tab visible
+- Severity color: urgent=đỏ, warning=vàng, info=xanh
+
+**F2 — Urgent popup khi login** (`index.html`)
+- Sau login thành công, trước redirect: check `/notifications/me` → filter `severity=urgent AND is_read=false`
+- Nếu có → modal overlay đỏ → "Đã hiểu" → mark-read → redirect
+
+**F3 — CTDT chart cho Student** (`home.html`) và Advisor (`advisor.html`)
+- `_curriculum_chart.js` đã có, `initCurriculumChart(el, opts)` hoạt động
+- Student: gọi `/courses/standard-plan?spec=...` + `/grades/me` → map status passed/failed/current → render chart (view-only)
+- Advisor: tab ctdt đã có HTML, chỉ cần gọi API + render (view-only)
+- Mapping: `grade.passed=true` → "passed", `grade.passed=false` → "failed", `grade.outcome=null` → "current"
+
+**F4 — Advisor ghi chú vào môn cụ thể** (`advisor.html`, backend)
+- DB: thêm cột `course_code VARCHAR(20) NULL` vào bảng `advisor_notes`
+- Backend: thêm route `GET /advisor/students/{id}/course-notes` → `{course_code: [notes]}`
+- Schema: `AdvisorNoteCreateIn` thêm field `course_code: str | None`
+- Frontend advisor.html: trong roadmap modal → mỗi course card có nút 💬 → mini-modal ghi chú
+- Frontend home.html: trong CTDT chart SV → badge 💬 trên môn có note → click → popup đọc (read-only)
+
+**F5 — Panel "SV cần chú ý"** (`advisor.html`)
+- Backend `/advisor/students` đã trả về `status` + `status_reason` — check xem frontend đã dùng chưa
+- Nếu chưa functional: build filter logic, color bar trái mỗi card (đỏ/vàng/xanh)
+- Criteria: `high_risk` = GPA4 < 2.0 OR (>4 năm AND TC < 100); `needs_attention` = GPA giảm 2 kỳ OR thiếu >50 TC
+
+**F6 — Estimated graduation date** (`home.html`, `academic_engine.py`)
+- `#dGradEst`, `#dGradEstSub` đã có HTML — check xem backend đã tính `estimated_graduation` chưa
+- Nếu chưa: thêm logic trong `build_progress_snapshot()`: `avg_tc/kỳ` → `kỳ_còn_lại` → format "HK2/2025-2026"
+- Format: "Có thể TN kỳ này ✓" / "Dự kiến HK2/2025-2026 (~2 kỳ)" / "Dự kiến HK1/2027 (~5 kỳ, cần tăng tốc)"
+
+**F7 — Recommendation Explainability** (`home.html`, backend)
+- Route mới: `GET /recommendations/why-not/{course_code}` (auth=student)
+- Logic rule-based (không cần LLM): check tiên quyết chưa qua, sai CN, đã học, đang học
+- Frontend: input search môn bất kỳ → call API → popup giải thích có cấu trúc
+
+**F8 — Rating môn học** (DB migration, backend, frontend)
+- Bảng mới `course_ratings`: `id, course_code, user_id, rating (1-5), comment, created_at, UNIQUE(course_code, user_id)`
+- Routes: `POST /ratings/{course_code}`, `GET /ratings/{course_code}/summary`, `GET /ratings/me`
+- SV chỉ rate môn đã pass
+- Synthetic data: script `backend/scripts/seed_ratings.py` → ~500 ratings realistic
+- Frontend: star widget trên môn đã pass, avg_rating trong recommendation cards
+- Admin: cột avg_rating trong course table
+- ML: thêm feature `avg_rating` vào model khi retrain
+
+---
+
+## 4. Quy tắc làm việc
+
+### 4.1 Cách Claude Code được giao việc
+
+**Từ 2026-04-23:** User gửi **SPEC (đặc tả)**, không phải code chi tiết.
+
+Spec mô tả:
+- Mục tiêu (1 câu)
+- Bối cảnh (tình trạng hiện tại)
+- Yêu cầu (behavior mong đợi)
+- Ràng buộc (không đụng gì)
+- Cách test
+
+**Claude Code TỰ QUYẾT:**
+- Tên function, biến
+- Cách tổ chức code
+- CSS class, thuật toán
+- Cấu trúc file
+
+**Claude Code KHÔNG tự ý:**
+- Đổi tên file/bảng đã có
+- Refactor code đang chạy tốt
+- Thêm dependency mới
+- Bỏ tính năng đang dùng
+
+### 4.2 Khi được yêu cầu làm tính năng mới:
+1. Đọc SPEC.md section liên quan trước
+2. Kiểm tra route đã tồn tại chưa (xem section 3.1)
+3. Nếu đã có → chỉ sửa/bổ sung, không viết lại
+4. Nếu chưa có → thêm mới, không xóa route cũ
+
+### 4.3 Khi sửa `academic_engine.py`:
+- Ngưỡng TN: `_DEFAULT_GRADUATION_THRESHOLD = 153.0` — **KHÔNG đổi**
+- Quy tắc TC: xem `CTDT_CHUAN.md`
+- Không xóa function đang được import trong `main.py` hoặc `chat_assistant.py`
+
+### 4.4 Khi thêm route mới vào `main.py`:
+- Đặt theo nhóm (advisor routes gần nhau)
+- Luôn thêm authentication dependency (`_require_admin`, etc.)
+
+### 4.5 Khi sửa database:
+- Thêm migration vào `migrate.py`
+- Cập nhật `models.py` và `schemas.py` đồng thời
+- Không đổi tên cột/bảng đang có (breaking change)
+
+### 4.6 Sau khi sửa code:
+- Chạy `pytest -v`
+- Báo kết quả cụ thể: "X/X tests pass" hoặc liệt kê test FAIL
+
+### 4.7 Không làm:
+- Không xóa hoặc rename file đang có
+- Không refactor khi không được yêu cầu
+- Không đổi tech stack
+- Không tự thêm dependency
+- Không dùng localStorage/sessionStorage trong component
+
+---
+
+## 5. Thông tin kỹ thuật quan trọng
+
+### 5.1 Hằng số:
+```python
+_DEFAULT_GRADUATION_THRESHOLD = 153.0
+INTERNSHIP_REMAINING_BUFFER = 6.0
+```
+
+### 5.2 Giới hạn TC/kỳ theo GPA:
+```
+GPA >= 3.6  → max 25 TC/kỳ
+GPA >= 2.5  → max 22 TC/kỳ
+GPA < 2.5   → max 18 TC/kỳ
+```
+
+### 5.3 Upload matching rule:
+```
+1. Match course_code trước
+2. Fallback: match course_name (lowercase + trim)
+3. Không khớp → "Môn lạ" (amber color)
+4. Môn không hợp lệ không tính vào tiến độ CTĐT
+```
+
+### 5.3a Phân lớp can thiệp CTĐT cho admin (chốt 2026-04-25):
+
+Admin có **3 lớp** thao tác trên CTĐT, phân theo mức rủi ro:
+
+**Lớp 1 — Vận hành (sửa inline thoải mái, không cần Import):**
+- HK chuẩn của môn (1-9) — popup HK ở list view + input ở side panel
+- Tiên quyết — `+/×` ngay tại row list
+- Mô tả môn — modal Sửa
+- Flag `count_toward_credits` (Tính TC tích lũy / Không tính)
+
+**Lớp 2 — Cấu trúc CTĐT (CHỈ qua Import CTĐT chuẩn, UI khoá read-only):**
+- Mã môn, Tên môn, Số TC
+- Chuyên ngành áp dụng (`required_specialization` + bảng M2M `course_specializations`)
+- Nhóm tự chọn (BB / TC-A / TC-B / TC-C) + TC tối thiểu mỗi nhóm
+- → Modal "Sửa môn" disable các field này khi mode Edit + banner nhắc Import. Side panel hiện CN dạng badges read-only.
+- Khi mode "Thêm môn mới" thì vẫn cho gõ tay (cần thiết khi DB rỗng).
+
+**Lớp 3 — Cấu hình hệ thống (sửa có audit log + xác nhận, ở tab Nhật ký):**
+- `graduation_credit_threshold` — ngưỡng TC tốt nghiệp (mặc định 153.0)
+- `internship_min_credits` — ngưỡng TC đi thực tập DN (mặc định 90.0)
+- `thesis_min_credits` — ngưỡng TC làm ĐATN (mặc định 130.0)
+- `thesis_min_gpa4` — ngưỡng GPA hệ 4 làm ĐATN (mặc định 2.0)
+- `active_semester` — kỳ học hiện hành
+- Endpoints: `GET/PUT /admin/config/graduation-threshold`, `GET/PUT /admin/config/academic-thresholds`
+
+**KHÔNG cho admin sửa:** thang quy đổi 10→4, công thức GPA, quy tắc học lại = max — đây là quy chuẩn Bộ GD, fix-code only.
+
+### 5.4 Quy tắc tính điểm & GPA (xác nhận 2026-04-25 từ 2 bảng điểm thực tế K21):
+
+**Thang quy đổi 10 → 4 → letter (chuẩn Bộ GD):**
+```
+≥ 9.0  → A+ (4.0)
+8.5–8.9 → A  (3.7)
+8.0–8.4 → B+ (3.5)
+7.0–7.9 → B  (3.0)
+6.5–6.9 → C+ (2.5)
+5.5–6.4 → C  (2.0)
+5.0–5.4 → D+ (1.5)
+4.0–4.9 → D  (1.0)
+< 4.0   → F  (0)   — KHÔNG pass
+```
+Pass khi `score4 ≥ 1.0` (D, D+ vẫn đạt nhưng kéo GPA xuống).
+
+**Công thức GPA (HK + tích lũy):**
+```
+GPA = Σ(score4 × credits) / Σ(credits)    # chỉ trên môn count_toward_credits
+GPA10 = Σ(score10 × credits) / Σ(credits) # cùng nguyên tắc
+```
+Làm tròn 2 chữ số thập phân (round half up).
+
+**Môn KHÔNG vào TC tích lũy + KHÔNG vào GPA:**
+- **GDTC** 1/2/3: `7010701`, `7010702`, `7010703`
+- **QPAN** — nhận biết bằng **mã bắt đầu `73`**:
+  - Khóa 2021 (bảng điểm thực tế): `7300103`, `7300104`, `7300202`, `7300203` (4 môn, đặt HK1)
+  - ver2.pdf (khóa mới): `7300101` (HK4), `7300102` (HK5), `7300201` (HK6) (3 môn)
+- **Môn trượt** (F, score4 < 1.0)
+- **Chuẩn đầu ra Đ/K** (`CDRTH`, `CDRNN`, `7010610` Tiếng Anh tăng cường):
+  0 TC, kết quả "Đ"/"K", chỉ là điều kiện ra trường, không tham gia GPA.
+
+**Học kỳ hè (HK3) — VẪN tính bình thường:**
+- TC HK3 **VẪN** vào TC tích lũy, GPA **VẪN** tính như HK1/HK2 (đúng quy chế tín chỉ Bộ GD).
+- Chỉ KHÔNG dùng HK3 để **ước lượng tốc độ học / dự đoán kỳ TN** (vì kỳ hè ngắn ~6 tuần, không phản ánh nhịp học chính). Xem `_graduation_estimate()` line 706 + streak tracker line 1531.
+
+**Học lại = lấy điểm CAO NHẤT (KHÔNG phải mới nhất):**
+- Verify từ bảng điểm thực tế:
+  - File 1: `7080111 Mã nguồn mở` HK1/2023 D (1.0) → HK1/2025 B+ (3.5) → cuối dùng **B+ (3.5)**.
+  - File 2: `7080512 LTHĐT Java` HK2/2023 D (1.0) → HK1/2025 B (3.0) → cuối dùng **B**.
+  - File 2: `7010602 TA2` F → C → dùng **C**.
+- Chỉ tính 1 lần trong tổng TC tích lũy.
+
+**Lưu ý "TC đạt HK"**: Bảng điểm có thể hiển thị 2 cách (1 cộng cả GDTC/QPAN, 1 trừ ra) tuỳ đời bản in. KHÔNG ảnh hưởng tới TC tích lũy tốt nghiệp — code chỉ cần đảm bảo TC tích lũy + GPA không bao gồm các môn loại trừ ở trên.
+
+### 5.5 LLM chain:
+```
+Gemini 2.0 Flash → Groq llama-3.3-70b → Claude Haiku
+```
+
+### 5.6 Spec codes (6 CN CNTT):
+```
+7480201_07 — KHMT
+7480201_06 — MMT
+7480201_05 — CNPM
+7480201_09 — HTTT
+7480201_04 — THKT
+7480201_08 — CNTTDH
+```
+
+### 5.7 Notifications target types:
+```
+all              — Toàn hệ thống
+all_students     — Tất cả SV
+all_advisors     — Tất cả GV
+cohort           — SV theo khóa (K21,K22...)
+specialization   — SV theo CN (7480201_07...)
+students         — SV cụ thể (mã SV,mã SV...)
+advisors         — GV cụ thể (KHMT001,MMT001...)
+department       — GV theo bộ môn
+```
+
+### 5.8 Tài khoản demo:
+```
+demo_admin / Demo@2025
+demo_advisor / Demo@2025
+```
+
+### 5.9 Phạm vi áp dụng cá nhân hóa & gợi ý (chốt 2026-04-30):
+
+**Nguyên tắc gốc:** CTĐT của trường là **cố định, bắt buộc** — SV phải học hết các môn BB để đủ điều kiện tốt nghiệp, bất kể sở thích/định hướng nghề. **Hệ thống không "đề xuất" hay "không đề xuất" môn bắt buộc** — đó là quyết định của trường.
+
+**Cá nhân hóa CHỈ áp dụng cho môn tự chọn** (TC-A / TC-B / TC-C) — nơi SV thực sự có quyền chọn. Đây là phạm vi duy nhất gợi ý/recommendation/career-fit có ý nghĩa.
+
+**Implication cho từng feature:**
+
+| Feature | Môn bắt buộc (BB) | Môn tự chọn (TC-A/B/C) |
+|---------|-------------------|------------------------|
+| `/recommendations/me` (gợi ý đăng ký kỳ tới) | List theo HK chuẩn + tiên quyết — **KHÔNG rerank theo skill/career** | **Rerank theo skill match với nghề + ML score** |
+| `/recommendations/why-not/{code}` | "Đây là môn bắt buộc trong CTĐT — bạn phải học để đủ TC tốt nghiệp" | "Không phù hợp vì: thiếu skill X, sai CN, ..." |
+| Skill tree (SV) | Skill từ BB pass đóng góp (vì có học thật) | Skill từ TC pass đóng góp |
+| Career fit score | Tính trên skill từ TẤT CẢ môn pass (BB + TC) | Tính trên skill từ TẤT CẢ môn pass (BB + TC) |
+| Skills mapping (admin) | Cần map (để tính skill tree) | Cần map (để tính skill tree + rerank gợi ý) |
+| Roadmap kế hoạch chuẩn | Hiển thị toàn bộ BB + slot TC theo nhóm | SV chọn TC nào lấp slot — đây là chỗ admin/advisor có thể nói chuyện |
+| What-if simulator | Cho thử cả BB lẫn TC để xem dự kiến TC/GPA | (như BB) |
+
+**Tóm tắt:** Skills mapping ở admin **vẫn cần thiết cho cả BB và TC** (vì skill tree tính trên cả 2). Nhưng **logic recommendation cá nhân hóa chỉ filter/rerank các môn TC**, không đụng vào BB.
+
+**Khi audit code recommendation:** nếu thấy BB bị filter ra theo skill/career match → đó là bug. BB phải luôn xuất hiện đầy đủ theo HK chuẩn + tiên quyết.
+
+---
+
+## 6. Pattern lỗi đã fix (GHI NHỚ)
+
+- **innerHTML không chạy script:** fragment chỉ HTML+CSS, JS ở host page
+- **Redirect loop:** backend `/auth/login` trả role, frontend decode JWT
+- **Floating point 9.1000001:** `round(,2)` backend + `fmtScore()` frontend
+- **Port 8000 CLOSE_WAIT:** kill + restart + `pool_pre_ping=True`
+- **Advisor UNIQUE assignments:** check exists trước insert
+- **PostgreSQL path:** fix `db.py` path `.parent.parent` → `.parent.parent.parent`
+- **Setup-account lần đầu:** KHÔNG bắt login lại, redirect theo role
+- **Upload điểm race condition:** throttle max 5 request
+- **Mật khẩu mất:** checkbox ép xác nhận + Copy all + CSV export
+- **Sidebar flash trắng khi reload (2026-05-02):** `html::before` pseudo-element reserve 240px dark navy strip — render-blocking CSS giữ vùng sidebar đậm trước khi JS mount
+- **Animation replay gây jitter khi full reload (2026-05-02):** `.fade-up*` mặc định instant; chỉ animate khi `html[data-first-visit="true"]` (set 1 lần/session qua `sessionStorage.eduguide_visited`)
+- **`tailwind.config = ...` inline duplicate 14× page (2026-05-02):** consolidate vào `theme.js`, mọi token map sang CSS vars để dark mode auto-flip cho cả markup cũ
+- **`Mã CN '7480201_07' không hợp lệ` ở edit modal (2026-05-02):** `_IMPORT_VALID_SPECIALIZATIONS` ở `main.py:3251` chứa legacy Vietnamese names thay vì canonical codes
+
+---
+
+## 7. Cách hỏi khi không chắc
+
+Hỏi trước khi code:
+- "Tôi định làm X — có ổn không?"
+- "Route Y đã có chưa hay cần thêm mới?"
+- "Logic này đúng với CTDT_CHUAN.md không?"
+
+Tốt hơn hỏi 1 phút còn hơn code sai rồi phải sửa lại.
+
+---
+
+## 8. Thời gian còn lại (deadline bảo vệ ~24 ngày)
+
+### Ưu tiên:
+1. Fix nốt tính năng còn thiếu (section 3.5)
+2. Test thủ công 3 role + các luồng chính
+3. Viết báo cáo 6 chương (~15 ngày)
+4. PowerPoint + luyện demo (~3 ngày)
+
+### Không làm:
+- Không thêm tính năng mới ngoài danh sách
+- Không refactor
+- Không đổi database engine
+- Không re-design UI khi đã có

@@ -8,10 +8,9 @@ import json
 import os
 import re
 import secrets
-import smtplib
+# import smtplib  # removed 2026-05-05 — không còn SMTP forgot password
 from contextlib import asynccontextmanager
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+# MIMEMultipart/MIMEText imports removed 2026-05-05 — không còn SMTP
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import unicodedata
@@ -29,7 +28,7 @@ from backend.scripts.curriculum_importer import import_curriculum_from_excel
 from backend.core import academic_engine
 from backend.core.academic_engine import build_progress_snapshot, build_recommendations, build_semester_roadmap, build_analytics, invalidate_difficulty_stats_cache
 from backend.core.chat_assistant import chat_reply, get_chat_history, invalidate_student_context_cache
-from backend.core.parser import read_rows_from_upload, extract_grades, extract_tich_luy, extract_student_code, extract_full_name, _is_missing
+from backend.core.parser import read_rows_from_upload, extract_grades, extract_tich_luy, extract_student_code, extract_full_name, _is_missing, normalize_text
 
 TOKEN_TTL_HOURS = 24
 
@@ -82,18 +81,30 @@ def _migrate_teacher_codes(db):
 
 
 def on_startup():
-    models.Base.metadata.create_all(bind=engine)
-    # Chạy migration script (ALTER TABLE + backfill data) — idempotent, an toàn re-run.
-    try:
-        from backend.db import migrate as _migrate_module
-        _migrate_module.run()
-    except Exception as exc:
-        print(f"[on_startup] migrate.run() failed: {exc}", flush=True)
+    # Migration & schema bootstrap chỉ chạy khi env EDU_RUN_MIGRATIONS=1 (default OFF).
+    # Lý do: idempotent nhưng chậm + spam log; dev không cần chạy mỗi lần restart.
+    # Cách dùng:
+    #   - Lần đầu setup DB:        EDU_RUN_MIGRATIONS=1 uvicorn backend.main:app
+    #   - Sau khi sửa migrate.py:  python -m backend.db.migrate    (chạy 1 lần là xong)
+    #   - Bình thường:              uvicorn backend.main:app       (skip migration)
+    _run_migrations = os.getenv("EDU_RUN_MIGRATIONS", "0").lower() in ("1", "true", "yes", "on")
+    if _run_migrations:
+        models.Base.metadata.create_all(bind=engine)
+        try:
+            from backend.db import migrate as _migrate_module
+            _migrate_module.run()
+        except Exception as exc:
+            print(f"[on_startup] migrate.run() failed: {exc}", flush=True)
+    else:
+        print("[on_startup] skip migrations (set EDU_RUN_MIGRATIONS=1 to enable)", flush=True)
+
+    # Maintenance tasks (nhanh, không phải migration) — vẫn chạy mỗi lần boot.
     from backend.db import SessionLocal
     db = SessionLocal()
     try:
         _cleanup_expired_tokens(db)
-        _migrate_teacher_codes(db)
+        if _run_migrations:
+            _migrate_teacher_codes(db)
     finally:
         db.close()
 
@@ -111,6 +122,7 @@ _APP_ENV = (os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
 _DEV_DEFAULT_ORIGINS = [
     "http://localhost", "http://127.0.0.1",
     "http://localhost:5500", "http://127.0.0.1:5500",
+    "http://localhost:5501", "http://127.0.0.1:5501",
     "http://localhost:8000", "http://127.0.0.1:8000",
 ]
 
@@ -199,17 +211,9 @@ def public_contact(db: Session = Depends(get_db)):
     keys = ("contact_email", "contact_phone", "contact_office")
     rows = db.query(models.SystemConfig).filter(models.SystemConfig.key.in_(keys)).all()
     data = {r.key: (r.value or "").strip() for r in rows}
-    email = data.get("contact_email") or ""
-    if not email:
-        admin_with_email = db.query(models.User).filter(
-            models.User.role == "admin",
-            models.User.email.isnot(None),
-            models.User.email != "",
-        ).order_by(models.User.id.asc()).first()
-        if admin_with_email:
-            email = admin_with_email.email or ""
+    # email field on users đã DROP 2026-05-05 — chỉ lấy từ system_config
     return {
-        "email": email,
+        "email": data.get("contact_email", ""),
         "phone": data.get("contact_phone", ""),
         "office": data.get("contact_office", ""),
     }
@@ -380,6 +384,20 @@ def _resolve_user_role(user: models.User) -> str:
 
 
 def _to_user_out(user: models.User) -> schemas.UserOut:
+    # Lookup class_group code (chỉ áp dụng cho student có class_group_id)
+    class_group_code = None
+    try:
+        if getattr(user, "class_group_id", None):
+            from sqlalchemy.orm import object_session
+            sess = object_session(user)
+            if sess is not None:
+                cg = sess.query(models.ClassGroup).filter(
+                    models.ClassGroup.id == user.class_group_id
+                ).first()
+                class_group_code = cg.code if cg else None
+    except Exception:
+        class_group_code = None
+
     return schemas.UserOut(
         id=user.id,
         username=user.username,
@@ -388,11 +406,11 @@ def _to_user_out(user: models.User) -> schemas.UserOut:
         specialization=user.specialization,
         cohort=user.cohort,
         managed_specialization=user.managed_specialization,
-        is_head_of_department=bool(user.is_head_of_department),
         teacher_code=user.teacher_code,
         is_first_login=bool(user.is_first_login),
-        email=user.email,
-        grades_locked=bool(user.grades_locked),
+        class_group_id=getattr(user, "class_group_id", None),
+        class_group_code=class_group_code,
+        grades_locked=False,  # Deprecated — luôn False sau refactor 2026-05-05
     )
 
 
@@ -474,7 +492,7 @@ def health():
     gkey = _os.getenv("GEMINI_API_KEY", "")
     gqkey = _os.getenv("GROQ_API_KEY", "")
     okey = _os.getenv("OPENAI_API_KEY", "")
-    akey = _os.getenv("ANTHROPIC_API_KEY", "")
+    akey = _os.getenv("ANTHROPIC_API_KEY", "") or _os.getenv("CLAUDE_API_KEY", "")
     return {
         "status": "ok",
         "gemini_key_loaded": bool(gkey),
@@ -515,7 +533,6 @@ def register(payload: schemas.RegisterIn, db: Session = Depends(get_db)):
         password_hash=_hash_password(payload.password),
         full_name=normalize_vietnamese_name(payload.full_name) or None,
         specialization=payload.specialization or None,
-        career_goal=payload.career_goal or None,
     )
     db.add(user)
     db.flush()  # get user.id before commit
@@ -529,10 +546,11 @@ def register(payload: schemas.RegisterIn, db: Session = Depends(get_db)):
 def login(payload: schemas.LoginIn, db: Session = Depends(get_db)):
     user = _authenticate(payload.username, payload.password, db)
     token = _issue_token(user, db)
+    # require_setup REMOVED 2026-05-05 — bỏ first-login modal. SV vào thẳng app.
     return {
         "access_token": token,
         "token_type": "bearer",
-        "require_setup": bool(user.is_first_login),
+        "require_setup": False,  # kept False cho backward compat — UI cũ check nhưng skip modal
         "role": user.role,
     }
 
@@ -593,70 +611,8 @@ def auth_config():
     return {"google_client_id": os.getenv("GOOGLE_CLIENT_ID", "")}
 
 
-@app.post("/auth/google")
-def google_login(payload: schemas.GoogleAuthIn, db: Session = Depends(get_db)):
-    """Verify a Google ID token and return our own access token.
-    Creates the user account automatically on first sign-in.
-    """
-    client_id = os.getenv("GOOGLE_CLIENT_ID", "")
-    if not client_id:
-        raise HTTPException(status_code=501, detail="Google OAuth chưa được cấu hình trên server (thiếu GOOGLE_CLIENT_ID).")
-
-    # Verify with Google's tokeninfo endpoint
-    try:
-        resp = httpx.get(
-            "https://oauth2.googleapis.com/tokeninfo",
-            params={"id_token": payload.credential},
-            timeout=10.0,
-        )
-    except Exception:
-        raise HTTPException(status_code=502, detail="Không thể kết nối tới Google để xác thực.")
-
-    if resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Google credential không hợp lệ hoặc đã hết hạn.")
-
-    info = resp.json()
-
-    # Security: verify audience matches our client_id
-    if info.get("aud") != client_id:
-        raise HTTPException(status_code=401, detail="Google credential không dành cho ứng dụng này.")
-
-    if info.get("email_verified") not in ("true", True):
-        raise HTTPException(status_code=401, detail="Email Google chưa được xác minh.")
-
-    google_sub: str = info["sub"]
-    email: str = info.get("email", "")
-    full_name: str = info.get("name", "")
-
-    # 1. Find by google_sub (returning user)
-    user = db.query(models.User).filter(models.User.google_sub == google_sub).first()
-
-    # 2. Find by email as username (link existing account)
-    if not user and email:
-        user = db.query(models.User).filter(models.User.username == email).first()
-        if user:
-            user.google_sub = google_sub
-            db.commit()
-
-    # 3. Create new account
-    if not user:
-        # Generate a locked password (random, not usable for password login)
-        random_pw = secrets.token_hex(32)
-        pw_hash = bcrypt.hashpw(random_pw.encode(), bcrypt.gensalt()).decode()
-        user = models.User(
-            username=email,
-            password_hash=pw_hash,
-            full_name=normalize_vietnamese_name(full_name) or None,
-            google_sub=google_sub,
-            role="student",
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    token = _issue_token(user, db)
-    needs_setup = not user.specialization
-    return {"access_token": token, "token_type": "bearer", "needs_setup": needs_setup}
+# REMOVED 2026-05-05: POST /auth/google đã bỏ — không dùng Google OAuth.
+# Tool nội bộ chỉ dùng password login (admin tạo tài khoản, SV nhận default password).
 
 
 @app.get("/auth/me", response_model=schemas.UserOut)
@@ -1582,30 +1538,18 @@ def upload_grades(
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
-    """SV upload bảng điểm cá nhân (source='self').
+    """SV upload bảng điểm cá nhân.
 
     Mục đích: SV dùng cho lập kế hoạch cá nhân (lộ trình, AI advisor, gợi ý).
-    Đây là DỮ LIỆU TỰ KHAI, KHÔNG XÁC THỰC — cố vấn mặc định không xem
-    nguồn này (chỉ xem source='admin' từ phòng đào tạo).
-
-    Block khi `grades_locked=true` (sau khi admin đã import — bản chính thức
-    đã có, SV phải sửa ở web trường, không qua app này).
+    Đây là DỮ LIỆU TỰ KHAI — EduGuide là tool cá nhân, không thay thế cổng
+    SIS chính thức. Refactor 2026-05-05: bỏ logic merge admin/self, bỏ
+    grades_locked, bỏ source field — mỗi lần upload là full replace.
     """
     user = _get_user_by_token(authorization, db)
     if user.role != "student":
-        # Admin/advisor không dùng endpoint này — họ có /admin/grades/import
         raise HTTPException(
             status_code=403,
-            detail="Endpoint này chỉ dành cho sinh viên. Admin dùng /admin/grades/import.",
-        )
-    if user.grades_locked:
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                "Bảng điểm của bạn đã được phòng đào tạo đồng bộ chính thức. "
-                "Mọi cập nhật phải thực hiện trên web của trường — app này không "
-                "thể tự sửa bản chính thức."
-            ),
+            detail="Endpoint này chỉ dành cho sinh viên.",
         )
 
     data = file.file.read(_MAX_UPLOAD_BYTES + 1)
@@ -1628,13 +1572,25 @@ def upload_grades(
     if not grade_records:
         raise HTTPException(status_code=400, detail="Khong tim thay du lieu diem trong file.")
 
-    tich_luy = extract_tich_luy(rows)
-    # SV chỉ được set official_earned_credits NẾU admin chưa set
-    # (ngăn SV bypass ngưỡng TT/ĐATN bằng file giả)
-    if tich_luy is not None and user.official_earned_credits is None:
-        user.official_earned_credits = tich_luy
-
     all_courses = {c.course_code: c for c in db.query(models.Course).all()}
+
+    # ── Pre-compute valid courses cho chuyên ngành của SV (CTĐT) ─────────────
+    # Để cảnh báo "môn ngoài CTDT": môn tồn tại trong system nhưng không thuộc
+    # required_specialization của SV. SV vẫn được upload (insert), chỉ thêm
+    # warning vào issues.
+    user_spec = user.specialization
+    courses_in_user_ctdt: set[str] = set()
+    if user_spec:
+        # Single-spec qua required_specialization
+        for c in all_courses.values():
+            if c.required_specialization == user_spec or c.required_specialization is None:
+                courses_in_user_ctdt.add(c.course_code)
+        # M2M qua course_specializations
+        m2m_codes = db.query(models.CourseSpecialization.course_code).filter(
+            models.CourseSpecialization.specialization == user_spec
+        ).all()
+        for (code,) in m2m_codes:
+            courses_in_user_ctdt.add(code)
 
     # Snapshot GPA before replacing
     old_grades = db.query(models.UserGrade).filter(
@@ -1651,11 +1607,9 @@ def upload_grades(
     gpa4_before = _calc_gpa4(old_grades)
     credits_before = int(sum(float(all_courses[g.course_code].credits) for g in old_grades if g.course_code in all_courses))
 
-    # Full replace của điểm 'self' — KHÔNG xóa điểm 'admin' (nếu có)
-    # (Lý do an toàn: dù check has_admin_grades ở trên đã reject nhưng vẫn defensive)
+    # Full replace: xoá hết grades cũ, insert grades mới.
     db.query(models.UserGrade).filter(
         models.UserGrade.user_id == user.id,
-        models.UserGrade.source == "self",
     ).delete(synchronize_session=False)
 
     # Dedup: CSV may contain retakes for the same course — keep best score per course_code.
@@ -1675,6 +1629,7 @@ def upload_grades(
     inserted = 0
     updated = 0  # kept for API compatibility; always 0 in replace mode
     skipped_unknown = 0
+    skipped_admin_verified = 0  # always 0 sau refactor — kept for API compat
     issues: list[schemas.GradeUploadIssue] = []
 
     for rec in grade_records:
@@ -1688,6 +1643,15 @@ def upload_grades(
             skipped_unknown += 1
             continue
 
+        # Cảnh báo môn ngoài CTDT của SV (nhưng vẫn insert — SV tự khai)
+        if user_spec and courses_in_user_ctdt and code not in courses_in_user_ctdt:
+            course_obj = all_courses.get(code)
+            issues.append(schemas.GradeUploadIssue(
+                course_code_in_file=code,
+                course_name_in_file=rec.get("course_name") or (course_obj.course_name if course_obj else None),
+                reason=f"Môn không thuộc CTĐT chuyên ngành của bạn (vẫn được lưu, nhưng không tính vào tốt nghiệp)",
+            ))
+
         db.add(models.UserGrade(
             user_id=user.id,
             course_code=code,
@@ -1696,7 +1660,6 @@ def upload_grades(
             letter=rec.get("letter"),
             passed=rec.get("passed", False),
             term=rec.get("term"),
-            source="self",
         ))
         inserted += 1
 
@@ -1745,7 +1708,10 @@ def upload_grades(
     # Cố vấn cũng KHÔNG được auto-assign từ self-upload (advisor view chỉ
     # dùng source='admin', nên việc gán CV trên data tự khai là vô nghĩa).
     return schemas.GradeUploadOut(
-        inserted=inserted, updated=updated, skipped_unknown=skipped_unknown, issues=issues,
+        inserted=inserted, updated=updated,
+        skipped_unknown=skipped_unknown,
+        skipped_admin_verified=skipped_admin_verified,
+        issues=issues,
         gpa4_before=gpa4_before, gpa4_after=gpa4_after,
         credits_before=credits_before, credits_after=credits_after,
         official_tich_luy=tich_luy,
@@ -1784,29 +1750,9 @@ def list_my_grades(
     )
 
 
-@app.patch("/admin/users/{user_id}/grades-lock")
-def admin_toggle_grades_lock(
-    user_id: int,
-    locked: bool,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """Admin khoá/mở khoá quyền upload bảng điểm của 1 SV."""
-    admin = _require_admin(authorization, db)
-    sv = db.query(models.User).filter(
-        models.User.id == user_id, models.User.role == "student"
-    ).first()
-    if not sv:
-        raise HTTPException(status_code=404, detail="Không tìm thấy sinh viên")
-    sv.grades_locked = bool(locked)
-    db.commit()
-    _log(db, admin, "TOGGLE_GRADES_LOCK", "user", str(user_id),
-         f"locked={'True' if locked else 'False'} cho SV {sv.username}")
-    return {
-        "user_id": user_id, "username": sv.username,
-        "grades_locked": sv.grades_locked,
-        "message": ("Đã khoá bảng điểm" if locked else "Đã mở khoá bảng điểm") + f" — {sv.username}",
-    }
+# REMOVED 2026-05-05: PATCH /admin/users/{id}/grades-lock và GET /grades/me/status
+# đã bị bỏ. Mô hình mới: SV luôn có thể upload điểm cá nhân, không có khái niệm
+# admin lock hoặc verified source. UI luôn hiển thị "data tự khai".
 
 
 @app.get("/grades/me/status")
@@ -1814,27 +1760,18 @@ def get_my_grades_status(
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
-    """Trả trạng thái khoá + nguồn điểm cho frontend SV biết có upload được không."""
+    """Trả trạng thái upload cho frontend SV. Sau refactor 2026-05-05: luôn cho upload."""
     user = _get_user_by_token(authorization, db)
     if user.role != "student":
-        return {"locked": False, "can_upload": False, "source_breakdown": {}}
-    breakdown = {"self": 0, "admin": 0}
-    for src, in db.query(models.UserGrade.source).filter(models.UserGrade.user_id == user.id):
-        breakdown[src or "self"] = breakdown.get(src or "self", 0) + 1
-    has_admin = breakdown.get("admin", 0) > 0
-    locked = bool(user.grades_locked) or has_admin
-    if locked and has_admin:
-        reason = "verified"
-    elif locked:
-        reason = "admin_locked"
-    else:
-        reason = None
+        return {"locked": False, "can_upload": False}
+    grade_count = db.query(models.UserGrade).filter(
+        models.UserGrade.user_id == user.id
+    ).count()
     return {
-        "locked": locked,
-        "can_upload": not locked,
-        "lock_reason": reason,  # 'verified' (admin đã import) | 'admin_locked' (admin khoá tay) | None
-        "source_breakdown": breakdown,
-        "official_earned_credits": float(user.official_earned_credits) if user.official_earned_credits is not None else None,
+        "locked": False,
+        "can_upload": True,
+        "lock_reason": None,
+        "grade_count": grade_count,
     }
 
 
@@ -1924,138 +1861,16 @@ def change_password(
     return schemas.MessageOut(message="Đổi mật khẩu thành công. Vui lòng đăng nhập lại.")
 
 
-@app.patch("/auth/me/setup-account", response_model=schemas.UserOut)
-def setup_account(
-    payload: schemas.SetupAccountIn,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """Thiết lập tài khoản lần đầu: cập nhật email + đặt mật khẩu mới."""
-    user = _get_user_by_token(authorization, db)
-    if not user.is_first_login:
-        raise HTTPException(status_code=400, detail="Tài khoản đã được thiết lập trước đó")
-
-    # Kiểm tra email chưa dùng
-    existing = db.query(models.User).filter(
-        models.User.email == payload.email,
-        models.User.id != user.id,
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email này đã được sử dụng bởi tài khoản khác")
-
-    user.email = payload.email
-    user.password_hash = _hash_password(payload.new_password)
-    user.is_first_login = False
-    user.default_password = None
-    # Giữ session hiện tại — user được redirect thẳng vào app, không cần login lại
-    db.commit()
-    db.refresh(user)
-    return _to_user_out(user)
-
-
-# ── Email helper ─────────────────────────────────────────────────────────────
-
-def _send_reset_email(to_email: str, reset_link: str) -> None:
-    mail_user = os.getenv("MAIL_USERNAME", "")
-    mail_pass = os.getenv("MAIL_PASSWORD", "")
-    mail_from = os.getenv("MAIL_FROM", mail_user)
-    if not mail_user or not mail_pass:
-        raise ValueError("Email server chưa được cấu hình (MAIL_USERNAME / MAIL_PASSWORD trong .env)")
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Đặt lại mật khẩu EduGuide"
-    msg["From"] = f"EduGuide <{mail_from}>"
-    msg["To"] = to_email
-
-    html = f"""
-    <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#f8fafc;border-radius:16px;">
-      <h2 style="color:#4f46e5;margin-bottom:8px;">Đặt lại mật khẩu</h2>
-      <p style="color:#475569;font-size:14px;line-height:1.6;">
-        Bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản <strong>EduGuide</strong>.
-        Link có hiệu lực trong <strong>30 phút</strong>.
-      </p>
-      <a href="{reset_link}"
-         style="display:inline-block;margin:20px 0;padding:12px 28px;background:linear-gradient(135deg,#4f46e5,#7c3aed);
-                color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;">
-        Đặt lại mật khẩu
-      </a>
-      <p style="color:#94a3b8;font-size:12px;">Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
-      <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;"/>
-      <p style="color:#cbd5e1;font-size:11px;">© 2025 EduGuide · Hệ thống Gợi ý Môn học CNTT</p>
-    </div>
-    """
-    msg.attach(MIMEText(html, "html"))
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(mail_user, mail_pass)
-        smtp.sendmail(mail_from, to_email, msg.as_string())
-
-
-@app.post("/auth/forgot-password", response_model=schemas.MessageOut)
-def forgot_password(payload: schemas.ForgotPasswordIn, db: Session = Depends(get_db)):
-    """Gửi email đặt lại mật khẩu. Luôn trả 200 để tránh user enumeration."""
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
-    if not user:
-        # Không tiết lộ email có tồn tại hay không
-        return schemas.MessageOut(message="Nếu email tồn tại, bạn sẽ nhận được hướng dẫn trong vài phút.")
-
-    # Tạo token ngẫu nhiên
-    raw_token = secrets.token_urlsafe(32)
-    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
-    expires_at = datetime.utcnow() + timedelta(minutes=30)
-
-    # Xóa token cũ chưa dùng
-    db.query(models.PasswordResetToken).filter(
-        models.PasswordResetToken.user_id == user.id,
-        models.PasswordResetToken.used_at == None,
-    ).delete()
-
-    db.add(models.PasswordResetToken(
-        user_id=user.id,
-        token_hash=token_hash,
-        expires_at=expires_at,
-    ))
-    db.commit()
-
-    # Build reset link
-    frontend_base = os.getenv("FRONTEND_BASE_URL", "http://localhost:5500")
-    reset_link = f"{frontend_base}/frontend/pages/reset-password.html?token={raw_token}"
-
-    try:
-        _send_reset_email(user.email, reset_link)
-    except Exception as exc:
-        # Log lỗi nhưng không để lộ chi tiết cho client
-        print(f"[forgot-password] email error: {exc}")
-        raise HTTPException(status_code=503, detail="Không thể gửi email lúc này. Kiểm tra cấu hình SMTP.")
-
-    return schemas.MessageOut(message="Nếu email tồn tại, bạn sẽ nhận được hướng dẫn trong vài phút.")
-
-
-@app.post("/auth/reset-password", response_model=schemas.MessageOut)
-def reset_password(payload: schemas.ResetPasswordIn, db: Session = Depends(get_db)):
-    """Đặt lại mật khẩu bằng token từ email."""
-    token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
-    record = db.query(models.PasswordResetToken).filter(
-        models.PasswordResetToken.token_hash == token_hash,
-        models.PasswordResetToken.used_at == None,
-        models.PasswordResetToken.expires_at > datetime.utcnow(),
-    ).first()
-
-    if not record:
-        raise HTTPException(status_code=400, detail="Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn")
-
-    user = db.query(models.User).filter(models.User.id == record.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản")
-
-    user.password_hash = _hash_password(payload.new_password)
-    user.is_first_login = False
-    record.used_at = datetime.utcnow()
-    # Thu hồi tất cả session
-    db.query(models.AuthToken).filter(models.AuthToken.user_id == user.id).delete()
-    db.commit()
-
-    return schemas.MessageOut(message="Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.")
+# REMOVED 2026-05-05 (Phase 6):
+#   • PATCH /auth/me/setup-account     — first-login modal đã bỏ
+#   • POST  /auth/forgot-password-edu  — không còn email cá nhân
+#   • POST  /auth/forgot-password      — SMTP flow không dùng
+#   • POST  /auth/reset-password       — token reset SMTP
+#   • _send_reset_email() helper
+# Mô hình mới: Admin tạo SV với default_password (6 chữ số). SV login →
+# vào thẳng app. SV đổi password tự do qua Settings (POST /auth/change-password).
+# Nếu SV quên pw → admin reset (POST /admin/users/{id}/reset-password) → admin
+# nhận pw mới + giao SV. Không có email cá nhân, không có self-service forgot.
 
 
 @app.get("/study-goal/me", response_model=schemas.StudyGoalOut)
@@ -2161,8 +1976,8 @@ def recommendations_why_not(
         raise HTTPException(status_code=404, detail="Không tìm thấy môn học")
 
     snapshot = _build_snapshot(db, user.id, specialization=specialization)
-    if user.official_earned_credits is not None:
-        snapshot.earned_credits = round(float(user.official_earned_credits), 1)
+    # Note: official_earned_credits đã được drop ở refactor 2026-05-05.
+    # earned_credits giờ tính trực tiếp từ user_grades trong _build_snapshot.
 
     code = course.course_code
     course_name = course.course_name
@@ -2431,13 +2246,8 @@ def recommendations_why_not(
                         "data": {"track": top_track},
                     })
 
-        # Skill match — môn dạy skill SV quan tâm
-        user_skills = set()
-        try:
-            if user.career_skills:
-                user_skills = {str(s).upper() for s in user.career_skills if s}
-        except Exception:
-            pass
+        # Skill match — feature đã bỏ (cột users.career_skills DROP 2026-05-05)
+        user_skills: set[str] = set()
         if user_skills:
             course_skills = db.query(
                 models.CourseSkill.skill_code, models.CourseSkill.weight, models.Skill.name,
@@ -2782,13 +2592,11 @@ def get_profile(
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
+    """Lấy profile preferences SV — sau refactor 2026-05-05 chỉ còn target_gpa."""
     user = _get_user_by_token(authorization, db)
     plan = db.query(models.StudyPlan).filter(models.StudyPlan.user_id == user.id).order_by(models.StudyPlan.id.desc()).first()
     return schemas.UserProfileOut(
-        max_credits_per_term=float(user.max_credits_per_term) if user.max_credits_per_term is not None else None,
-        career_goal=user.career_goal,
         target_gpa=float(plan.target_gpa) if plan and plan.target_gpa is not None else None,
-        difficulty_preference=user.difficulty_preference,
     )
 
 
@@ -2799,13 +2607,6 @@ def update_profile(
     db: Session = Depends(get_db),
 ):
     user = _get_user_by_token(authorization, db)
-    sent = payload.model_fields_set
-    if payload.max_credits_per_term is not None:
-        user.max_credits_per_term = payload.max_credits_per_term
-    if 'career_goal' in sent:
-        user.career_goal = payload.career_goal
-    if 'difficulty_preference' in sent:
-        user.difficulty_preference = payload.difficulty_preference
     if payload.target_gpa is not None:
         plan = db.query(models.StudyPlan).filter(models.StudyPlan.user_id == user.id).order_by(models.StudyPlan.id.desc()).first()
         if plan:
@@ -2818,10 +2619,7 @@ def update_profile(
     invalidate_student_context_cache(user.id)
     plan = db.query(models.StudyPlan).filter(models.StudyPlan.user_id == user.id).order_by(models.StudyPlan.id.desc()).first()
     return schemas.UserProfileOut(
-        max_credits_per_term=float(user.max_credits_per_term) if user.max_credits_per_term is not None else None,
-        career_goal=user.career_goal,
         target_gpa=float(plan.target_gpa) if plan and plan.target_gpa is not None else None,
-        difficulty_preference=user.difficulty_preference,
     )
 
 
@@ -2888,12 +2686,16 @@ def _compute_overdue_student_ids(db: Session, graduation_threshold: float) -> se
     if not candidate_ids:
         return set()
 
-    rows = db.query(models.User.id, models.User.official_earned_credits).filter(
-        models.User.id.in_(candidate_ids), models.User.role == "student"
-    ).all()
+    # Tính credits từ user_grades (passed) thay vì official_earned_credits đã drop
     overdue: set[int] = set()
-    for uid, tc in rows:
-        if tc is None or float(tc or 0) < graduation_threshold:
+    course_credits = {c.course_code: float(c.credits or 0) for c in db.query(models.Course).all()}
+    for uid in candidate_ids:
+        passed = db.query(models.UserGrade.course_code).filter(
+            models.UserGrade.user_id == uid,
+            models.UserGrade.passed == True,
+        ).all()
+        tc = sum(course_credits.get(code, 0) for (code,) in passed)
+        if tc < graduation_threshold:
             overdue.add(uid)
     return overdue
 
@@ -2907,38 +2709,7 @@ def admin_list_users(
     from sqlalchemy import func as sqlfunc
     users = db.query(models.User).order_by(models.User.id).all()
     graduation_threshold = academic_engine._get_graduation_threshold(db)
-    overdue_ids = _compute_overdue_student_ids(db, graduation_threshold)
-
-    # grade_count: tổng số dòng điểm (bất kể passed/count_toward)
-    grade_count_rows = db.query(
-        models.UserGrade.user_id,
-        sqlfunc.count(models.UserGrade.id).label("grade_count"),
-    ).group_by(models.UserGrade.user_id).all()
-    grade_count_map = {r.user_id: r.grade_count for r in grade_count_rows}
-
-    # weighted GPA: chỉ môn passed=True và count_toward_credits=True
-    gpa_rows = db.query(
-        models.UserGrade.user_id,
-        sqlfunc.sum(models.UserGrade.score4 * models.Course.credits).label("weighted_sum"),
-        sqlfunc.sum(models.Course.credits).label("total_creds"),
-    ).join(models.Course, models.Course.course_code == models.UserGrade.course_code
-    ).filter(
-        models.UserGrade.passed == True,  # noqa: E712
-        models.UserGrade.score4 != None,
-        models.Course.count_toward_credits == True,  # noqa: E712
-    ).group_by(models.UserGrade.user_id).all()
-    gpa_map: dict[int, float | None] = {}
-    for r in gpa_rows:
-        tc = float(r.total_creds or 0)
-        if tc > 0:
-            gpa_map[r.user_id] = round(float(r.weighted_sum) / tc, 2)
-
-    class _FakeStats:
-        def __init__(self, uid: int):
-            self.grade_count = grade_count_map.get(uid, 0)
-            self.avg_score4  = gpa_map.get(uid)
-
-    stats_map = {u.id: _FakeStats(u.id) for u in users}
+    # Refactor 2026-05-05: bỏ tính grade_count, gpa, overdue (admin không quản lý điểm)
 
     # Batch: advisor assignment per student → advisor user
     assignments = db.query(models.AdvisorAssignment).all()
@@ -2949,23 +2720,33 @@ def admin_list_users(
         for u in db.query(models.User).filter(models.User.id.in_(advisor_ids)).all()
     } if advisor_ids else {}
 
+    # Batch: class_group_id → code (1 query thay vì N)
+    class_group_ids = {u.class_group_id for u in users if getattr(u, "class_group_id", None)}
+    class_code_map: dict[int, str] = {}
+    if class_group_ids:
+        for cg in db.query(models.ClassGroup).filter(models.ClassGroup.id.in_(class_group_ids)).all():
+            class_code_map[cg.id] = cg.code
+
     items = []
     for u in users:
-        st = stats_map.get(u.id)
         adv_id = assn_map.get(u.id) if u.role == "student" else None
         adv = advisor_map.get(adv_id) if adv_id else None
+        cg_id = getattr(u, "class_group_id", None)
         items.append(schemas.AdminUserItem(
             id=u.id,
             username=u.username,
             full_name=u.full_name,
             role=u.role,
             specialization=u.specialization,
-            career_goal=u.career_goal,
-            official_earned_credits=float(u.official_earned_credits) if u.official_earned_credits is not None else None,
-            grade_count=st.grade_count if st else 0,
-            avg_score4=round(float(st.avg_score4), 2) if st and st.avg_score4 is not None else None,
+            cohort=u.cohort,
+            class_group_id=cg_id,
+            class_group_code=class_code_map.get(cg_id) if cg_id else None,
+            career_goal=None,  # Deprecated 2026-05-05
+            official_earned_credits=None,  # Deprecated 2026-05-05
+            grade_count=0,                  # Deprecated 2026-05-05 — admin không xem điểm
+            avg_score4=None,                # Deprecated 2026-05-05
             default_password=u.default_password,
-            is_overdue=(u.role == "student" and u.id in overdue_ids),
+            is_overdue=False,               # Deprecated 2026-05-05
             advisor_id=adv_id,
             advisor_teacher_code=adv.teacher_code if adv else None,
             advisor_full_name=adv.full_name if adv else None,
@@ -2973,35 +2754,9 @@ def admin_list_users(
     return schemas.AdminUserListOut(total=len(items), users=items)
 
 
-@app.get("/admin/users/{user_id}/grades", response_model=list[schemas.UserGradeOut])
-def admin_user_grades(
-    user_id: int,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    _require_admin(authorization, db)
-    rows = (
-        db.query(models.UserGrade, models.Course)
-        .outerjoin(models.Course, models.Course.course_code == models.UserGrade.course_code)
-        .filter(models.UserGrade.user_id == user_id)
-        .all()
-    )
-    result = []
-    for grade, course in rows:
-        out = schemas.UserGradeOut(
-            id=grade.id,
-            user_id=grade.user_id,
-            course_code=grade.course_code,
-            course_name=course.course_name if course else None,
-            credits=float(course.credits) if course and course.credits else None,
-            score10=float(grade.score10) if grade.score10 is not None else None,
-            score4=float(grade.score4) if grade.score4 is not None else None,
-            letter=grade.letter,
-            passed=grade.passed,
-            term=grade.term,
-        )
-        result.append(out)
-    return result
+# REMOVED 2026-05-05: GET /admin/users/{id}/grades đã bị bỏ.
+# Mô hình mới: EduGuide là tool nội bộ — admin chỉ quản lý tài khoản + thông báo.
+# Bảng điểm là dữ liệu cá nhân của SV, admin không cần xem.
 
 
 @app.patch("/admin/users/{user_id}/role", response_model=schemas.MessageOut)
@@ -3059,30 +2814,46 @@ def admin_update_user(
         # "" hoặc None → clear; mã spec hợp lệ → set
         new_spec = (payload.specialization or "").strip() or None
         if new_spec is not None and new_spec not in _IMPORT_VALID_SPECIALIZATIONS:
-            raise HTTPException(status_code=422, detail=f"Mã CN '{new_spec}' không hợp lệ")
+            raise HTTPException(
+                status_code=422,
+                detail=f"Mã CN '{new_spec}' không hợp lệ. Phải là 1 trong: {', '.join(sorted(_IMPORT_VALID_SPECIALIZATIONS))}"
+            )
         if new_spec != u.specialization:
             changes.append(f"specialization: '{u.specialization}' → '{new_spec}'")
             u.specialization = new_spec
             spec_changed = True
 
-    if payload.email is not None:
-        # Email cá nhân là quyền của user (SV tự gắn Gmail qua OAuth). Admin
-        # KHÔNG được sửa email của student — chỉ được xem. Cho advisor/admin
-        # role thì admin có thể sửa (vì là tài khoản trường cấp).
-        if u.role == "student":
-            raise HTTPException(
-                status_code=403,
-                detail="Không được sửa email cá nhân của sinh viên. SV tự gắn Gmail qua đăng nhập."
-            )
-        new_email = (payload.email or "").strip() or None
-        if new_email != u.email:
-            # Check unique
-            if new_email and db.query(models.User).filter(
-                models.User.email == new_email, models.User.id != u.id
-            ).first():
-                raise HTTPException(status_code=409, detail=f"Email '{new_email}' đã được dùng")
-            changes.append(f"email: '{u.email}' → '{new_email}'")
-            u.email = new_email
+    # Email column REMOVED 2026-05-05 — không còn email cá nhân. SV đổi pw qua Settings.
+
+    # Đổi lớp (chỉ áp dụng cho student) → trigger reassign advisor
+    class_changed = False
+    if getattr(payload, "class_code", None) is not None:
+        new_class_code = (payload.class_code or "").strip().upper() or None
+        old_class_id = getattr(u, "class_group_id", None)
+        if u.role != "student":
+            raise HTTPException(status_code=400, detail="Chỉ sinh viên mới có lớp")
+        if new_class_code:
+            cg = db.query(models.ClassGroup).filter(
+                models.ClassGroup.code == new_class_code
+            ).first()
+            if not cg:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Lớp '{new_class_code}' chưa tồn tại"
+                )
+            if cg.id != old_class_id:
+                changes.append(f"class: {old_class_id} → {cg.id} ({new_class_code})")
+                u.class_group_id = cg.id
+                u.specialization = cg.specialization  # tự cập nhật spec
+                u.cohort = cg.cohort
+                spec_changed = True
+                class_changed = True
+        else:
+            # Clear class
+            if old_class_id is not None:
+                changes.append(f"class: {old_class_id} → null")
+                u.class_group_id = None
+                class_changed = True
 
     if not changes:
         return _to_user_out(u)  # nothing to update
@@ -3090,8 +2861,8 @@ def admin_update_user(
     db.commit()
     db.refresh(u)
 
-    # Nếu là student và spec thay đổi → reassign advisor
-    if u.role == "student" and spec_changed:
+    # Nếu là student và spec/class thay đổi → reassign advisor
+    if u.role == "student" and (spec_changed or class_changed):
         try:
             assign_advisor_for_student(db, u.id, u.specialization)
             db.commit()
@@ -3132,17 +2903,15 @@ def admin_recover_account(
     new_pw = str(_rnd.randint(100000, 999999))
     user.password_hash = _hash_temp_password(new_pw)
     user.default_password = new_pw  # admin xem được trong UI
-    user.email = None
-    user.google_sub = None
     user.is_first_login = True
     db.commit()
 
     _log(db, admin, "RECOVER_ACCOUNT", "user", user.username,
-         "Reset password + clear email + clear google_sub + force first-login")
+         "Reset password + force first-login")
 
     return schemas.AdminResetPasswordOut(
         password=new_pw,
-        message=f"Đã khôi phục {user.username}. Đưa mật khẩu cho SV. SV phải liên kết Gmail mới khi đăng nhập."
+        message=f"Đã khôi phục {user.username}. Đưa mật khẩu mới cho SV."
     )
 
 
@@ -3249,14 +3018,26 @@ def admin_delete_user(
 # ── Admin bulk import users ───────────────────────────────────────────────────
 
 _IMPORT_VALID_SPECIALIZATIONS = {
-    "Kỹ thuật phần mềm", "Mạng máy tính và truyền thông dữ liệu",
-    "An toàn thông tin", "Hệ thống thông tin",
-    "Trí tuệ nhân tạo", "Khoa học máy tính",
+    # Canonical spec codes (sync với DB users.specialization + frontend dropdown values)
+    "7480201_07",  # KHMT
+    "7480201_06",  # MMT
+    "7480201_05",  # CNPM
+    "7480201_09",  # HTTT
+    "7480201_04",  # THKT
+    "7480201_08",  # CNTTDH
 }
 
 
 def _parse_users_csv(data: bytes, filename: str) -> list[dict]:
-    """Parse CSV/Excel file thành list of dicts với keys: username, password, full_name, specialization."""
+    """Parse CSV/Excel file thành list of dicts.
+
+    File template MỚI 4 cột bắt buộc + 2 cột optional:
+      | MSSV | Họ tên | Email | Mã lớp | (Mật khẩu, Khoá) |
+
+    Mã lớp BẮT BUỘC — backend tự derive specialization + cohort từ class_groups.code.
+    Chuyên ngành/Khoá là legacy fields giữ lại để backward-compat (sẽ override
+    bằng giá trị từ class_groups khi gán SV vào lớp).
+    """
     import io
     rows = read_rows_from_upload(filename, data)["rows"]
     if not rows:
@@ -3284,10 +3065,12 @@ def _parse_users_csv(data: bytes, filename: str) -> list[dict]:
                     return i
         return None
 
-    idx_user = _col("username", "mssv", "mã sv", "masv", "tài khoản", "tai khoan")
-    idx_pass = _col("password", "mật khẩu", "mat khau")
-    idx_name = _col("full_name", "họ tên", "ho ten", "tên", "ten", "họ và tên")
-    idx_spec = _col("specialization", "chuyên ngành", "chuyen nganh")
+    idx_user   = _col("username", "mssv", "mã sv", "masv", "tài khoản", "tai khoan")
+    idx_pass   = _col("password", "mật khẩu", "mat khau")
+    idx_name   = _col("full_name", "họ tên", "ho ten", "tên", "ten", "họ và tên")
+    idx_email  = _col("email", "email")
+    idx_class  = _col("mã lớp", "ma lop", "class_code", "lớp", "lop")
+    idx_spec   = _col("specialization", "chuyên ngành", "chuyen nganh")
     idx_cohort = _col("cohort", "khoá", "khoa hoc", "khóa")
 
     if idx_user is None:
@@ -3304,6 +3087,8 @@ def _parse_users_csv(data: bytes, filename: str) -> list[dict]:
             "username": username,
             "password": str(row[idx_pass] or "").strip() if idx_pass is not None and idx_pass < len(row) else "",
             "full_name": str(row[idx_name] or "").strip() if idx_name is not None and idx_name < len(row) else "",
+            "email": str(row[idx_email] or "").strip().lower() if idx_email is not None and idx_email < len(row) else "",
+            "class_code": str(row[idx_class] or "").strip().upper() if idx_class is not None and idx_class < len(row) else "",
             "specialization": str(row[idx_spec] or "").strip() if idx_spec is not None and idx_spec < len(row) else "",
             "cohort": str(row[idx_cohort] or "").strip() if idx_cohort is not None and idx_cohort < len(row) else "",
         })
@@ -3369,32 +3154,64 @@ def admin_create_user(
     existing = db.query(models.User).filter(models.User.username == username).first()
     if existing:
         raise HTTPException(status_code=409, detail=f"Tài khoản '{username}' đã tồn tại.")
+
+    # ── Resolve class_group nếu có (chỉ áp dụng cho student) ──────────────
+    class_group: models.ClassGroup | None = None
+    derived_spec: str | None = None
+    derived_cohort: str | None = None
+    class_code = (getattr(payload, "class_code", None) or "").strip().upper()
+    if class_code and role == "student":
+        class_group = db.query(models.ClassGroup).filter(
+            models.ClassGroup.code == class_code
+        ).first()
+        if not class_group:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Lớp '{class_code}' chưa tồn tại — tạo lớp trước khi gán SV"
+            )
+        derived_spec = class_group.specialization
+        derived_cohort = class_group.cohort
+
+    # Fallback: derive cohort từ MSSV nếu không có class_group
+    if role == "student" and not derived_cohort:
+        derived_cohort = _extract_cohort_from_username(username)
+
     import random as _random
     password_plain = str(_random.randint(100000, 999999))
     hashed = _hash_temp_password(password_plain)
-    # Derive cohort từ MSSV (sv14001 → "14") — chỉ áp dụng cho student.
-    derived_cohort = None
-    if role == "student":
-        derived_cohort = _extract_cohort_from_username(username)
+
     user = models.User(
         username=username,
         password_hash=hashed,
         full_name=normalize_vietnamese_name(payload.full_name) or payload.username,
-        role=payload.role or "student",
+        role=role,
         cohort=derived_cohort,
+        specialization=derived_spec,
+        email=getattr(payload, "email", None),
+        class_group_id=class_group.id if class_group else None,
         is_first_login=True,
         default_password=password_plain,
     )
     db.add(user)
     db.flush()
-    auto_assign_advisor(user, db)
+    # Auto-assign advisor (qua class_group nếu có, fallback round-robin)
+    if role == "student":
+        try:
+            assign_advisor_for_student(db, user.id, derived_spec)
+        except Exception:
+            pass
     db.commit()
-    _log(db, admin, "CREATE_USER", "user", payload.username, f"role={user.role} cohort={derived_cohort}")
+    db.refresh(user)
+    _log(db, admin, "CREATE_USER", "user", payload.username,
+         f"role={user.role} cohort={derived_cohort} class={class_code or '—'}")
     return schemas.AdminCreateUserOut(
         id=user.id,
         username=user.username,
         full_name=user.full_name,
         role=user.role,
+        email=getattr(user, "email", None),
+        class_group_id=getattr(user, "class_group_id", None),
+        class_group_code=class_group.code if class_group else None,
         password_plain=password_plain,
     )
 
@@ -3424,10 +3241,11 @@ def admin_import_users(
     if not records:
         raise HTTPException(status_code=400, detail="Không tìm thấy dữ liệu sinh viên trong file")
 
-    # Approach C: UPSERT — tạo mới hoặc cập nhật (cohort, spec, full_name).
-    # Re-upload roster sau khi trường phân CN sẽ tự update specialization
-    # → trigger reassign advisor.
+    # Approach C: UPSERT — tạo mới hoặc cập nhật. Re-upload roster sau khi đổi
+    # lớp sẽ tự derive lại specialization + advisor.
     existing_users = {u.username: u for u in db.query(models.User).all()}
+    # Pre-load class_groups (code → ClassGroup) để tránh N queries
+    classes_by_code = {c.code: c for c in db.query(models.ClassGroup).all()}
 
     created_count = 0
     updated_count = 0
@@ -3438,12 +3256,30 @@ def admin_import_users(
     for row_idx, rec in enumerate(records, start=2):  # row 1 = header
         username = rec["username"]
         try:
-            new_spec = rec["specialization"] if rec["specialization"] in _IMPORT_VALID_SPECIALIZATIONS else None
-            # Cohort: ưu tiên CSV column, fallback derive từ MSSV pattern (sv14001 → "14")
-            new_cohort = (rec.get("cohort") or "").strip() or None
-            if not new_cohort:
-                new_cohort = _extract_cohort_from_username(username)
+            # ── Resolve class_group (priority: file column "Mã lớp")
+            class_code = (rec.get("class_code") or "").strip().upper()
+            class_group: models.ClassGroup | None = None
+            if class_code:
+                class_group = classes_by_code.get(class_code)
+                if not class_group:
+                    errors.append(schemas.UserImportError(
+                        row=row_idx, username=username,
+                        reason=f"Lớp '{class_code}' chưa tồn tại — tạo lớp trước khi import SV"
+                    ))
+                    continue
+
+            # Derive spec + cohort: ưu tiên class_group, fallback CSV cohort/spec
+            if class_group:
+                new_spec = class_group.specialization
+                new_cohort = class_group.cohort
+            else:
+                new_spec = rec["specialization"] if rec["specialization"] in _IMPORT_VALID_SPECIALIZATIONS else None
+                new_cohort = (rec.get("cohort") or "").strip() or None
+                if not new_cohort:
+                    new_cohort = _extract_cohort_from_username(username)
+
             new_name = normalize_vietnamese_name(rec["full_name"]) or None
+            # email field removed 2026-05-05 (Phase 6)
 
             existing = existing_users.get(username)
             if existing:
@@ -3455,13 +3291,23 @@ def admin_import_users(
                     existing.cohort = new_cohort
                 if new_name and not existing.full_name:
                     existing.full_name = new_name
-                # Reassign advisor nếu CN thay đổi
-                if existing.specialization != old_spec:
+                # email field removed 2026-05-05
+                # Đổi lớp → trigger reassign advisor qua sync
+                old_class_id = getattr(existing, "class_group_id", None)
+                if class_group and old_class_id != class_group.id:
+                    existing.class_group_id = class_group.id
+                    db.flush()
+                    try:
+                        assign_advisor_for_student(db, existing.id, existing.specialization)
+                    except Exception:
+                        pass
+                # Reassign advisor nếu CN thay đổi (vd không qua lớp)
+                elif existing.specialization != old_spec:
                     spec_changed_count += 1
                     try:
                         assign_advisor_for_student(db, existing.id, existing.specialization)
                     except Exception:
-                        pass  # nuốt lỗi assign — không phá flow import
+                        pass
                 updated_count += 1
                 continue
 
@@ -3476,7 +3322,8 @@ def admin_import_users(
                 continue
             username = normalized_username  # dùng lowercase cho insert
             # Re-derive cohort từ username chuẩn hoá (đảm bảo nhất quán)
-            new_cohort = new_cohort or _extract_cohort_from_username(username)
+            if not new_cohort:
+                new_cohort = _extract_cohort_from_username(username)
 
             import random as _rnd
             plain_pw = rec["password"] or str(_rnd.randint(100000, 999999))
@@ -3492,12 +3339,13 @@ def admin_import_users(
                 role="student",
                 specialization=new_spec,
                 cohort=new_cohort,
+                class_group_id=class_group.id if class_group else None,
                 default_password=plain_pw if not rec["password"] else None,
             )
             db.add(new_user)
             db.flush()  # get new_user.id
-            # Auto-assign advisor cho SV mới có CN
-            if new_user.specialization:
+            # Auto-assign advisor cho SV mới có Lớp HOẶC CN
+            if class_group or new_user.specialization:
                 try:
                     assign_advisor_for_student(db, new_user.id, new_user.specialization)
                 except Exception:
@@ -3512,11 +3360,13 @@ def admin_import_users(
                 row=row_idx, username=username,
                 reason=f"Lỗi DB: {type(exc).__name__}: {str(exc)[:200]}"
             ))
-            # Reload existing_users sau rollback để row sau dùng state đúng
+            # Reload existing_users + classes sau rollback để row sau dùng state đúng
             try:
                 existing_users = {u.username: u for u in db.query(models.User).all()}
+                classes_by_code = {c.code: c for c in db.query(models.ClassGroup).all()}
             except Exception:
                 existing_users = {}
+                classes_by_code = {}
             continue
 
     try:
@@ -3537,145 +3387,15 @@ def admin_import_users(
 
 
 # ── Admin bulk import grades ──────────────────────────────────────────────────
+# REMOVED 2026-05-05: endpoint POST /admin/grades/import đã bị bỏ.
+# Mô hình mới: EduGuide là tool cá nhân — SV tự upload bảng điểm qua POST
+# /grades/upload. Admin không quản lý điểm chính thức (đã có SIS riêng).
+# → Bỏ luôn logic merge admin/self, drop column user_grades.source.
 
-@app.post("/admin/grades/import", response_model=schemas.AdminGradesImportOut)
-def admin_import_grades(
-    file: UploadFile,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """Import điểm cho một sinh viên. Mã SV đọc từ dòng đầu file."""
-    admin = _require_admin(authorization, db)
 
-    data = file.file.read(_MAX_UPLOAD_BYTES + 1)
-    if len(data) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File quá lớn. Giới hạn 10 MB.")
-    filename = file.filename or "grades.xlsx"
-
-    try:
-        _parsed = read_rows_from_upload(filename, data)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception:
-        raise HTTPException(status_code=400, detail="Không đọc được file. Kiểm tra định dạng (xlsx/csv).")
-    rows = _parsed["rows"]
-    student_code = _parsed["student_code"]
-
-    if not student_code:
-        raise HTTPException(
-            status_code=400,
-            detail="File không có mã sinh viên. Thêm dòng 'Mã sinh viên: MSSV' vào đầu file.",
-        )
-
-    grade_records = extract_grades(rows)
-    if not grade_records:
-        raise HTTPException(status_code=400, detail="Không tìm thấy dữ liệu điểm trong file.")
-
-    # Wrap everything in a savepoint so that if grades fail to save,
-    # a newly-created student account is also rolled back (no zombie records).
-    sp = db.begin_nested()
-    try:
-        # 1. Find or create student account
-        account_created = False
-        password_plain: str | None = None
-        parsed_name = _parsed.get("full_name") or None
-        student = db.query(models.User).filter(models.User.username == student_code).first()
-        if not student:
-            import random
-            password_plain = str(random.randint(100000, 999999))
-            hashed = _hash_temp_password(password_plain)
-            student = models.User(
-                username=student_code,
-                password_hash=hashed,
-                full_name=normalize_vietnamese_name(parsed_name) or student_code,
-                role="student",
-                is_first_login=True,
-                default_password=password_plain,
-            )
-            db.add(student)
-            db.flush()
-            auto_assign_advisor(student, db)
-            account_created = True
-        elif parsed_name and not student.full_name:
-            student.full_name = normalize_vietnamese_name(parsed_name)
-
-        # 2. Update tich_luy
-        tich_luy = extract_tich_luy(rows)
-        if tich_luy is not None:
-            student.official_earned_credits = tich_luy
-
-        all_courses = {c.course_code: c for c in db.query(models.Course).all()}
-
-        # 3. Full replace of grades
-        db.query(models.UserGrade).filter(models.UserGrade.user_id == student.id).delete(synchronize_session=False)
-
-        # 4. Dedup: keep best score per course_code
-        best_per_course: dict[str, dict] = {}
-        for rec in grade_records:
-            code = rec["course_code"]
-            existing = best_per_course.get(code)
-            if existing is None:
-                best_per_course[code] = rec
-            else:
-                if (rec.get("score10") or -1) > (existing.get("score10") or -1):
-                    best_per_course[code] = rec
-        grade_records = list(best_per_course.values())
-
-        # 5. Insert grades — đánh dấu source='admin' (đã xác thực)
-        inserted = 0
-        for rec in grade_records:
-            code = rec["course_code"]
-            if code not in all_courses:
-                continue
-            db.add(models.UserGrade(
-                user_id=student.id,
-                course_code=code,
-                score10=rec.get("score10"),
-                score4=rec.get("score4"),
-                letter=rec.get("letter"),
-                passed=rec.get("passed", False),
-                term=rec.get("term"),
-                source="admin",
-            ))
-            inserted += 1
-
-        sp.commit()  # release savepoint → changes now part of outer transaction
-        db.commit()
-    except Exception as exc:
-        sp.rollback()  # rolls back account creation AND grades together
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Lỗi lưu dữ liệu: {exc}")
-
-    # Approach C: lock grades — sau khi admin import, SV không tự upload đè được.
-    # Phải dùng web trường để sửa, sau đó admin re-import.
-    if not student.grades_locked:
-        student.grades_locked = True
-        db.commit()
-
-    invalidate_student_context_cache(student.id)
-    invalidate_difficulty_stats_cache()
-
-    # Approach C: KHÔNG auto-detect spec từ điểm. Spec do trường phân,
-    # admin set qua roster import (CSV có cột specialization). Nếu admin
-    # cần đổi spec cho SV, re-upload roster với cột spec mới.
-    specialization_changed = False
-    new_specialization: str | None = None
-    advisor_out: dict | None = None
-    advisor_warning: str | None = None
-
-    _log(db, admin, "ADMIN_IMPORT_GRADES", "user", student.username,
-         f"inserted={inserted} tich_luy={tich_luy} account_created={account_created} locked=true")
-
-    return schemas.AdminGradesImportOut(
-        student_code=student_code,
-        account_created=account_created,
-        password_plain=password_plain,
-        grades_imported=inserted,
-        advisor_assigned=advisor_out,
-        advisor_warning=advisor_warning,
-        specialization_changed=specialization_changed,
-        new_specialization=new_specialization,
-    )
+# REMOVED 2026-05-05: GET /admin/reports/graduation đã bị bỏ.
+# Mô hình mới: EduGuide là tool nội bộ — admin không quản lý điểm/tốt nghiệp.
+# Báo cáo tốt nghiệp chính thức xem ở SIS của trường.
 
 
 # ── Admin Audit Log ───────────────────────────────────────────────────────────
@@ -3715,32 +3435,11 @@ def admin_dashboard(
     total_advisors = db.query(sqlfunc.count(models.User.id)).filter(models.User.role == "advisor").scalar() or 0
     total_courses  = db.query(sqlfunc.count(models.Course.id)).scalar() or 0
 
-    # at_risk: SV có GPA tích lũy < 2.0 (weighted, count_toward_credits=True only)
-    from sqlalchemy import and_
-    gpa_sub = (
-        db.query(
-            models.UserGrade.user_id,
-            (sqlfunc.sum(models.UserGrade.score4 * models.Course.credits) /
-             sqlfunc.sum(models.Course.credits)).label("avg4"),
-        )
-        .join(models.Course, models.Course.course_code == models.UserGrade.course_code)
-        .filter(
-            models.UserGrade.passed == True,  # noqa: E712
-            models.UserGrade.score4 != None,
-            models.Course.count_toward_credits == True,  # noqa: E712
-        )
-        .group_by(models.UserGrade.user_id)
-        .subquery()
-    )
-    at_risk = (
-        db.query(sqlfunc.count(gpa_sub.c.user_id))
-        .filter(gpa_sub.c.avg4 < 2.0)
-        .scalar() or 0
-    )
+    # Refactor 2026-05-05: bỏ stats GPA-related (at_risk_students). Tool nội bộ
+    # không quản lý điểm. at_risk = 0 (giữ field cho API compat).
 
     # active_users_this_week: số SV unique có UserGrade.uploaded_at trong 7 ngày qua
     week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-    # uploaded_at stored as UTC-naive in DB (server_default=func.now()) — compare naive
     week_ago_naive = week_ago.replace(tzinfo=None)
     active_this_week = (
         db.query(sqlfunc.count(sqlfunc.distinct(models.UserGrade.user_id)))
@@ -3750,7 +3449,7 @@ def admin_dashboard(
 
     graduation_threshold = academic_engine._get_graduation_threshold(db)
 
-    # SV chưa có bảng điểm
+    # SV chưa upload điểm cá nhân
     students_with_grades_ids = {
         row[0] for row in db.query(models.UserGrade.user_id).distinct().all()
     }
@@ -3759,14 +3458,13 @@ def admin_dashboard(
     }
     students_no_grades = len(all_student_ids - students_with_grades_ids)
 
-    # SV chưa đăng nhập lần đầu (is_first_login = True)
     students_first_login = (
         db.query(sqlfunc.count(models.User.id))
         .filter(models.User.role == "student", models.User.is_first_login == True)  # noqa: E712
         .scalar() or 0
     )
 
-    # Phân bố theo khóa: lấy 2 ký tự từ vị trí 1-2 của username (mã SV format 1KKSSSSSSSS)
+    # Phân bố theo khóa + chuyên ngành (cho overview)
     cohort_distribution: dict = {}
     spec_distribution: dict = {}
     students = db.query(models.User.username, models.User.specialization).filter(
@@ -3783,7 +3481,7 @@ def admin_dashboard(
         total_students=total_students,
         total_advisors=total_advisors,
         total_courses=total_courses,
-        at_risk_students=at_risk,
+        at_risk_students=0,  # Deprecated — không quản lý điểm nữa
         active_users_this_week=active_this_week,
         graduation_threshold=graduation_threshold,
         students_no_grades=students_no_grades,
@@ -3810,36 +3508,10 @@ def admin_dashboard_stats(
 
     # at_risk: GPA tích lũy weighted < 2.0 (đồng bộ với /admin/users.avg_score4)
     # Quy tắc CLAUDE.md §5.4: chỉ tính môn passed + count_toward_credits=True, weighted by credits.
-    gpa_sub = (
-        db.query(
-            models.UserGrade.user_id,
-            (sqlfunc.sum(models.UserGrade.score4 * models.Course.credits) /
-             sqlfunc.sum(models.Course.credits)).label("avg4"),
-        )
-        .join(models.Course, models.Course.course_code == models.UserGrade.course_code)
-        .filter(
-            models.UserGrade.passed == True,  # noqa: E712
-            models.UserGrade.score4 != None,  # noqa: E711
-            models.Course.count_toward_credits == True,  # noqa: E712
-        )
-        .group_by(models.UserGrade.user_id)
-        .subquery()
-    )
-    at_risk = db.query(sqlfunc.count(gpa_sub.c.user_id)).filter(gpa_sub.c.avg4 < 2.0).scalar() or 0
-
+    # Refactor 2026-05-05: bỏ tính at_risk, thesis_eligible (admin không quản lý điểm).
+    at_risk = 0
+    thesis_eligible = 0
     graduation_threshold = academic_engine._get_graduation_threshold(db)
-
-    # thesis_eligible: đã tích lũy >= threshold - 10 TC (tức là xong thực tập, còn đồ án TN)
-    thesis_threshold = graduation_threshold - 10.0
-    thesis_eligible = (
-        db.query(sqlfunc.count(models.User.id))
-        .filter(
-            models.User.role == "student",
-            models.User.official_earned_credits != None,  # noqa: E711
-            models.User.official_earned_credits >= thesis_threshold,
-        )
-        .scalar() or 0
-    )
 
     week_ago_naive = (datetime.now(timezone.utc) - timedelta(days=7)).replace(tzinfo=None)
     active_this_week = (
@@ -3867,16 +3539,9 @@ def admin_dashboard_stats(
         .scalar() or 0
     )
 
-    # SV chưa đủ điều kiện làm đồ án TN: chưa có TC hoặc TC < thesis_threshold
-    not_thesis_eligible = (
-        db.query(sqlfunc.count(models.User.id))
-        .filter(
-            models.User.role == "student",
-            (models.User.official_earned_credits == None) |  # noqa: E711
-            (models.User.official_earned_credits < thesis_threshold),
-        )
-        .scalar() or 0
-    )
+    # SV chưa đủ điều kiện làm đồ án TN
+    total_students_count = len(all_student_ids)
+    not_thesis_eligible = total_students_count - thesis_eligible
 
     notifications_total = db.query(sqlfunc.count(models.SystemNotification.id)).scalar() or 0
     total_reads = db.query(sqlfunc.count(models.NotificationRead.id)).scalar() or 0
@@ -3909,15 +3574,13 @@ def admin_dashboard_stats(
 
     sorted_spec = sorted(spec_distribution.items(), key=lambda x: -x[1])
 
-    overdue_count = len(_compute_overdue_student_ids(db, graduation_threshold))
+    # Bỏ overdue tính theo TC — không quản lý điểm.
+    overdue_count = 0
 
+    # Warnings: chỉ những vấn đề liên quan tới quản lý tài khoản (không liên quan điểm)
     warnings_list = []
-    if at_risk > 0:
-        warnings_list.append({"level": "error", "message": f"{at_risk} sinh viên có GPA < 2.0 (nguy cơ cảnh báo học vụ)", "count": at_risk, "tab": "users", "filter": "gpa_low"})
-    if overdue_count > 0:
-        warnings_list.append({"level": "error", "message": f"{overdue_count} sinh viên quá hạn (học >5 năm, chưa đủ TC tốt nghiệp)", "count": overdue_count, "tab": "users", "filter": "overdue"})
     if students_no_grades > 0:
-        warnings_list.append({"level": "warning", "message": f"{students_no_grades} sinh viên chưa có bảng điểm", "count": students_no_grades, "tab": "users", "filter": "no_grades"})
+        warnings_list.append({"level": "info", "message": f"{students_no_grades} sinh viên chưa upload bảng điểm cá nhân", "count": students_no_grades, "tab": "users", "filter": "no_grades"})
     if students_first_login > 0:
         warnings_list.append({"level": "warning", "message": f"{students_first_login} sinh viên chưa đăng nhập lần đầu", "count": students_first_login, "tab": "users", "filter": "default_pw"})
     if students_no_advisor > 0:
@@ -4302,11 +3965,12 @@ def get_course_reviews(
     safe_limit = max(1, min(int(limit), 50))
     safe_offset = max(0, int(offset))
 
-    # Chỉ lấy review có text (loại stars-only)
+    # Chỉ lấy review có text (loại stars-only) + chưa bị admin ẩn (hidden=False)
     base_q = db.query(models.CourseRating).filter(
         models.CourseRating.course_code == course_code,
         models.CourseRating.review.isnot(None),
         models.CourseRating.review != "",
+        models.CourseRating.hidden == False,  # noqa: E712
     )
     total = base_q.count()
 
@@ -4388,145 +4052,14 @@ def get_course_skills(course_code: str, db: Session = Depends(get_db)):
     ]
 
 
-@app.put("/admin/courses/{course_code}/skills", response_model=list[schemas.CourseSkillOut])
-def admin_set_course_skills(
-    course_code: str,
-    payload: schemas.CourseSkillIn,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """Replace toàn bộ skills của 1 môn."""
-    admin = _require_admin(authorization, db)
-    course = db.query(models.Course).filter(models.Course.course_code == course_code).first()
-    if not course:
-        raise HTTPException(status_code=404, detail="Môn không tồn tại")
-
-    # Validate skill codes
-    skill_codes = [s["skill_code"] for s in payload.skills if s.get("skill_code")]
-    existing_skills = {s.code for s in db.query(models.Skill).filter(
-        models.Skill.code.in_(skill_codes)
-    ).all()} if skill_codes else set()
-    invalid = [c for c in skill_codes if c not in existing_skills]
-    if invalid:
-        raise HTTPException(status_code=400, detail=f"Skill không tồn tại: {', '.join(invalid)}")
-
-    # Replace
-    db.query(models.CourseSkill).filter(
-        models.CourseSkill.course_code == course_code
-    ).delete()
-    for s in payload.skills:
-        sc = s.get("skill_code")
-        w = float(s.get("weight", 1.0))
-        if not sc:
-            continue
-        w = max(0.1, min(1.0, w))
-        db.add(models.CourseSkill(course_code=course_code, skill_code=sc, weight=w))
-    db.commit()
-    _log(db, admin, "SET_COURSE_SKILLS", "course", course_code,
-         f"{len(skill_codes)} skills: {','.join(skill_codes)}")
-
-    # Trả về list mới
-    return get_course_skills(course_code, db)
+# REMOVED 2026-05-05: PUT /admin/courses/{code}/skills đã bỏ.
+# Admin không quản lý skill mapping qua UI nữa — course_skills được seed bởi
+# scripts/seed_careers.py và dùng trực tiếp cho recommendation rerank +
+# career fit %. GET /courses/{code}/skills (public — SV xem) vẫn còn.
 
 
-# ── User career_skills (SV chọn skills quan tâm) ─────────────────────────────
-
-@app.get("/me/career-skills")
-def get_my_career_skills(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    user = _get_user_by_token(authorization, db)
-    return {"career_skills": user.career_skills or []}
-
-
-@app.put("/me/career-skills")
-def set_my_career_skills(
-    payload: dict,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """SV chọn 3-5 skills quan tâm — dùng cho recommendation feature."""
-    user = _get_user_by_token(authorization, db)
-    raw = payload.get("career_skills") or []
-    if not isinstance(raw, list):
-        raise HTTPException(status_code=400, detail="career_skills phải là list")
-    cleaned = [str(s).strip().upper() for s in raw if str(s or "").strip()]
-    cleaned = list(dict.fromkeys(cleaned))[:10]  # dedup + cap 10
-    if cleaned:
-        existing = {s.code for s in db.query(models.Skill).filter(
-            models.Skill.code.in_(cleaned)
-        ).all()}
-        cleaned = [c for c in cleaned if c in existing]
-    user.career_skills = cleaned
-    db.commit()
-    return {"career_skills": cleaned}
-
-
-# ── System Notifications ──────────────────────────────────────────────────────
-
-@app.get("/system-notifications", response_model=list[schemas.SystemNotificationOut])
-def get_system_notifications(db: Session = Depends(get_db)):
-    """Public — students fetch active notifications without auth."""
-    return (
-        db.query(models.SystemNotification)
-        .filter(models.SystemNotification.is_active == True)
-        .order_by(models.SystemNotification.created_at.desc())
-        .all()
-    )
-
-
-@app.get("/admin/system-notifications", response_model=list[schemas.SystemNotificationOut])
-def admin_list_notifications(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    _require_admin(authorization, db)
-    return (
-        db.query(models.SystemNotification)
-        .order_by(models.SystemNotification.created_at.desc())
-        .limit(200)
-        .all()
-    )
-
-
-@app.post("/admin/system-notifications", response_model=schemas.SystemNotificationOut)
-def admin_create_notification(
-    payload: schemas.SystemNotificationIn,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    admin = _require_admin(authorization, db)
-    if payload.type not in ("info", "warning", "success", "danger"):
-        raise HTTPException(status_code=400, detail="type phải là info | warning | success | danger")
-    notif = models.SystemNotification(
-        title=payload.title,
-        body=payload.body,
-        type=payload.type,
-        admin_id=admin.id,
-        admin_username=admin.username,
-    )
-    db.add(notif)
-    db.commit()
-    db.refresh(notif)
-    _log(db, admin, "SEND_NOTIF", "notification", str(notif.id), payload.title)
-    return notif
-
-
-@app.patch("/admin/system-notifications/{notif_id}/deactivate", response_model=schemas.MessageOut)
-def admin_deactivate_notification(
-    notif_id: int,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    admin = _require_admin(authorization, db)
-    notif = db.query(models.SystemNotification).filter(models.SystemNotification.id == notif_id).first()
-    if not notif:
-        raise HTTPException(status_code=404, detail="Không tìm thấy thông báo")
-    notif.is_active = False
-    db.commit()
-    _log(db, admin, "DEACTIVATE_NOTIF", "notification", str(notif_id), notif.title)
-    return schemas.MessageOut(message="Đã thu hồi thông báo")
+# REMOVED 2026-05-05: GET/PUT /me/career-skills đã bỏ.
+# Cột users.career_skills đã DROP — feature SV chọn skills quan tâm không dùng nữa.
 
 
 # ── Notifications v2 — flexible target groups ─────────────────────────────────
@@ -4820,100 +4353,6 @@ def get_unread_notification_count(
     }
     count = sum(1 for n in all_notifs if _notif_visible_to(n, user) and n.id not in read_ids)
     return {"count": count}
-
-
-# ── Admin → Student personal messaging ────────────────────────────────────────
-
-@app.post("/admin/messages/{user_id}", response_model=schemas.UserMessageOut)
-def admin_send_message(
-    user_id: int,
-    payload: schemas.UserMessageIn,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    admin = _require_admin(authorization, db)
-    recipient = db.query(models.User).filter(models.User.id == user_id).first()
-    if not recipient:
-        raise HTTPException(status_code=404, detail="Không tìm thấy sinh viên")
-    if payload.type not in ("info", "warning", "success", "danger"):
-        raise HTTPException(status_code=400, detail="type phải là info | warning | success | danger")
-    msg = models.UserMessage(
-        sender_id=admin.id,
-        sender_username=admin.username,
-        recipient_id=user_id,
-        title=payload.title,
-        body=payload.body,
-        type=payload.type,
-    )
-    db.add(msg)
-    db.commit()
-    db.refresh(msg)
-    _log(db, admin, "SEND_MESSAGE", "user", str(user_id), f"→ {recipient.username}: {payload.title}")
-    return msg
-
-
-@app.get("/messages/me", response_model=list[schemas.UserMessageOut])
-def get_my_messages(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """Student fetches all personal messages from admin (newest first)."""
-    user = _get_user_by_token(authorization, db)
-    return (
-        db.query(models.UserMessage)
-        .filter(models.UserMessage.recipient_id == user.id)
-        .order_by(models.UserMessage.created_at.desc())
-        .limit(50)
-        .all()
-    )
-
-
-@app.patch("/messages/me/{msg_id}/read", response_model=schemas.MessageOut)
-def mark_message_read(
-    msg_id: int,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    user = _get_user_by_token(authorization, db)
-    msg = db.query(models.UserMessage).filter(
-        models.UserMessage.id == msg_id,
-        models.UserMessage.recipient_id == user.id,
-    ).first()
-    if not msg:
-        raise HTTPException(status_code=404, detail="Không tìm thấy tin nhắn")
-    msg.is_read = True
-    db.commit()
-    return schemas.MessageOut(message="ok")
-
-
-@app.patch("/messages/me/read-all", response_model=schemas.MessageOut)
-def mark_all_messages_read(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    user = _get_user_by_token(authorization, db)
-    db.query(models.UserMessage).filter(
-        models.UserMessage.recipient_id == user.id,
-        models.UserMessage.is_read == False,
-    ).update({"is_read": True})
-    db.commit()
-    return schemas.MessageOut(message="ok")
-
-
-@app.get("/admin/messages/sent", response_model=list[schemas.UserMessageOut])
-def admin_sent_messages(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    admin = _require_admin(authorization, db)
-    return (
-        db.query(models.UserMessage)
-        .filter(models.UserMessage.sender_id == admin.id)
-        .order_by(models.UserMessage.created_at.desc())
-        .limit(200)
-        .all()
-    )
-
 
 
 # ── Specializations comparison (Phase 11) ─────────────────────────────────────
@@ -5268,30 +4707,13 @@ def get_upcoming_deadlines(
                     "due_at": due.isoformat(),
                     "days_left": days_left,
                     "action_label": "Xem kế hoạch HK tới",
-                    "action_href": "roadmap.html",
+                    "action_href": "integrated-roadmap.html",
                 })
         except Exception:
             pass
 
-    # 2. Active risk cases
-    try:
-        cases = db.query(models.RiskCase).filter(
-            models.RiskCase.student_id == user.id,
-            models.RiskCase.state == "open",
-        ).all()
-        for case in cases:
-            items.append({
-                "kind": "risk",
-                "severity": "critical" if case.severity == "high" else "warning",
-                "title": "Cảnh báo học vụ",
-                "description": case.reason or "Cần liên hệ cố vấn để xử lý",
-                "due_at": None,
-                "days_left": None,
-                "action_label": "Hỏi cố vấn",
-                "action_href": "messaging.html",
-            })
-    except Exception:
-        pass  # RiskCase model may not exist in all deployments
+    # Risk cases removed 2026-05-05 — bảng + workflow đã drop, tool nội bộ
+    # không cần tracking risk (advisor xem trực tiếp progress SV).
 
     # 3. State milestones (passive nudges)
     has_grades = db.query(models.UserGrade).filter(models.UserGrade.user_id == user.id).count() > 0
@@ -5469,25 +4891,59 @@ def save_custom_roadmap(
         except Exception:
             return 99
 
-    placement: dict[str, int] = {code: _term_idx(label) for code, label in raw_items}
+    custom_placement: dict[str, int] = {code: _term_idx(label) for code, label in raw_items}
     label_of: dict[str, str] = {code: label for code, label in raw_items}
 
-    # Validate prereq ordering
-    prereq_rows = db.query(models.CoursePrerequisite).filter(
-        models.CoursePrerequisite.course_code.in_(codes)
-    ).all()
+    # Build EFFECTIVE placement = CTDT default + customOverride.
+    # Lý do: client chỉ gửi items đã di chuyển khỏi default. Backend cần biết
+    # vị trí default của các môn KHÁC để validate prereq cho cả những môn user
+    # chưa move (mà có thể bị ảnh hưởng bởi move hiện tại).
+    # Default = Course.typical_semester (HK theo CTĐT 1-9).
+    effective_placement: dict[str, int] = {}
+    try:
+        spec_code = (user.specialization or "").strip() or None
+        # Lấy tất cả courses áp dụng cho spec hoặc shared (required_spec NULL)
+        q = db.query(models.Course).filter(models.Course.typical_semester.isnot(None))
+        if spec_code:
+            q = q.filter(
+                (models.Course.required_specialization.is_(None))
+                | (models.Course.required_specialization == spec_code)
+            )
+        for c in q.all():
+            if c.course_code and c.typical_semester:
+                effective_placement[c.course_code] = int(c.typical_semester)
+    except Exception:
+        # Fallback: nếu không lấy được standard plan, validate chỉ trên payload (như cũ)
+        pass
+
+    # Override: customItems chiếm ưu tiên hơn default
+    for code, idx in custom_placement.items():
+        effective_placement[code] = idx
+        label_of.setdefault(code, f"HK{idx}")
+
+    # Validate prereq ordering trên effective_placement (full picture)
+    prereq_rows = db.query(models.CoursePrerequisite).all()
+    # Filter chỉ những prereq liên quan đến course có trong effective placement
+    effective_codes = set(effective_placement.keys())
     for p in prereq_rows:
-        course_idx = placement.get(p.course_code, 99)
-        prereq_idx = placement.get(p.prerequisite_code)
-        if prereq_idx is None:
-            continue  # prereq not in user plan — assumed already passed
+        if p.course_code not in effective_codes:
+            continue
+        if p.prerequisite_code not in effective_placement:
+            continue  # prereq không trong CTDT/customItems → skip (đã pass hoặc không liên quan)
+        course_idx = effective_placement[p.course_code]
+        prereq_idx = effective_placement[p.prerequisite_code]
         if prereq_idx >= course_idx:
+            # Chỉ raise lỗi nếu vi phạm liên quan đến items user vừa gửi
+            # (tránh raise lỗi cho default config cũ user chưa đụng vào)
+            related = (p.course_code in custom_placement) or (p.prerequisite_code in custom_placement)
+            if not related:
+                continue
             raise HTTPException(
                 status_code=422,
                 detail=(
-                    f"Môn {p.course_code} ({label_of.get(p.course_code, '?')}) yêu cầu tiên quyết "
+                    f"Môn {p.course_code} (HK{course_idx}) yêu cầu tiên quyết "
                     f"{p.prerequisite_code} phải học trước "
-                    f"(hiện ở {label_of.get(p.prerequisite_code, '?')})"
+                    f"(hiện ở HK{prereq_idx})"
                 ),
             )
 
@@ -6491,8 +5947,7 @@ def simulator_current_snapshot(
     """Trả về trạng thái hiện tại + danh sách môn kỳ tới (lấy từ roadmap custom, fallback engine)."""
     user = _get_user_by_token(authorization, db)
     snap = academic_engine._build_snapshot(db, user.id, specialization=user.specialization)
-    if user.official_earned_credits is not None:
-        snap.earned_credits = round(float(user.official_earned_credits), 1)
+    # Note: official_earned_credits đã drop. earned_credits tính từ grades.
 
     # Pull planned courses for next term from custom roadmap first
     custom_plan = db.query(models.StudyPlan).filter(
@@ -6642,8 +6097,7 @@ def simulator_target_gpa(
         raise HTTPException(status_code=422, detail="target_gpa4 phải trong [0, 4.0]")
 
     snap = academic_engine._build_snapshot(db, user.id, specialization=user.specialization)
-    if user.official_earned_credits is not None:
-        snap.earned_credits = round(float(user.official_earned_credits), 1)
+    # Note: official_earned_credits đã drop. earned_credits tính từ grades.
 
     grad_threshold = academic_engine._get_graduation_threshold(db)
     current_avg4 = snap.avg_score4 or 0.0
@@ -6737,8 +6191,7 @@ def simulator_what_if(
 
     # Fetch snapshot for current stats
     snap = academic_engine._build_snapshot(db, user.id, specialization=user.specialization)
-    if user.official_earned_credits is not None:
-        snap.earned_credits = round(float(user.official_earned_credits), 1)
+    # Note: official_earned_credits đã drop. earned_credits tính từ grades.
 
     current_avg4 = snap.avg_score4 or 0.0
     current_earned = snap.earned_credits or 0.0
@@ -6865,7 +6318,7 @@ def simulator_switch_spec(
 
     # 1. Build snapshot với CN HIỆN TẠI (để biết TC hiện tại)
     snap_current = academic_engine._build_snapshot(db, user.id, specialization=user.specialization)
-    current_earned = float(user.official_earned_credits) if user.official_earned_credits is not None else (snap_current.earned_credits or 0.0)
+    current_earned = float(snap_current.earned_credits or 0.0)
 
     # 2. Lấy tất cả grades + courses đã pass
     grades = db.query(models.UserGrade).filter(
@@ -7108,400 +6561,6 @@ def _format_career(
     return out
 
 
-# ── Holland-lite RIASEC quiz ──────────────────────────────────────────────────
-# 12 câu hỏi mapped với RIASEC types
-# R=Realistic (thực tiễn), I=Investigative (nghiên cứu), A=Artistic (sáng tạo)
-# S=Social (xã hội), E=Enterprising (lãnh đạo), C=Conventional (quy chuẩn)
-HOLLAND_QUESTIONS = [
-    {"id": 1,  "type": "R", "text": "Em thích lắp ráp máy tính, sửa thiết bị, tinh chỉnh hệ thống mạng/server."},
-    {"id": 2,  "type": "I", "text": "Em hứng thú phân tích dữ liệu, tìm pattern, giải quyết bài toán bằng công thức."},
-    {"id": 3,  "type": "A", "text": "Em thích thiết kế giao diện đẹp, làm UI/UX hoặc đồ họa cho ứng dụng."},
-    {"id": 4,  "type": "S", "text": "Em thấy hứng thú khi giải thích kiến thức cho bạn khác, hướng dẫn người mới."},
-    {"id": 5,  "type": "E", "text": "Em thích đóng vai trò leader trong nhóm, đưa quyết định, dẫn dắt sản phẩm."},
-    {"id": 6,  "type": "C", "text": "Em thích công việc có quy trình rõ ràng, sắp xếp dữ liệu logic, kiểm tra chi tiết."},
-    {"id": 7,  "type": "R", "text": "Em ưu tiên làm việc với phần cứng, mạng, cloud thực tế hơn là code thuần."},
-    {"id": 8,  "type": "I", "text": "Em thấy thú vị khi đọc paper khoa học, theo dõi nghiên cứu AI/ML mới."},
-    {"id": 9,  "type": "A", "text": "Em thích lập trình game, trải nghiệm tương tác, tạo sản phẩm cảm xúc cao."},
-    {"id": 10, "type": "S", "text": "Em thích chăm sóc khách hàng / hỗ trợ kỹ thuật cho người dùng cuối."},
-    {"id": 11, "type": "E", "text": "Em có ý định khởi nghiệp hoặc xây sản phẩm riêng, đem ra thị trường."},
-    {"id": 12, "type": "C", "text": "Em thích kiểm thử phần mềm, viết tài liệu, đảm bảo chất lượng theo chuẩn."},
-]
-
-# Map RIASEC primary type → career_path codes phù hợp
-# Note: career_path codes phải tồn tại trong DB (seed_careers.py)
-HOLLAND_PATH_MAP = {
-    "R": ["network_admin", "devops", "iot_engineer", "embedded"],
-    "I": ["data_engineer", "ml_engineer", "ai_researcher", "data_scientist"],
-    "A": ["frontend_dev", "game_dev", "mobile_dev", "ux_designer"],
-    "S": ["it_trainer", "tech_support", "customer_success", "tech_writer"],
-    "E": ["product_manager", "tech_lead", "startup_founder", "business_analyst"],
-    "C": ["qa_tester", "database_admin", "project_manager", "system_analyst"],
-}
-
-
-@app.get("/quiz/holland/questions")
-def get_holland_questions():
-    """Trả 12 câu hỏi quiz — public (không cần login)."""
-    return {
-        "questions": HOLLAND_QUESTIONS,
-        "scale": [
-            {"value": 1, "label": "Hoàn toàn không"},
-            {"value": 2, "label": "Không hợp"},
-            {"value": 3, "label": "Bình thường"},
-            {"value": 4, "label": "Khá hợp"},
-            {"value": 5, "label": "Rất hợp"},
-        ],
-        "type_labels": {
-            "R": {"name": "Thực tiễn", "icon": "engineering", "color": "amber"},
-            "I": {"name": "Nghiên cứu", "icon": "psychology", "color": "indigo"},
-            "A": {"name": "Sáng tạo", "icon": "palette", "color": "violet"},
-            "S": {"name": "Xã hội", "icon": "groups", "color": "emerald"},
-            "E": {"name": "Lãnh đạo", "icon": "trending_up", "color": "rose"},
-            "C": {"name": "Quy chuẩn", "icon": "rule", "color": "cyan"},
-        },
-    }
-
-
-@app.post("/quiz/holland/submit")
-def submit_holland_quiz(
-    payload: dict,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """SV submit 12 answers (1-5 Likert) → compute RIASEC scores → suggest paths.
-
-    payload = { answers: [{q: 1, a: 4}, ...] }
-    """
-    user = _get_user_by_token(authorization, db)
-    if user.role != "student":
-        raise HTTPException(status_code=403, detail="Chỉ sinh viên được làm quiz hướng nghiệp")
-
-    raw_answers = payload.get("answers", [])
-    if not isinstance(raw_answers, list) or len(raw_answers) != 12:
-        raise HTTPException(status_code=400, detail="Cần đúng 12 câu trả lời")
-
-    # Validate + organize
-    answer_map: dict[int, int] = {}
-    for item in raw_answers:
-        try:
-            q = int(item.get("q"))
-            a = int(item.get("a"))
-        except (ValueError, TypeError):
-            raise HTTPException(status_code=400, detail="Format answer không hợp lệ")
-        if q < 1 or q > 12:
-            raise HTTPException(status_code=400, detail=f"q={q} ngoài phạm vi 1-12")
-        if a < 1 or a > 5:
-            raise HTTPException(status_code=400, detail=f"a={a} ngoài phạm vi 1-5")
-        answer_map[q] = a
-    if len(answer_map) != 12:
-        raise HTTPException(status_code=400, detail="Phải trả lời đủ 12 câu (mỗi câu 1 lần)")
-
-    # Compute RIASEC scores
-    scores = {"R": 0, "I": 0, "A": 0, "S": 0, "E": 0, "C": 0}
-    for q in HOLLAND_QUESTIONS:
-        scores[q["type"]] += answer_map[q["id"]]
-    # Mỗi type có 2 câu × max 5 = 10 điểm. Convert to /10.
-
-    # Top 3 types ranking
-    sorted_types = sorted(scores.items(), key=lambda x: -x[1])
-    primary_codes = [t for t, _ in sorted_types[:3]]
-
-    # Suggest career paths
-    candidate_path_codes: list[str] = []
-    for code in primary_codes:
-        for p in HOLLAND_PATH_MAP.get(code, []):
-            if p not in candidate_path_codes:
-                candidate_path_codes.append(p)
-    # Resolve actual paths exist in DB
-    existing_paths = {p.code: p for p in db.query(models.CareerPath).filter(
-        models.CareerPath.code.in_(candidate_path_codes)
-    ).all()} if candidate_path_codes else {}
-    suggested_paths = []
-    for code in candidate_path_codes:
-        if code in existing_paths:
-            p = existing_paths[code]
-            suggested_paths.append({
-                "code": p.code, "name": p.name,
-                "short_description": p.short_description,
-                "icon": p.icon, "color": p.color,
-            })
-        if len(suggested_paths) >= 6:
-            break
-
-    # Save result (upsert)
-    existing = db.query(models.UserQuizResult).filter(
-        models.UserQuizResult.user_id == user.id
-    ).first()
-    serialized_answers = [{"q": q, "a": a} for q, a in sorted(answer_map.items())]
-    suggested_codes_only = [s["code"] for s in suggested_paths]
-    if existing:
-        existing.answers = serialized_answers
-        existing.riasec_scores = scores
-        existing.primary_codes = primary_codes
-        existing.suggested_paths = suggested_codes_only
-        existing.taken_at = datetime.utcnow()
-    else:
-        db.add(models.UserQuizResult(
-            user_id=user.id, quiz_type="holland",
-            answers=serialized_answers, riasec_scores=scores,
-            primary_codes=primary_codes, suggested_paths=suggested_codes_only,
-        ))
-    db.commit()
-
-    return {
-        "riasec_scores": scores,
-        "primary_codes": primary_codes,
-        "suggested_paths": suggested_paths,
-        "max_score_per_type": 10,
-    }
-
-
-@app.post("/me/compare-scenarios")
-def compare_scenarios(
-    payload: dict = Body(...),
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """So sánh 2 phương án định hướng/tốc độ học.
-
-    Input:
-    {
-      "scenario_a": {"career_code": "ml_engineer", "credits_per_term": 18},
-      "scenario_b": {"career_code": "frontend_dev", "credits_per_term": 22},
-    }
-
-    Output: 2 metrics đầy đủ + recommendation.
-    """
-    user = _get_user_by_token(authorization, db)
-    if user.role != "student":
-        raise HTTPException(status_code=403, detail="Chỉ SV được so sánh phương án")
-
-    scen_a = payload.get("scenario_a") or {}
-    scen_b = payload.get("scenario_b") or {}
-    if not scen_a or not scen_b:
-        raise HTTPException(status_code=400, detail="Cần đủ scenario_a và scenario_b")
-
-    from backend.core.academic_engine import (
-        _build_snapshot, _get_graduation_threshold, _get_academic_thresholds,
-    )
-
-    specialization = user.specialization
-    snapshot = _build_snapshot(db, user.id, specialization=specialization)
-    if user.official_earned_credits is not None:
-        snapshot.earned_credits = round(float(user.official_earned_credits), 1)
-
-    grad_threshold = _get_graduation_threshold(db)
-    earned = snapshot.earned_credits or 0.0
-    gpa4 = snapshot.avg_score4 if snapshot.avg_score4 is not None else 0.0
-    remaining = max(0.0, grad_threshold - earned)
-
-    # SV's owned skills (qua passed courses)
-    passed_codes = {
-        g.course_code for g in db.query(models.UserGrade).filter(
-            models.UserGrade.user_id == user.id,
-            models.UserGrade.passed == True,  # noqa: E712
-        ).all()
-    }
-    owned_skills: dict[str, float] = {}
-    if passed_codes:
-        for cs in db.query(models.CourseSkill).filter(
-            models.CourseSkill.course_code.in_(passed_codes)
-        ).all():
-            owned_skills[cs.skill_code] = max(owned_skills.get(cs.skill_code, 0.0), float(cs.weight))
-
-    def _evaluate(scen: dict) -> dict:
-        career_code = (scen.get("career_code") or "").strip()
-        try:
-            tc_per_term = float(scen.get("credits_per_term") or 18)
-        except (TypeError, ValueError):
-            tc_per_term = 18.0
-        tc_per_term = max(10.0, min(25.0, tc_per_term))
-
-        path = None
-        if career_code:
-            path = db.query(models.CareerPath).filter(
-                models.CareerPath.code == career_code
-            ).first()
-
-        # Required skills cho path
-        path_skill_rows = []
-        if path:
-            path_skill_rows = db.query(
-                models.CareerPathSkill.skill_code,
-                models.CareerPathSkill.importance,
-            ).filter(models.CareerPathSkill.path_id == path.id).all()
-        required = {sc: float(imp) for sc, imp in path_skill_rows}
-
-        # Skill coverage
-        if required:
-            mastered = sum(1 for sc in required if owned_skills.get(sc, 0) >= 0.9)
-            learning = sum(1 for sc in required if 0.5 <= owned_skills.get(sc, 0) < 0.9)
-            missing_codes = [sc for sc in required if owned_skills.get(sc, 0) < 0.5]
-            total = len(required)
-            coverage_pct = round((mastered + learning * 0.5) / total * 100) if total else 0
-            mastery_pct = round(mastered / total * 100) if total else 0
-        else:
-            mastered = learning = 0
-            missing_codes = []
-            coverage_pct = mastery_pct = 0
-            total = 0
-
-        # Recommended courses to fill gap
-        rec_courses_brief = []
-        if missing_codes:
-            cand = db.query(
-                models.CourseSkill.course_code,
-                models.CourseSkill.skill_code,
-                models.Course.course_name,
-                models.Course.credits,
-            ).join(
-                models.Course, models.CourseSkill.course_code == models.Course.course_code
-            ).filter(
-                models.CourseSkill.skill_code.in_(missing_codes),
-                ~models.CourseSkill.course_code.in_(passed_codes),
-            ).limit(50).all()
-            score_map: dict[str, dict] = {}
-            for code, sk, nm, cr in cand:
-                e = score_map.setdefault(code, {
-                    "course_code": code, "course_name": nm,
-                    "credits": float(cr) if cr else None, "matched": 0,
-                })
-                e["matched"] += 1
-            rec_courses_brief = sorted(
-                score_map.values(), key=lambda x: -x["matched"]
-            )[:5]
-
-        # Terms to graduate (dựa trên tc_per_term)
-        terms_to_grad = (remaining / tc_per_term) if tc_per_term > 0 else None
-
-        # Career fit score (avg category match)
-        fit_score = None
-        if required:
-            # Owned avg per category
-            from collections import defaultdict as _dd
-            cat_owned: dict[str, list[float]] = _dd(list)
-            cat_required: dict[str, list[float]] = _dd(list)
-            for sc, w in owned_skills.items():
-                skl = db.query(models.Skill).filter(models.Skill.code == sc).first()
-                if skl:
-                    cat_owned[skl.category].append(w)
-            for sc, imp in required.items():
-                skl = db.query(models.Skill).filter(models.Skill.code == sc).first()
-                if skl:
-                    cat_required[skl.category].append(imp)
-            # Compute weighted fit
-            num = 0.0
-            den = 0.0
-            for cat, imps in cat_required.items():
-                imp_sum = sum(imps)
-                avg_owned = sum(cat_owned.get(cat, [])) / len(cat_owned[cat]) if cat_owned.get(cat) else 0.0
-                num += imp_sum * avg_owned
-                den += imp_sum
-            fit_score = round(num / den * 100, 1) if den > 0 else 0.0
-
-        # Difficulty assessment based on credits/term
-        if tc_per_term <= 16:
-            difficulty = "Nhẹ nhàng"
-            diff_color = "emerald"
-            diff_msg = "Tải học vừa sức, có thời gian học sâu hoặc làm thêm"
-        elif tc_per_term <= 20:
-            difficulty = "Vừa sức"
-            diff_color = "indigo"
-            diff_msg = "Cân bằng — tốc độ học hợp lý"
-        elif tc_per_term <= 23:
-            difficulty = "Áp lực cao"
-            diff_color = "amber"
-            diff_msg = "Tải nặng — cần kế hoạch cá nhân tốt"
-        else:
-            difficulty = "Quá tải"
-            diff_color = "rose"
-            diff_msg = "Vượt quy định 25 TC/kỳ — không khuyến nghị"
-
-        return {
-            "career_path": {
-                "code": path.code, "name": path.name,
-                "icon": path.icon, "color": path.color,
-                "short_description": path.short_description,
-            } if path else None,
-            "credits_per_term": tc_per_term,
-            "terms_to_graduate": round(terms_to_grad, 1) if terms_to_grad is not None else None,
-            "remaining_credits": round(remaining, 1),
-            "fit_score": fit_score,
-            "skill_summary": {
-                "total": total,
-                "mastered": mastered,
-                "learning": learning,
-                "missing": len(missing_codes),
-                "coverage_percent": coverage_pct,
-                "mastery_percent": mastery_pct,
-            },
-            "recommended_courses": rec_courses_brief,
-            "difficulty": {
-                "label": difficulty,
-                "color": diff_color,
-                "message": diff_msg,
-            },
-        }
-
-    eval_a = _evaluate(scen_a)
-    eval_b = _evaluate(scen_b)
-
-    # Recommendation: pick the better scenario
-    def _score(e: dict) -> float:
-        # Higher fit + lower terms_to_grad = better
-        fit = e.get("fit_score") or 50
-        tg = e.get("terms_to_graduate") or 99
-        diff = e.get("difficulty", {}).get("label", "Vừa sức")
-        # Penalize "Quá tải"
-        diff_penalty = 30 if diff == "Quá tải" else (10 if diff == "Áp lực cao" else 0)
-        # Score: fit/2 - tg*5 - penalty
-        return fit / 2 - tg * 5 - diff_penalty
-
-    score_a = _score(eval_a)
-    score_b = _score(eval_b)
-    if score_a > score_b + 5:
-        winner = "A"
-    elif score_b > score_a + 5:
-        winner = "B"
-    else:
-        winner = "tie"
-
-    advice = []
-    if eval_a.get("fit_score") is not None and eval_b.get("fit_score") is not None:
-        diff_fit = abs(eval_a["fit_score"] - eval_b["fit_score"])
-        if diff_fit >= 10:
-            better = "A" if eval_a["fit_score"] > eval_b["fit_score"] else "B"
-            advice.append({
-                "label": f"Phương án {better} phù hợp năng lực hiện tại hơn",
-                "icon": "trending_up",
-                "detail": f"Chênh fit score {diff_fit:.0f} điểm",
-            })
-    if eval_a.get("terms_to_graduate") and eval_b.get("terms_to_graduate"):
-        diff_t = abs(eval_a["terms_to_graduate"] - eval_b["terms_to_graduate"])
-        if diff_t >= 1:
-            faster = "A" if eval_a["terms_to_graduate"] < eval_b["terms_to_graduate"] else "B"
-            advice.append({
-                "label": f"Phương án {faster} ra trường nhanh hơn",
-                "icon": "schedule",
-                "detail": f"Sớm hơn ~{diff_t:.1f} kỳ",
-            })
-    if eval_a["difficulty"]["label"] != eval_b["difficulty"]["label"]:
-        a_label = eval_a["difficulty"]["label"]
-        b_label = eval_b["difficulty"]["label"]
-        advice.append({
-            "label": "Mức độ áp lực khác nhau",
-            "icon": "compare",
-            "detail": f"A: {a_label} · B: {b_label}",
-        })
-
-    return {
-        "scenario_a": eval_a,
-        "scenario_b": eval_b,
-        "winner": winner,
-        "advice": advice,
-    }
-
-
 @app.get("/me/readiness")
 def get_my_readiness(
     authorization: str | None = Header(default=None),
@@ -7528,8 +6587,8 @@ def get_my_readiness(
 
     specialization = user.specialization
     snapshot = _build_snapshot(db, user.id, specialization=specialization)
-    if user.official_earned_credits is not None:
-        snapshot.earned_credits = round(float(user.official_earned_credits), 1)
+    # Note: official_earned_credits đã được drop ở refactor 2026-05-05.
+    # earned_credits giờ tính trực tiếp từ user_grades trong _build_snapshot.
 
     grad_threshold = _get_graduation_threshold(db)
     at = _get_academic_thresholds(db)
@@ -8153,44 +7212,6 @@ def delete_skill_evidence(
     return {"deleted": True, "id": evidence_id}
 
 
-@app.get("/quiz/holland/me")
-def get_my_holland_result(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """Trả kết quả quiz gần nhất của SV (nếu có)."""
-    user = _get_user_by_token(authorization, db)
-    result = db.query(models.UserQuizResult).filter(
-        models.UserQuizResult.user_id == user.id
-    ).first()
-    if not result:
-        return {"taken": False}
-
-    suggested_codes = result.suggested_paths or []
-    suggested_paths = []
-    if suggested_codes:
-        paths_lookup = {p.code: p for p in db.query(models.CareerPath).filter(
-            models.CareerPath.code.in_(suggested_codes)
-        ).all()}
-        for code in suggested_codes:
-            if code in paths_lookup:
-                p = paths_lookup[code]
-                suggested_paths.append({
-                    "code": p.code, "name": p.name,
-                    "short_description": p.short_description,
-                    "icon": p.icon, "color": p.color,
-                })
-
-    return {
-        "taken": True,
-        "taken_at": result.taken_at.isoformat() if result.taken_at else None,
-        "riasec_scores": result.riasec_scores,
-        "primary_codes": result.primary_codes,
-        "suggested_paths": suggested_paths,
-        "max_score_per_type": 10,
-    }
-
-
 @app.get("/careers")
 def list_careers(db: Session = Depends(get_db)):
     """Danh sách tất cả định hướng nghề nghiệp (public — không cần auth)."""
@@ -8783,7 +7804,7 @@ def register_courses(
         )
 
     # 6. Validate credit load for this semester
-    max_credits = float(user.max_credits_per_term or 21.0)
+    max_credits = 21.0  # Default — user.max_credits_per_term đã drop ở 2026-05-05
     existing_regs = db.query(models.CourseRegistration).filter(
         models.CourseRegistration.user_id == user.id,
         models.CourseRegistration.semester_label == sem_label,
@@ -9170,29 +8191,51 @@ def assign_advisor_for_student(
     student_id: int,
     specialization: str | None,
 ) -> tuple[models.User | None, str | None]:
-    """Gán SV cho trưởng bộ môn tương ứng.
+    """Gán cố vấn cho SV theo thứ tự ưu tiên:
+
+    1. Nếu SV thuộc Lớp (class_group_id): assign GVCN của lớp đó (chuẩn nhất)
+    2. Fallback: round-robin trong cùng managed_specialization → pick GV ít SV nhất
+    3. Nếu không có GV nào cùng spec: trả warning
 
     - Xóa assignment cũ (nếu có) trước khi gán mới.
-    - Tìm advisor có is_head_of_department=True và managed_specialization khớp.
-    - Trả về (advisor, None) nếu thành công; (None, warning_msg) nếu chưa có trưởng.
     - KHÔNG commit — caller phải tự commit.
     """
     db.query(models.AdvisorAssignment).filter(
         models.AdvisorAssignment.student_id == student_id
     ).delete(synchronize_session=False)
 
-    head = db.query(models.User).filter(
+    # Path 1: SV thuộc Lớp → GVCN
+    student = db.query(models.User).get(student_id)
+    if student and getattr(student, "class_group_id", None):
+        cg = db.query(models.ClassGroup).filter(
+            models.ClassGroup.id == student.class_group_id
+        ).first()
+        if cg:
+            advisor = db.query(models.User).get(cg.advisor_id)
+            if advisor:
+                db.add(models.AdvisorAssignment(advisor_id=advisor.id, student_id=student_id))
+                return advisor, None
+
+    # Path 2: Fallback round-robin trong cùng spec (cho SV chưa có lớp)
+    advisors = db.query(models.User).filter(
         models.User.role == "advisor",
         models.User.managed_specialization == specialization,
-        models.User.is_head_of_department == True,  # noqa: E712
-    ).first()
+    ).all()
 
-    if head:
-        db.add(models.AdvisorAssignment(advisor_id=head.id, student_id=student_id))
-        return head, None
+    if advisors:
+        # Pick GV có ít SV nhất; tie-break: alphabet teacher_code
+        counts = {
+            adv.id: db.query(models.AdvisorAssignment).filter(
+                models.AdvisorAssignment.advisor_id == adv.id
+            ).count()
+            for adv in advisors
+        }
+        chosen = sorted(advisors, key=lambda a: (counts[a.id], a.teacher_code or a.username))[0]
+        db.add(models.AdvisorAssignment(advisor_id=chosen.id, student_id=student_id))
+        return chosen, None
 
     label = _SPEC_DISPLAY.get(specialization, specialization or "Năm đại cương")
-    return None, f"Bộ môn {label} chưa có trưởng bộ môn"
+    return None, f"Chuyên ngành {label} chưa có cố vấn"
 
 
 # Kept for backwards compat with any existing assignment at startup/import flows;
@@ -9292,15 +8335,9 @@ def advisor_list_students(
 
     # Pre-query: SV nào có grade admin → batch để tránh N queries
     student_ids = [asgn.student_id for asgn in assignments]
+    # Sau refactor 2026-05-05: không còn distinguish admin/self source.
+    # Field has_admin_grades giờ luôn False — UI advisor xem "data tự khai".
     admin_grade_user_ids: set[int] = set()
-    if student_ids:
-        admin_grade_user_ids = {
-            r[0] for r in db.query(models.UserGrade.user_id)
-            .filter(
-                models.UserGrade.source == "admin",
-                models.UserGrade.user_id.in_(student_ids),
-            ).distinct().all()
-        }
 
     items: list[schemas.AdvisorStudentItem] = []
     for asgn in assignments:
@@ -9372,6 +8409,196 @@ def advisor_student_recommendations(
         raise HTTPException(status_code=404, detail="Không tìm thấy sinh viên")
 
     return build_recommendations(db, student_id)
+
+
+# ── 3.5. GET /advisor/students/{student_id}/risk-analysis — AI phân tích rủi ro ─
+
+@app.get("/advisor/students/{student_id}/risk-analysis")
+def advisor_student_risk_analysis(
+    student_id: int,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """A6: AI-assisted at-risk analysis cho SV cụ thể.
+
+    Khác với /advisor/stats (rule-based threshold GPA<2.0):
+    Endpoint này gửi rich context (GPA trend, retake count, missing TC, notes
+    history, recent term performance) vào LLM để có phân tích chi tiết +
+    recommendation cụ thể cho từng SV.
+
+    Token cost: gọi mỗi lần advisor click "Phân tích AI" trong UI — không tự
+    động chạy nightly để tiết kiệm. Cố vấn quyết định khi cần đào sâu.
+
+    Returns:
+        {
+          "risk_level": "high" | "medium" | "low",
+          "summary": "1-2 câu tóm tắt",
+          "factors": ["yếu tố 1", "yếu tố 2", ...],
+          "recommendations": ["hành động 1", "hành động 2", ...],
+          "confidence": "high" | "medium" | "low"
+        }
+    """
+    import json as _json_lib
+    advisor = _require_advisor(authorization, db)
+    _check_advisor_has_student(advisor, student_id, db)
+
+    student = db.query(models.User).filter(models.User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Không tìm thấy sinh viên")
+
+    # Build rich context — grades + progress + notes
+    progress = build_progress_snapshot(db, student_id)
+    grades = db.query(models.UserGrade).filter(
+        models.UserGrade.user_id == student_id
+    ).all()
+
+    # Compute GPA trend: chia grades thành nửa cũ/nửa mới (sort by term), so sánh
+    def _term_sort_key(t: str) -> int:
+        # "Học kỳ 2 - Năm học 2021-2022" → 20212
+        import re
+        if not t:
+            return 0
+        yr = re.search(r"(\d{4})\s*[-–]\s*\d{4}", t)
+        sm = re.search(r"(?:H[Kk]|Học\s*k[ỳy])\s*(\d+)", t, re.IGNORECASE)
+        return (int(yr.group(1)) if yr else 0) * 10 + (int(sm.group(1)) if sm else 0)
+
+    sorted_grades = sorted([g for g in grades if g.term and g.score4 is not None],
+                           key=lambda g: _term_sort_key(g.term))
+    gpa_trend = "không đủ dữ liệu"
+    if len(sorted_grades) >= 4:
+        mid = len(sorted_grades) // 2
+        old_avg = sum(float(g.score4) for g in sorted_grades[:mid]) / mid
+        new_avg = sum(float(g.score4) for g in sorted_grades[mid:]) / (len(sorted_grades) - mid)
+        diff = new_avg - old_avg
+        if diff < -0.3:
+            gpa_trend = f"đang giảm ({old_avg:.2f} → {new_avg:.2f})"
+        elif diff > 0.3:
+            gpa_trend = f"đang tăng ({old_avg:.2f} → {new_avg:.2f})"
+        else:
+            gpa_trend = f"ổn định (~{new_avg:.2f})"
+
+    # Retake / fail count
+    fail_count = sum(1 for g in grades if g.score4 is not None and float(g.score4) < 1.0)
+    retake_count = 0
+    seen = set()
+    for g in sorted_grades:
+        if g.course_code in seen:
+            retake_count += 1
+        seen.add(g.course_code)
+
+    # Notes về SV
+    notes = db.query(models.AdvisorNote).filter(
+        models.AdvisorNote.student_id == student_id
+    ).order_by(models.AdvisorNote.created_at.desc()).limit(5).all()
+    notes_summary = "\n".join(
+        f"- {n.created_at.strftime('%Y-%m-%d')}: {(n.content or '')[:150]}"
+        for n in notes
+    ) or "(chưa có note)"
+
+    # Build context for LLM
+    earned = progress.get("earned_credits", 0)
+    threshold = academic_engine._get_graduation_threshold(db)
+    remaining = max(0, threshold - earned)
+    avg4 = progress.get("avg_score4")
+    # Format avg4 separately — f-string không support format-spec với conditional inline
+    avg4_str = f"{avg4:.2f}" if avg4 is not None else "—"
+
+    context = f"""Sinh viên: {student.full_name or student.username} (MSSV: {student.username})
+Khoá: {student.cohort or '?'}, Chuyên ngành: {student.specialization or '?'}
+
+Tiến độ hiện tại:
+- Tín chỉ tích luỹ: {earned}/{threshold} TC (còn {remaining} TC)
+- GPA hệ 4: {avg4_str}
+- Tổng số môn đã học: {len(grades)}
+- Số môn trượt (score4 < 1.0): {fail_count}
+- Số môn học lại: {retake_count}
+- Xu hướng GPA: {gpa_trend}
+- Đủ điều kiện thực tập: {'có' if progress.get('internship_eligible') else 'không'}
+- Đủ điều kiện tốt nghiệp: {'có' if progress.get('graduation_ready') else 'không'}
+
+5 ghi chú gần nhất của cố vấn:
+{notes_summary}
+"""
+
+    # LLM prompt — yêu cầu output JSON strict
+    prompt = f"""Bạn là chuyên gia tư vấn học vụ phân tích rủi ro của sinh viên CNTT.
+
+DỮ LIỆU SINH VIÊN:
+{context}
+
+Phân tích rủi ro học tập của SV và trả về JSON HỢP LỆ với cấu trúc:
+{{
+  "risk_level": "high" | "medium" | "low",
+  "summary": "1-2 câu tóm tắt tình trạng",
+  "factors": ["yếu tố rủi ro 1", "yếu tố 2", "yếu tố 3"],
+  "recommendations": ["hành động cố vấn nên làm 1", "hành động 2", "hành động 3"],
+  "confidence": "high" | "medium" | "low"
+}}
+
+YÊU CẦU:
+- factors: 2-4 yếu tố cụ thể (vd: "GPA giảm từ 2.8 xuống 2.3", "trượt 3 môn cốt lõi", "thiếu 25 TC năm cuối")
+- recommendations: 2-4 hành động cụ thể, có thể thực hiện (vd: "Hẹn SV gặp tuần sau để đánh giá lại lộ trình", "Khuyến cáo đăng ký lại Toán rời rạc kỳ tới")
+- KHÔNG dùng markdown, KHÔNG thêm text ngoài JSON
+- KHÔNG dùng code fence ```
+- Bắt đầu bằng {{ kết thúc bằng }}
+
+JSON:"""
+
+    # Call LLM
+    from backend.core.chat_assistant import _gemini_chat, _groq_chat
+    raw = None
+    try:
+        raw = (_gemini_chat([{"role": "user", "content": prompt}], temperature=0.3, max_tokens=600)
+            or _groq_chat([{"role": "user", "content": prompt}], temperature=0.3, max_tokens=600))
+    except Exception:
+        pass
+
+    if not raw:
+        # Fallback: rule-based mini-analysis
+        risk = "high" if (avg4 is not None and avg4 < 2.0) else \
+               ("medium" if (avg4 is not None and avg4 < 2.5) else "low")
+        return {
+            "risk_level": risk,
+            "summary": "AI tạm không khả dụng. Phân tích nhanh dựa trên ngưỡng GPA cứng.",
+            "factors": [
+                f"GPA hệ 4: {avg4:.2f}" if avg4 is not None else "Chưa có GPA",
+                f"Còn {remaining} TC để tốt nghiệp",
+                f"{fail_count} môn trượt, {retake_count} môn học lại",
+            ],
+            "recommendations": ["Bật AI provider (Gemini/Groq) để có phân tích chi tiết."],
+            "confidence": "low",
+        }
+
+    # Parse JSON từ LLM output
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = "\n".join(line for line in raw.split("\n") if not line.startswith("```"))
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start >= 0 and end > start:
+        try:
+            parsed = _json_lib.loads(raw[start:end + 1])
+            # Validate structure
+            if not isinstance(parsed, dict):
+                raise ValueError("not dict")
+            return {
+                "risk_level": parsed.get("risk_level", "medium"),
+                "summary": str(parsed.get("summary", ""))[:500],
+                "factors": [str(f)[:200] for f in (parsed.get("factors") or [])][:5],
+                "recommendations": [str(r)[:300] for r in (parsed.get("recommendations") or [])][:5],
+                "confidence": parsed.get("confidence", "medium"),
+            }
+        except Exception:
+            pass
+
+    # Last fallback
+    return {
+        "risk_level": "medium",
+        "summary": raw[:300],
+        "factors": [],
+        "recommendations": [],
+        "confidence": "low",
+    }
 
 
 # ── 4. GET /advisor/stats — thống kê nhóm SV ─────────────────────────────────
@@ -9608,41 +8835,37 @@ def admin_list_advisors(
             .filter(models.AdvisorAssignment.advisor_id == adv.id)
             .count()
         )
+        # Đếm số lớp GV chủ nhiệm
+        class_count = db.query(models.ClassGroup).filter(
+            models.ClassGroup.advisor_id == adv.id
+        ).count()
         result.append(schemas.AdminAdvisorItem(
             id=adv.id,
             username=adv.username,
             teacher_code=adv.teacher_code,
             full_name=adv.full_name,
             managed_specialization=adv.managed_specialization,
-            is_head_of_department=bool(adv.is_head_of_department),
+            email=getattr(adv, "email", None),
             student_count=count,
+            class_count=class_count,
             default_password=adv.default_password,
         ))
     return result
 
 
-def _check_head_conflict(db: Session, managed_spec: str | None, is_head: bool, exclude_id: int | None = None) -> None:
-    """Raise 400 nếu bộ môn đã có trưởng bộ môn."""
-    if not is_head:
-        return
-    q = db.query(models.User).filter(
-        models.User.role == "advisor",
-        models.User.managed_specialization == managed_spec,
-        models.User.is_head_of_department == True,  # noqa: E712
-    )
-    if exclude_id:
-        q = q.filter(models.User.id != exclude_id)
-    existing_head = q.first()
-    if existing_head:
-        spec_label = managed_spec or "Năm đại cương"
-        raise HTTPException(
-            status_code=400,
-            detail=f"Bộ môn '{spec_label}' đã có trưởng bộ môn: {existing_head.full_name or existing_head.username}",
-        )
+# Note: _check_head_conflict + _demote_existing_heads đã bị remove cùng với
+# concept "Trưởng bộ môn" — model mới quản lý SV ↔ GV qua Lớp (ClassGroup).
 
 
 def _parse_advisors_csv(data: bytes, filename: str) -> list[dict]:
-    """Parse CSV/Excel → list of dicts: teacher_code, full_name, managed_specialization."""
+    """Parse CSV/Excel → list of dicts: teacher_code, full_name, managed_specialization, email.
+
+    File template 4 cột:
+      | Mã GV | Họ tên | Email | Chuyên ngành |
+
+    Lưu ý: cột "Trưởng BM" cũ đã bị BỎ — model mới quản lý qua Lớp (ClassGroup),
+    không còn concept Trưởng bộ môn.
+    """
     rows = read_rows_from_upload(filename, data)["rows"]
     if not rows:
         raise ValueError("File rỗng hoặc không đọc được")
@@ -9657,9 +8880,10 @@ def _parse_advisors_csv(data: bytes, filename: str) -> list[dict]:
                     return i
         return None
 
-    idx_tc   = _col("teacher_code", "mã gv", "ma gv", "magv", "mã giảng viên", "tc")
-    idx_name = _col("full_name", "họ tên", "ho ten", "tên", "ten", "họ và tên")
-    idx_spec = _col("managed_specialization", "specialization", "chuyên ngành", "chuyen nganh", "bộ môn", "bo mon")
+    idx_tc    = _col("teacher_code", "mã gv", "ma gv", "magv", "mã giảng viên", "tc")
+    idx_name  = _col("full_name", "họ tên", "ho ten", "tên", "ten", "họ và tên")
+    idx_email = _col("email", "email")
+    idx_spec  = _col("managed_specialization", "specialization", "chuyên ngành", "chuyen nganh", "bộ môn", "bo mon")
 
     if idx_tc is None:
         raise ValueError("Không tìm thấy cột teacher_code / Mã GV trong file")
@@ -9675,6 +8899,7 @@ def _parse_advisors_csv(data: bytes, filename: str) -> list[dict]:
             "teacher_code": tc,
             "full_name": str(row[idx_name] or "").strip() if idx_name is not None and idx_name < len(row) else "",
             "managed_specialization": str(row[idx_spec] or "").strip() if idx_spec is not None and idx_spec < len(row) else "",
+            "email": str(row[idx_email] or "").strip().lower() if idx_email is not None and idx_email < len(row) else "",
         })
     return result
 
@@ -9721,6 +8946,9 @@ def admin_import_advisors(
         spec = rec["managed_specialization"] or None
         if spec not in _IMPORT_VALID_SPECS:
             spec = None
+        email = (rec.get("email") or "").strip().lower() or None
+        if email and ("@" not in email or "." not in email.split("@")[-1]):
+            email = None  # silently drop invalid email
 
         if not tc:
             errors.append(schemas.AdvisorImportError(row=row_idx, teacher_code=tc, reason="Mã GV trống"))
@@ -9738,16 +8966,6 @@ def admin_import_advisors(
         plain_pw = str(_rnd_imp.randint(100000, 999999))
         generated_passwords[tc] = plain_pw
 
-        is_head = False
-        if spec:
-            head_exists = db.query(models.User).filter(
-                models.User.managed_specialization == spec,
-                models.User.is_head_of_department == True,
-                models.User.role == "advisor",
-            ).first()
-            if not head_exists:
-                is_head = True
-
         user = models.User(
             username=tc,
             password_hash=_hash_temp_password(plain_pw),
@@ -9755,7 +8973,7 @@ def admin_import_advisors(
             role="advisor",
             teacher_code=tc,
             managed_specialization=spec,
-            is_head_of_department=is_head,
+            email=email,
             default_password=plain_pw,
         )
         db.add(user)
@@ -9791,14 +9009,7 @@ def admin_create_advisor(
         raise HTTPException(status_code=400, detail=f"Mã GV '{teacher_code}' đã tồn tại")
     if db.query(models.User).filter(models.User.teacher_code == teacher_code).first():
         raise HTTPException(status_code=400, detail=f"Mã GV '{teacher_code}' đã tồn tại")
-    # Auto-set head: là trưởng nếu bộ môn chưa có trưởng nào
     spec = payload.managed_specialization or None
-    existing_head = db.query(models.User).filter(
-        models.User.role == "advisor",
-        models.User.managed_specialization == spec,
-        models.User.is_head_of_department == True,  # noqa: E712
-    ).first()
-    is_head = existing_head is None
     import random as _random
     raw_pw = str(_random.randint(100000, 999999))
     hashed = _hash_temp_password(raw_pw)
@@ -9809,7 +9020,7 @@ def admin_create_advisor(
         full_name=normalize_vietnamese_name(payload.full_name),
         role="advisor",
         managed_specialization=spec,
-        is_head_of_department=is_head,
+        email=getattr(payload, "email", None),
         default_password=raw_pw,
         is_first_login=True,
     )
@@ -9823,7 +9034,7 @@ def admin_create_advisor(
         teacher_code=user.teacher_code,
         full_name=user.full_name,
         managed_specialization=user.managed_specialization,
-        is_head_of_department=bool(user.is_head_of_department),
+        email=getattr(user, "email", None),
         role=user.role,
         password_plain=raw_pw,
     )
@@ -9848,8 +9059,7 @@ def admin_update_advisor(
         adv.full_name = normalize_vietnamese_name(payload.full_name) or adv.full_name
     if payload.managed_specialization is not None:
         adv.managed_specialization = payload.managed_specialization or None
-    if payload.is_head_of_department is not None:
-        adv.is_head_of_department = payload.is_head_of_department
+    # email field removed 2026-05-05
 
     db.commit()
     db.refresh(adv)
@@ -9858,14 +9068,18 @@ def admin_update_advisor(
     count = db.query(models.AdvisorAssignment).filter(
         models.AdvisorAssignment.advisor_id == adv.id
     ).count()
+    class_count = db.query(models.ClassGroup).filter(
+        models.ClassGroup.advisor_id == adv.id
+    ).count()
     return schemas.AdminAdvisorItem(
         id=adv.id,
         username=adv.username,
         teacher_code=adv.teacher_code,
         full_name=adv.full_name,
         managed_specialization=adv.managed_specialization,
-        is_head_of_department=bool(adv.is_head_of_department),
+        email=getattr(adv, "email", None),
         student_count=count,
+        class_count=class_count,
     )
 
 
@@ -9876,14 +9090,14 @@ def admin_delete_advisor(
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
-    """Xoá cố vấn với cơ chế chuyển giao.
+    """Xoá cố vấn — block nếu còn lớp chủ nhiệm.
 
-    Quy tắc nghiệp vụ:
-    - Nếu cố vấn có SV phụ trách HOẶC là trưởng BM, và bộ môn còn cố vấn khác:
-      bắt buộc cung cấp `transfer_to` (id của cố vấn cùng bộ môn) để chuyển giao
-      SV + chức trưởng BM sang người đó.
-    - Nếu là cố vấn duy nhất của bộ môn: cho phép xoá; SV phụ trách (nếu có)
-      sẽ orphan — admin cần phân công lại bằng auto-classify hoặc tay.
+    Quy tắc:
+    - Nếu GV còn chủ nhiệm Lớp nào: 409 Conflict + danh sách lớp.
+      Admin phải PATCH các lớp đó (đổi GVCN) trước khi xoá.
+    - Nếu còn SV phụ trách qua AdvisorAssignment (không qua lớp) và bộ môn còn
+      GV khác: bắt buộc `transfer_to` để chuyển SV sang người khác.
+    - Nếu không còn ràng buộc: cho xoá ngay.
     """
     admin = _require_admin(authorization, db)
     adv = db.query(models.User).filter(
@@ -9892,6 +9106,25 @@ def admin_delete_advisor(
     ).first()
     if not adv:
         raise HTTPException(status_code=404, detail="Không tìm thấy cố vấn")
+
+    # Block: GV còn chủ nhiệm lớp nào không?
+    classes_owned = db.query(models.ClassGroup).filter(
+        models.ClassGroup.advisor_id == advisor_id
+    ).all()
+    if classes_owned:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": (
+                    f"GV {adv.username} còn chủ nhiệm {len(classes_owned)} lớp. "
+                    "Hãy phân GVCN mới cho các lớp này trước khi xoá."
+                ),
+                "classes": [
+                    {"id": c.id, "code": c.code, "name": c.name}
+                    for c in classes_owned
+                ],
+            },
+        )
 
     student_count = db.query(models.AdvisorAssignment).filter(
         models.AdvisorAssignment.advisor_id == advisor_id
@@ -9902,16 +9135,14 @@ def admin_delete_advisor(
         models.User.id != adv.id,
     ).all()
 
-    needs_transfer = (student_count > 0 or adv.is_head_of_department) and len(other_in_spec) > 0
+    needs_transfer = student_count > 0 and len(other_in_spec) > 0
 
     if needs_transfer and transfer_to is None:
         raise HTTPException(
             status_code=400,
             detail=(
-                "Không thể xóa: cần chọn cố vấn kế nhiệm để chuyển giao "
-                f"({student_count} SV phụ trách"
-                + (", chức trưởng BM" if adv.is_head_of_department else "")
-                + ")."
+                f"Không thể xóa: cần chọn cố vấn kế nhiệm để chuyển giao "
+                f"({student_count} SV phụ trách)."
             ),
         )
 
@@ -9926,33 +9157,21 @@ def admin_delete_advisor(
         if new_owner.id == adv.id:
             raise HTTPException(status_code=400, detail="Cố vấn kế nhiệm phải khác người đang xóa")
         if (new_owner.managed_specialization or "") != (adv.managed_specialization or ""):
-            raise HTTPException(
-                status_code=400,
-                detail="Cố vấn kế nhiệm phải cùng bộ môn",
-            )
+            raise HTTPException(status_code=400, detail="Cố vấn kế nhiệm phải cùng chuyên ngành")
 
     transferred_students = 0
-    transferred_head = False
 
     if new_owner is not None:
-        # Chuyển assignments: cập nhật advisor_id thay vì xoá rồi tạo (giữ assigned_at gốc)
         result = db.query(models.AdvisorAssignment).filter(
             models.AdvisorAssignment.advisor_id == advisor_id
         ).update({"advisor_id": new_owner.id})
         transferred_students = result or 0
-        # Chuyển chức trưởng BM (nếu có)
-        if adv.is_head_of_department:
-            adv.is_head_of_department = False
-            new_owner.is_head_of_department = True
-            transferred_head = True
         db.flush()
     else:
-        # Không có người kế nhiệm: xoá assignments (orphan SV)
         db.query(models.AdvisorAssignment).filter(
             models.AdvisorAssignment.advisor_id == advisor_id
         ).delete()
 
-    # Note: ghi chú do advisor này tạo bị xoá (tác giả không còn)
     db.query(models.AdvisorNote).filter(
         models.AdvisorNote.advisor_id == advisor_id
     ).delete()
@@ -9962,58 +9181,17 @@ def admin_delete_advisor(
 
     detail_parts = [f"Xóa cố vấn {adv.username}"]
     if transferred_students:
-        detail_parts.append(f"chuyển {transferred_students} SV")
-    if transferred_head:
-        detail_parts.append("chuyển chức trưởng BM")
-    if new_owner:
-        detail_parts.append(f"sang {new_owner.username}")
+        detail_parts.append(f"chuyển {transferred_students} SV sang {new_owner.username}")
     _log(db, admin, "delete_advisor", "user", str(advisor_id), " · ".join(detail_parts))
 
     msg = f"Đã xóa cố vấn {adv.username}"
-    if transferred_students or transferred_head:
-        bits = []
-        if transferred_students:
-            bits.append(f"{transferred_students} SV")
-        if transferred_head:
-            bits.append("chức trưởng BM")
-        msg += f" · Đã chuyển {' và '.join(bits)} sang {new_owner.full_name or new_owner.username}"
+    if transferred_students:
+        msg += f" · Đã chuyển {transferred_students} SV sang {new_owner.full_name or new_owner.username}"
     return {"message": msg}
 
 
-@app.post("/admin/advisors/{advisor_id}/transfer-head", response_model=schemas.MessageOut)
-def admin_transfer_head(
-    advisor_id: int,
-    payload: schemas.TransferHeadIn,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    admin = _require_admin(authorization, db)
-    old_head = db.query(models.User).filter(
-        models.User.id == advisor_id,
-        models.User.role == "advisor",
-    ).first()
-    if not old_head:
-        raise HTTPException(status_code=404, detail="Không tìm thấy cố vấn")
-    if not old_head.is_head_of_department:
-        raise HTTPException(status_code=400, detail="Cố vấn này không phải trưởng bộ môn")
-    new_head = db.query(models.User).filter(
-        models.User.id == payload.new_head_advisor_id,
-        models.User.role == "advisor",
-    ).first()
-    if not new_head:
-        raise HTTPException(status_code=404, detail="Không tìm thấy cố vấn mới")
-    if new_head.id == old_head.id:
-        raise HTTPException(status_code=400, detail="Cần chọn một cố vấn khác")
-    if (new_head.managed_specialization or "") != (old_head.managed_specialization or ""):
-        raise HTTPException(status_code=400, detail="Cố vấn mới phải cùng bộ môn")
-    old_head.is_head_of_department = False
-    new_head.is_head_of_department = True
-    db.commit()
-    _log(
-        db, admin, "transfer_head", "user", str(advisor_id),
-        f"Chuyển chức trưởng BM từ {old_head.username} sang {new_head.username}",
-    )
-    return {"message": f"Đã chuyển chức trưởng bộ môn sang {new_head.full_name or new_head.username}"}
+# Note: endpoint POST /admin/advisors/{id}/transfer-head đã bị remove cùng concept
+# "Trưởng bộ môn". Để chuyển GVCN của lớp, dùng PATCH /admin/classes/{id}.
 
 
 @app.get("/admin/advisors/{advisor_id}/students", response_model=list[schemas.AdminAdvisorStudentItem])
@@ -10313,16 +9491,6 @@ def admin_auto_classify_students(
     admin = _require_admin(authorization, db)
     from collections import Counter
 
-    # Map: managed_spec → head advisor
-    heads = {
-        a.managed_specialization: a
-        for a in db.query(models.User).filter(
-            models.User.role == "advisor",
-            models.User.is_head_of_department == True,  # noqa: E712
-        ).all()
-    }
-    general_head = heads.get(None)  # đại cương head
-
     students = db.query(models.User).filter(models.User.role == "student").all()
     course_map = {c.course_code: c for c in db.query(models.Course).all()}
     # M2M map: course_code → list[spec]
@@ -10367,27 +9535,17 @@ def admin_auto_classify_students(
 
         if new_spec != old_spec:
             sv.specialization = new_spec
+            db.flush()
         if new_spec:
             classified_to_spec += 1
         else:
             classified_to_general += 1
 
-        # Pick target advisor: head of new_spec, fallback general
-        target = heads.get(new_spec) if new_spec else general_head
+        # Re-assign advisor (qua class_group nếu có, fallback round-robin)
+        target, warn = assign_advisor_for_student(db, sv.id, new_spec)
         if not target:
-            # No head available → don't reassign, leave as is
             skipped_no_head += 1
             continue
-
-        cur = db.query(models.AdvisorAssignment).filter(
-            models.AdvisorAssignment.student_id == sv.id
-        ).first()
-        if cur and cur.advisor_id == target.id:
-            continue
-        if cur:
-            db.delete(cur)
-            db.flush()
-        db.add(models.AdvisorAssignment(advisor_id=target.id, student_id=sv.id))
         advisor_changes += 1
 
     db.commit()
@@ -10421,15 +9579,6 @@ def admin_bulk_set_specialization(
     if not isinstance(items, list) or not items:
         raise HTTPException(status_code=422, detail="items phải là list không rỗng")
 
-    heads = {
-        a.managed_specialization: a
-        for a in db.query(models.User).filter(
-            models.User.role == "advisor",
-            models.User.is_head_of_department == True,  # noqa: E712
-        ).all()
-    }
-    general_head = heads.get(None)
-
     updated = 0
     reassigned = 0
     errors: list[str] = []
@@ -10447,20 +9596,14 @@ def admin_bulk_set_specialization(
 
         if sv.specialization != new_spec:
             sv.specialization = new_spec
+            db.flush()
             updated += 1
 
-        target = heads.get(new_spec) if new_spec else general_head
+        # Re-assign advisor (qua class_group nếu có, fallback round-robin)
+        target, warn = assign_advisor_for_student(db, sv.id, new_spec)
         if not target:
-            errors.append(f"{uname}: không có trưởng BM cho '{new_spec or 'đại cương'}'")
+            errors.append(f"{uname}: {warn}")
             continue
-        cur = db.query(models.AdvisorAssignment).filter(
-            models.AdvisorAssignment.student_id == sv.id
-        ).first()
-        if cur and cur.advisor_id == target.id:
-            continue
-        if cur:
-            db.delete(cur); db.flush()
-        db.add(models.AdvisorAssignment(advisor_id=target.id, student_id=sv.id))
         reassigned += 1
 
     db.commit()
@@ -10472,6 +9615,605 @@ def admin_bulk_set_specialization(
         "errors": errors,
         "message": f"Cập nhật {updated} CN · phân lại {reassigned} GV · {len(errors)} lỗi",
     }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CLASS GROUP MANAGEMENT (Lớp sinh hoạt — GVCN ↔ SV)
+# ════════════════════════════════════════════════════════════════════════════
+
+def sync_advisor_for_class(db: Session, class_group: models.ClassGroup) -> int:
+    """Re-sync AdvisorAssignment cho mọi SV trong lớp.
+
+    Trigger: sau khi class_group.advisor_id được update, hoặc sau khi SV được
+    add/remove khỏi lớp. Đảm bảo invariant: SV trong lớp X có advisor = lớp X
+    .advisor_id. KHÔNG commit — caller tự commit.
+
+    Trả về số SV được sync (re-assigned).
+    """
+    students = db.query(models.User).filter(
+        models.User.class_group_id == class_group.id,
+        models.User.role == "student",
+    ).all()
+    student_ids = [s.id for s in students]
+    if not student_ids:
+        return 0
+
+    # Xoá assignments cũ — sau đó chỉ tạo mới (không UPSERT) để giữ logic đơn giản
+    db.query(models.AdvisorAssignment).filter(
+        models.AdvisorAssignment.student_id.in_(student_ids)
+    ).delete(synchronize_session=False)
+
+    # Bulk insert assignments mới với GVCN của lớp
+    for sid in student_ids:
+        db.add(models.AdvisorAssignment(
+            advisor_id=class_group.advisor_id,
+            student_id=sid,
+        ))
+
+    db.flush()
+    return len(student_ids)
+
+
+def _class_group_to_out(db: Session, cg: models.ClassGroup) -> schemas.ClassGroupOut:
+    """Build ClassGroupOut với joined data (advisor + student count)."""
+    advisor = db.query(models.User).filter(models.User.id == cg.advisor_id).first()
+    student_count = db.query(models.User).filter(
+        models.User.class_group_id == cg.id,
+        models.User.role == "student",
+    ).count()
+    return schemas.ClassGroupOut(
+        id=cg.id,
+        code=cg.code,
+        name=cg.name,
+        cohort=cg.cohort,
+        specialization=cg.specialization,
+        advisor_id=cg.advisor_id,
+        advisor_teacher_code=advisor.teacher_code if advisor else None,
+        advisor_full_name=advisor.full_name if advisor else None,
+        student_count=student_count,
+        created_at=cg.created_at,
+    )
+
+
+def _class_default_name(code: str) -> str:
+    """Auto-generate tên đẹp từ mã lớp DCCTCT66_07A → 'Lớp K66 CNPM 07A'."""
+    try:
+        cohort, spec_full, letter = schemas.parse_class_code(code)
+        spec_short = _SPEC_DISPLAY.get(spec_full, spec_full)
+        return f"Lớp K{cohort} {spec_short} {letter}"
+    except Exception:
+        return f"Lớp {code}"
+
+
+@app.get("/admin/classes", response_model=list[schemas.ClassGroupOut])
+def admin_list_classes(
+    cohort: str | None = None,
+    specialization: str | None = None,
+    advisor_id: int | None = None,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """List lớp với filters optional."""
+    _require_admin(authorization, db)
+    q = db.query(models.ClassGroup)
+    if cohort:
+        q = q.filter(models.ClassGroup.cohort == cohort)
+    if specialization:
+        q = q.filter(models.ClassGroup.specialization == specialization)
+    if advisor_id:
+        q = q.filter(models.ClassGroup.advisor_id == advisor_id)
+    classes = q.order_by(models.ClassGroup.code).all()
+    return [_class_group_to_out(db, c) for c in classes]
+
+
+@app.post("/admin/classes", response_model=schemas.ClassGroupOut)
+def admin_create_class(
+    payload: schemas.AdminCreateClassIn,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Tạo 1 lớp thủ công. GVCN bắt buộc."""
+    admin = _require_admin(authorization, db)
+
+    code = payload.code  # đã validate format trong schema
+    cohort, spec, _letter = schemas.parse_class_code(code)
+
+    # Validate advisor tồn tại + role=advisor
+    tc = payload.advisor_teacher_code.strip().upper()
+    advisor = db.query(models.User).filter(
+        models.User.teacher_code == tc,
+        models.User.role == "advisor",
+    ).first()
+    if not advisor:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Không tìm thấy GV với mã '{tc}'. Tạo GV trước khi tạo lớp."
+        )
+
+    # Check trùng code
+    if db.query(models.ClassGroup).filter(models.ClassGroup.code == code).first():
+        raise HTTPException(status_code=409, detail=f"Mã lớp '{code}' đã tồn tại")
+
+    name = (payload.name or "").strip() or _class_default_name(code)
+    cg = models.ClassGroup(
+        code=code,
+        name=name,
+        cohort=cohort,
+        specialization=spec,
+        advisor_id=advisor.id,
+    )
+    db.add(cg)
+    db.commit()
+    db.refresh(cg)
+
+    _log(db, admin, "CREATE_CLASS", "class_group", str(cg.id),
+         f"code={code} advisor={advisor.username}")
+
+    return _class_group_to_out(db, cg)
+
+
+@app.get("/admin/classes/{class_id}", response_model=schemas.ClassGroupOut)
+def admin_get_class(
+    class_id: int,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    _require_admin(authorization, db)
+    cg = db.query(models.ClassGroup).filter(models.ClassGroup.id == class_id).first()
+    if not cg:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp")
+    return _class_group_to_out(db, cg)
+
+
+@app.patch("/admin/classes/{class_id}", response_model=schemas.ClassGroupOut)
+def admin_update_class(
+    class_id: int,
+    payload: schemas.AdminUpdateClassIn,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Cập nhật tên hoặc GVCN. Đổi GVCN → tự sync AdvisorAssignment."""
+    admin = _require_admin(authorization, db)
+    cg = db.query(models.ClassGroup).filter(models.ClassGroup.id == class_id).first()
+    if not cg:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp")
+
+    changes: list[str] = []
+
+    if payload.name is not None:
+        new_name = (payload.name or "").strip()
+        if new_name and new_name != cg.name:
+            cg.name = new_name
+            changes.append(f"name='{new_name}'")
+
+    advisor_changed = False
+    if payload.advisor_teacher_code is not None:
+        tc = payload.advisor_teacher_code.strip().upper()
+        if not tc:
+            raise HTTPException(status_code=400, detail="Mã GVCN không được để trống")
+        advisor = db.query(models.User).filter(
+            models.User.teacher_code == tc,
+            models.User.role == "advisor",
+        ).first()
+        if not advisor:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Không tìm thấy GV với mã '{tc}'"
+            )
+        if advisor.id != cg.advisor_id:
+            old_advisor_id = cg.advisor_id
+            cg.advisor_id = advisor.id
+            db.flush()  # commit FK change trước khi sync
+            advisor_changed = True
+            changes.append(f"advisor: {old_advisor_id}→{advisor.id}")
+
+    synced = 0
+    if advisor_changed:
+        synced = sync_advisor_for_class(db, cg)
+        changes.append(f"synced {synced} SV")
+
+    db.commit()
+    db.refresh(cg)
+
+    if changes:
+        _log(db, admin, "UPDATE_CLASS", "class_group", str(class_id),
+             " · ".join(changes))
+
+    return _class_group_to_out(db, cg)
+
+
+@app.delete("/admin/classes/{class_id}", response_model=schemas.MessageOut)
+def admin_delete_class(
+    class_id: int,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Xoá lớp. Chặn nếu lớp còn SV — admin phải chuyển SV sang lớp khác trước."""
+    admin = _require_admin(authorization, db)
+    cg = db.query(models.ClassGroup).filter(models.ClassGroup.id == class_id).first()
+    if not cg:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp")
+
+    student_count = db.query(models.User).filter(
+        models.User.class_group_id == class_id,
+        models.User.role == "student",
+    ).count()
+    if student_count > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Lớp '{cg.code}' còn {student_count} sinh viên. "
+                "Hãy chuyển SV sang lớp khác trước khi xoá."
+            ),
+        )
+
+    code_snapshot = cg.code
+    db.delete(cg)
+    db.commit()
+
+    _log(db, admin, "DELETE_CLASS", "class_group", str(class_id),
+         f"code={code_snapshot}")
+    return {"message": f"Đã xoá lớp {code_snapshot}"}
+
+
+def _parse_classes_csv(data: bytes, filename: str) -> list[dict]:
+    """Parse CSV/Excel → list of dicts: code, name, advisor_teacher_code.
+
+    File template 5 cột (chỉ 'Mã lớp' + 'Mã GVCN' bắt buộc):
+      | Mã lớp | Tên lớp | Khoá | Chuyên ngành | Mã GVCN |
+
+    Khoá + Chuyên ngành chỉ mang tính tham khảo cho admin — backend tự derive
+    từ Mã lớp (parse_class_code). Khi có sự khác biệt, ưu tiên parse từ Mã lớp.
+    """
+    rows = read_rows_from_upload(filename, data)["rows"]
+    if not rows:
+        raise ValueError("File rỗng hoặc không đọc được")
+
+    headers = [str(c or "").strip().lower() for c in rows[0]]
+
+    def _col(*keys):
+        for k in keys:
+            for i, h in enumerate(headers):
+                if k in h:
+                    return i
+        return None
+
+    idx_code = _col("mã lớp", "ma lop", "code", "class_code")
+    idx_name = _col("tên lớp", "ten lop", "name", "class_name")
+    idx_adv  = _col("mã gvcn", "ma gvcn", "gvcn", "advisor_code", "mã gv chủ nhiệm", "ma gv chu nhiem")
+
+    if idx_code is None:
+        raise ValueError("Không tìm thấy cột 'Mã lớp' trong file")
+    if idx_adv is None:
+        raise ValueError("Không tìm thấy cột 'Mã GVCN' trong file")
+
+    result = []
+    for row in rows[1:]:
+        if not row or all(_is_missing(c) for c in row):
+            continue
+        code = str(row[idx_code] or "").strip().upper() if idx_code < len(row) else ""
+        if not code:
+            continue
+        result.append({
+            "code": code,
+            "name": str(row[idx_name] or "").strip() if idx_name is not None and idx_name < len(row) else "",
+            "advisor_teacher_code": str(row[idx_adv] or "").strip().upper() if idx_adv < len(row) else "",
+        })
+    return result
+
+
+@app.post("/admin/classes/import", response_model=schemas.AdminClassesImportOut)
+def admin_import_classes(
+    file: UploadFile,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Import bulk lớp từ Excel/CSV. UPSERT — re-import an toàn.
+
+    Reject row nếu:
+      • Mã lớp sai format
+      • Mã GVCN trống / không tồn tại / không phải role advisor
+    """
+    admin = _require_admin(authorization, db)
+
+    data = file.file.read(_MAX_UPLOAD_BYTES + 1)
+    if len(data) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="File quá lớn. Giới hạn 10 MB.")
+
+    try:
+        records = _parse_classes_csv(data, file.filename or "classes.xlsx")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Không đọc được file: {exc}")
+
+    if not records:
+        raise HTTPException(status_code=400, detail="Không tìm thấy dữ liệu trong file")
+
+    # Pre-load advisors map (teacher_code → User) để tránh N queries
+    advisors_by_tc = {
+        a.teacher_code: a
+        for a in db.query(models.User).filter(
+            models.User.role == "advisor",
+            models.User.teacher_code.isnot(None),
+        ).all()
+    }
+    existing_classes = {
+        c.code: c for c in db.query(models.ClassGroup).all()
+    }
+
+    created_count = 0
+    updated_count = 0
+    skipped_count = 0
+    errors: list[schemas.ClassImportError] = []
+    classes_to_sync: list[models.ClassGroup] = []
+
+    for row_idx, rec in enumerate(records, start=2):
+        code = rec["code"]
+        try:
+            cohort, spec, _letter = schemas.parse_class_code(code)
+        except ValueError as exc:
+            errors.append(schemas.ClassImportError(row=row_idx, code=code, reason=str(exc)))
+            continue
+
+        adv_tc = rec["advisor_teacher_code"]
+        if not adv_tc:
+            errors.append(schemas.ClassImportError(
+                row=row_idx, code=code, reason="Thiếu Mã GVCN"
+            ))
+            continue
+        advisor = advisors_by_tc.get(adv_tc)
+        if not advisor:
+            errors.append(schemas.ClassImportError(
+                row=row_idx, code=code,
+                reason=f"GV '{adv_tc}' chưa tồn tại — tạo GV trước"
+            ))
+            continue
+
+        name = rec["name"] or _class_default_name(code)
+
+        existing = existing_classes.get(code)
+        if existing:
+            # UPSERT: update name + advisor nếu khác
+            advisor_changed = False
+            if existing.advisor_id != advisor.id:
+                existing.advisor_id = advisor.id
+                advisor_changed = True
+            if existing.name != name:
+                existing.name = name
+            if advisor_changed:
+                classes_to_sync.append(existing)
+            updated_count += 1
+        else:
+            cg = models.ClassGroup(
+                code=code,
+                name=name,
+                cohort=cohort,
+                specialization=spec,
+                advisor_id=advisor.id,
+            )
+            db.add(cg)
+            existing_classes[code] = cg
+            created_count += 1
+            # Lớp mới chưa có SV → không cần sync. Sync khi import SV.
+
+    try:
+        db.flush()  # cần flush để lớp mới có id trước khi sync
+        # Sync các lớp có advisor thay đổi
+        for cg in classes_to_sync:
+            sync_advisor_for_class(db, cg)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi lưu dữ liệu: {exc}")
+
+    _log(db, admin, "BULK_IMPORT_CLASSES", "class_groups", None,
+         f"created={created_count} updated={updated_count} errors={len(errors)}")
+
+    return schemas.AdminClassesImportOut(
+        created_count=created_count,
+        updated_count=updated_count,
+        skipped_count=skipped_count,
+        errors=errors,
+    )
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# END CLASS GROUP
+# ════════════════════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# ADMIN REVIEWS DASHBOARD (course rating moderation)
+# ════════════════════════════════════════════════════════════════════════════
+
+@app.get("/admin/reviews", response_model=schemas.AdminReviewListOut)
+def admin_list_reviews(
+    course_code: str | None = None,
+    student_username: str | None = None,
+    min_rating: int | None = None,
+    max_rating: int | None = None,
+    include_hidden: bool = True,
+    limit: int = 50,
+    offset: int = 0,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """List tất cả reviews với filters cho admin moderation.
+
+    Filters:
+        course_code: lọc theo môn
+        student_username: lọc theo MSSV
+        min_rating / max_rating: lọc theo số sao
+        include_hidden: True (default) → cả review đã ẩn; False → chỉ hiển thị
+    """
+    _require_admin(authorization, db)
+
+    safe_limit = max(1, min(int(limit), 200))
+    safe_offset = max(0, int(offset))
+
+    q = db.query(models.CourseRating)
+    if course_code:
+        q = q.filter(models.CourseRating.course_code == course_code)
+    if min_rating is not None:
+        q = q.filter(models.CourseRating.rating >= int(min_rating))
+    if max_rating is not None:
+        q = q.filter(models.CourseRating.rating <= int(max_rating))
+    if not include_hidden:
+        q = q.filter(models.CourseRating.hidden == False)  # noqa: E712
+
+    if student_username:
+        sv = db.query(models.User).filter(
+            models.User.username == student_username.strip().lower()
+        ).first()
+        if sv:
+            q = q.filter(models.CourseRating.user_id == sv.id)
+        else:
+            return schemas.AdminReviewListOut(total=0, reviews=[])
+
+    total = q.count()
+    rows = q.order_by(models.CourseRating.id.desc()).offset(safe_offset).limit(safe_limit).all()
+
+    # Pre-load related users + courses
+    user_ids = {r.user_id for r in rows}
+    hidden_by_ids = {r.hidden_by for r in rows if r.hidden_by}
+    course_codes = {r.course_code for r in rows}
+    users_map = {
+        u.id: u for u in db.query(models.User).filter(
+            models.User.id.in_(user_ids | hidden_by_ids)
+        ).all()
+    } if (user_ids or hidden_by_ids) else {}
+    courses_map = {
+        c.course_code: c for c in db.query(models.Course).filter(
+            models.Course.course_code.in_(course_codes)
+        ).all()
+    } if course_codes else {}
+
+    items = []
+    for r in rows:
+        u = users_map.get(r.user_id)
+        course = courses_map.get(r.course_code)
+        hidden_by_user = users_map.get(r.hidden_by) if r.hidden_by else None
+        items.append(schemas.AdminReviewItem(
+            id=r.id,
+            user_id=r.user_id,
+            student_username=u.username if u else f"unknown:{r.user_id}",
+            student_full_name=u.full_name if u else None,
+            course_code=r.course_code,
+            course_name=course.course_name if course else None,
+            rating=r.rating,
+            review=r.review,
+            is_anonymous=bool(r.is_anonymous),
+            admin_feedback=r.admin_feedback,
+            hidden=bool(r.hidden),
+            hidden_by_username=hidden_by_user.username if hidden_by_user else None,
+            hidden_at=r.hidden_at,
+            created_at=r.created_at,
+        ))
+
+    return schemas.AdminReviewListOut(total=total, reviews=items)
+
+
+@app.delete("/admin/reviews/{review_id}", response_model=schemas.MessageOut)
+def admin_hide_review(
+    review_id: int,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Soft delete review — set hidden=True. Audit qua hidden_by + hidden_at."""
+    admin = _require_admin(authorization, db)
+    r = db.query(models.CourseRating).filter(models.CourseRating.id == review_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Không tìm thấy review")
+    if r.hidden:
+        return {"message": "Review đã được ẩn từ trước"}
+
+    from datetime import datetime as _dt
+    r.hidden = True
+    r.hidden_by = admin.id
+    r.hidden_at = _dt.utcnow()
+    db.commit()
+
+    _log(db, admin, "HIDE_REVIEW", "course_rating", str(review_id),
+         f"course={r.course_code} rating={r.rating}")
+    return {"message": "Đã ẩn review"}
+
+
+@app.post("/admin/reviews/{review_id}/restore", response_model=schemas.MessageOut)
+def admin_restore_review(
+    review_id: int,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Khôi phục review đã bị ẩn — set hidden=False, clear hidden_by + hidden_at."""
+    admin = _require_admin(authorization, db)
+    r = db.query(models.CourseRating).filter(models.CourseRating.id == review_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Không tìm thấy review")
+    if not r.hidden:
+        return {"message": "Review chưa bị ẩn"}
+
+    r.hidden = False
+    r.hidden_by = None
+    r.hidden_at = None
+    db.commit()
+
+    _log(db, admin, "RESTORE_REVIEW", "course_rating", str(review_id),
+         f"course={r.course_code}")
+    return {"message": "Đã khôi phục review"}
+
+
+@app.get("/admin/courses/{course_code}/rating-summary",
+         response_model=schemas.AdminRatingSummaryOut)
+def admin_course_rating_summary(
+    course_code: str,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Aggregate rating cho 1 môn — phục vụ tab Đánh giá trong side panel admin.
+
+    - `avg_rating`: trung bình trên review CHƯA ẩn (None nếu 0)
+    - `breakdown`: histogram 1★→5★ trên review CHƯA ẩn
+    - `total` / `visible_count` / `hidden_count`: counts để admin biết bao nhiêu đã moderate
+    """
+    _require_admin(authorization, db)
+    course = db.query(models.Course).filter(
+        models.Course.course_code == course_code
+    ).first()
+    if not course:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy môn {course_code}")
+
+    rows = db.query(models.CourseRating).filter(
+        models.CourseRating.course_code == course_code
+    ).all()
+
+    total = len(rows)
+    hidden_count = sum(1 for r in rows if r.hidden)
+    visible = [r for r in rows if not r.hidden]
+    visible_count = len(visible)
+
+    breakdown = {str(s): 0 for s in range(1, 6)}
+    for r in visible:
+        key = str(int(r.rating))
+        if key in breakdown:
+            breakdown[key] += 1
+
+    avg = round(sum(r.rating for r in visible) / visible_count, 1) if visible_count else None
+
+    return schemas.AdminRatingSummaryOut(
+        course_code=course_code,
+        course_name=course.course_name,
+        avg_rating=avg,
+        total=total,
+        visible_count=visible_count,
+        hidden_count=hidden_count,
+        breakdown=breakdown,
+    )
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# END ADMIN REVIEWS
+# ════════════════════════════════════════════════════════════════════════════
 
 
 @app.post("/admin/advisors/auto-assign")
@@ -10569,14 +10311,17 @@ def admin_auto_assign(
     }
 
 
-# ── Trưởng bộ môn: phân công cố vấn cho SV ──────────────────────────────────
+# ── Department-level views (admin-only sau khi bỏ concept Trưởng bộ môn) ─────
+# Trước đây 2 endpoints dưới chỉ trưởng BM xài. Sau refactor, mọi GV cùng spec
+# đều có thể view (collaboration). Dùng _require_advisor + filter theo spec của
+# advisor đang đăng nhập.
 
 def _require_head_advisor(authorization: str | None, db: Session) -> models.User:
-    """Require caller is an advisor AND is_head_of_department=True."""
-    advisor = _require_advisor(authorization, db)
-    if not advisor.is_head_of_department:
-        raise HTTPException(status_code=403, detail="Chỉ trưởng bộ môn mới có quyền thực hiện thao tác này")
-    return advisor
+    """Compat wrapper — trả về advisor đang đăng nhập (không còn check head).
+
+    Giữ lại để minimize impact lên 2 endpoints `/advisor/my-department-*`.
+    """
+    return _require_advisor(authorization, db)
 
 
 @app.get("/advisor/my-department-students", response_model=list[schemas.DeptStudentItem])
@@ -10643,12 +10388,15 @@ def advisor_dept_advisors(
         count = db.query(models.AdvisorAssignment).filter(
             models.AdvisorAssignment.advisor_id == adv.id
         ).count()
+        class_count = db.query(models.ClassGroup).filter(
+            models.ClassGroup.advisor_id == adv.id
+        ).count()
         result.append(schemas.DeptAdvisorItem(
             id=adv.id,
             username=adv.username,
             full_name=adv.full_name,
-            is_head_of_department=bool(adv.is_head_of_department),
             student_count=count,
+            class_count=class_count,
         ))
     return result
 
@@ -10796,7 +10544,6 @@ def admin_bulk_import_assignments(
             ).first()
             if existing:
                 continue  # already exists, skip creation
-            _check_head_conflict(db, t.managed_specialization, t.is_head_of_department)
             plain_pw = str(_rnd.randint(100000, 999999))
             new_adv = models.User(
                 username=tc,
@@ -10805,7 +10552,6 @@ def admin_bulk_import_assignments(
                 full_name=normalize_vietnamese_name(t.full_name),
                 role="advisor",
                 managed_specialization=t.managed_specialization or None,
-                is_head_of_department=t.is_head_of_department,
                 default_password=plain_pw,
                 is_first_login=True,
             )
@@ -11009,6 +10755,46 @@ def direct_unread_count(
     return {
         "total": count,
         "per_sender": {str(r.sender_id): r.cnt for r in rows},
+    }
+
+
+@app.get("/me/advisor")
+def get_my_advisor(
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """SV → trả về cố vấn được phân công (assigned advisor).
+
+    Dùng cho:
+      - Floating-chat dual-tab (AI + Cố vấn) — biết advisor_id để mở DM.
+      - Sidebar widget "Cố vấn của bạn".
+      - Contextual CTAs ("Hỏi cố vấn về môn", "Trao đổi về kỳ này"...).
+
+    Trả {"advisor": null} nếu SV chưa được phân công (admin chưa assign).
+    Reject nếu role != student.
+    """
+    me = _get_user_by_token(authorization, db)
+    if me.role != "student":
+        raise HTTPException(status_code=403, detail="Endpoint này chỉ dành cho sinh viên")
+
+    assignment = db.query(models.AdvisorAssignment).filter(
+        models.AdvisorAssignment.student_id == me.id
+    ).first()
+    if not assignment:
+        return {"advisor": None}
+
+    advisor = db.query(models.User).filter(models.User.id == assignment.advisor_id).first()
+    if not advisor:
+        return {"advisor": None}
+
+    return {
+        "advisor": {
+            "id": advisor.id,
+            "username": advisor.username,
+            "full_name": advisor.full_name or advisor.username,
+            "teacher_code": advisor.teacher_code,
+            "managed_specialization": advisor.managed_specialization,
+        }
     }
 
 
@@ -11660,8 +11446,15 @@ def list_connections(
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
-    """Danh sách kết nối đã accepted."""
+    """Danh sách kết nối:
+    - UserConnection accepted (friend-request flow)
+    - AdvisorAssignment (admin gán SV ↔ GV) — tự động coi là accepted để
+      messaging hoạt động ngay sau khi admin phân công, không cần SV/GV tự
+      gửi friend request.
+    """
     me = _get_user_by_token(authorization, db)
+
+    # 1. Friend-request connections (status=accepted)
     rows = db.query(models.UserConnection).filter(
         models.UserConnection.status == "accepted",
         (
@@ -11669,7 +11462,61 @@ def list_connections(
             (models.UserConnection.to_id == me.id)
         ),
     ).order_by(models.UserConnection.created_at.desc()).all()
-    return {"connections": [_fmt_connection(c, me.id, db) for c in rows]}
+    out = [_fmt_connection(c, me.id, db) for c in rows]
+
+    # 2. AdvisorAssignment-based connections — wrap as virtual accepted entries
+    # để frontend (messaging.html) render giống nhau.
+    # Tránh duplicate nếu đã có UserConnection giữa cùng 2 user.
+    seen_user_ids = {c.get("other_user", {}).get("id") for c in out if c.get("other_user")}
+
+    if me.role == "student":
+        # Student → list their advisor(s)
+        assigns = db.query(models.AdvisorAssignment).filter_by(student_id=me.id).all()
+        for a in assigns:
+            if a.advisor_id in seen_user_ids:
+                continue
+            adv = db.query(models.User).filter_by(id=a.advisor_id).first()
+            if not adv:
+                continue
+            out.append({
+                "id": -a.id,  # negative to differentiate from UserConnection.id
+                "status": "accepted",
+                "source": "advisor_assignment",
+                "created_at": a.assigned_at.isoformat() if a.assigned_at else None,
+                "other_user": {
+                    "id": adv.id,
+                    "username": adv.username,
+                    "full_name": adv.full_name,
+                    "role": adv.role,
+                    "teacher_code": getattr(adv, "teacher_code", None),
+                    "specialization": adv.managed_specialization,
+                },
+            })
+    elif me.role == "advisor":
+        # Advisor → list their assigned students
+        assigns = db.query(models.AdvisorAssignment).filter_by(advisor_id=me.id).all()
+        for a in assigns:
+            if a.student_id in seen_user_ids:
+                continue
+            std = db.query(models.User).filter_by(id=a.student_id).first()
+            if not std:
+                continue
+            out.append({
+                "id": -a.id,
+                "status": "accepted",
+                "source": "advisor_assignment",
+                "created_at": a.assigned_at.isoformat() if a.assigned_at else None,
+                "other_user": {
+                    "id": std.id,
+                    "username": std.username,
+                    "full_name": std.full_name,
+                    "role": std.role,
+                    "specialization": std.specialization,
+                    "cohort": std.cohort,
+                },
+            })
+
+    return {"connections": out}
 
 
 @app.get("/users/search")
@@ -11920,9 +11767,8 @@ def advisor_get_student_roadmap(
     if student.role != "student":
         raise HTTPException(status_code=422, detail="ID này không phải sinh viên")
 
-    # Lấy roadmap (dùng lại engine đang chạy cho SV)
-    effective_max = max_credits or (float(student.max_credits_per_term) if student.max_credits_per_term else None)
-    roadmap = build_semester_roadmap(db, student_id, max_credits_per_term=effective_max)
+    # Lấy roadmap (engine tự tính max_credits từ remaining workload)
+    roadmap = build_semester_roadmap(db, student_id, max_credits_per_term=max_credits)
 
     # Lấy planned electives của SV
     pe_rows = (
@@ -12009,9 +11855,8 @@ def advisor_get_student_grades(
     if not student:
         raise HTTPException(status_code=404, detail="Sinh viên không tồn tại")
 
+    # Sau refactor 2026-05-05: không còn source field. include_self ignored.
     q = db.query(models.UserGrade).filter(models.UserGrade.user_id == student_id)
-    if not include_self:
-        q = q.filter(models.UserGrade.source == "admin")
     grades = q.order_by(models.UserGrade.term, models.UserGrade.course_code).all()
 
     course_codes = {g.course_code for g in grades}
@@ -12020,15 +11865,8 @@ def advisor_get_student_grades(
         for c in db.query(models.Course).filter(models.Course.course_code.in_(course_codes)).all()
     }
 
-    # Đếm để frontend biết có data admin không (cảnh báo nếu chỉ có self)
-    total_admin = db.query(models.UserGrade).filter(
-        models.UserGrade.user_id == student_id,
-        models.UserGrade.source == "admin",
-    ).count()
-    total_self = db.query(models.UserGrade).filter(
-        models.UserGrade.user_id == student_id,
-        models.UserGrade.source == "self",
-    ).count()
+    total_admin = 0  # Deprecated
+    total_self = len(grades)
 
     return {
         "student_id": student_id,
@@ -12052,797 +11890,6 @@ def advisor_get_student_grades(
         "total_self": total_self,
         "has_admin_grades": total_admin > 0,
         "include_self": include_self,
-    }
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# LUỒNG 1: GRADUATION RISK MANAGEMENT
-# Endpoints cho dự báo rủi ro TN trễ + workflow case management
-# ══════════════════════════════════════════════════════════════════════════════
-from backend.core import risk_engine as _risk
-
-
-def _serialize_case(case: models.RiskCase, db: Session, *, include_comments: bool = False, include_actions: bool = False) -> dict:
-    """Convert RiskCase row → dict cho API response."""
-    student = db.query(models.User).filter(models.User.id == case.student_id).first()
-    advisor = db.query(models.User).filter(models.User.id == case.advisor_id).first() if case.advisor_id else None
-
-    out = {
-        "id": case.id,
-        "student": {
-            "id": case.student_id,
-            "username": student.username if student else None,
-            "full_name": student.full_name if student else None,
-        },
-        "advisor": {
-            "id": case.advisor_id,
-            "full_name": advisor.full_name if advisor else None,
-        } if advisor else None,
-        "state": case.state,
-        "opened_at": case.opened_at.isoformat() if case.opened_at else None,
-        "closed_at": case.closed_at.isoformat() if case.closed_at else None,
-        "opened_risk_score": float(case.opened_risk_score) if case.opened_risk_score is not None else None,
-        "current_risk_score": float(case.current_risk_score) if case.current_risk_score is not None else None,
-        "opened_reason": case.opened_reason,
-        "opened_factors": case.opened_factors or [],
-        "close_reason": case.close_reason,
-        "next_check_at": case.next_check_at.isoformat() if case.next_check_at else None,
-    }
-
-    if include_actions:
-        actions = db.query(models.CaseAction).filter(models.CaseAction.case_id == case.id).order_by(models.CaseAction.created_at.desc()).all()
-        out["actions"] = [_serialize_action(a, db) for a in actions]
-    if include_comments:
-        comments = db.query(models.CaseComment).filter(models.CaseComment.case_id == case.id).order_by(models.CaseComment.created_at.asc()).all()
-        out["comments"] = [_serialize_comment(c, db) for c in comments]
-    return out
-
-
-def _serialize_action(a: models.CaseAction, db: Session) -> dict:
-    assignee = db.query(models.User).filter(models.User.id == a.assigned_to).first()
-    return {
-        "id": a.id,
-        "case_id": a.case_id,
-        "action_type": a.action_type,
-        "title": a.title,
-        "description": a.description,
-        "assigned_to": a.assigned_to,
-        "assignee_name": assignee.full_name if assignee else None,
-        "deadline": a.deadline.isoformat() if a.deadline else None,
-        "state": a.state,
-        "done_at": a.done_at.isoformat() if a.done_at else None,
-        "done_note": a.done_note,
-        "created_at": a.created_at.isoformat() if a.created_at else None,
-        "created_by": a.created_by,
-    }
-
-
-def _serialize_comment(c: models.CaseComment, db: Session) -> dict:
-    author = db.query(models.User).filter(models.User.id == c.author_id).first()
-    return {
-        "id": c.id,
-        "author_id": c.author_id,
-        "author_name": author.full_name if author else None,
-        "author_role": author.role if author else None,
-        "content": c.content,
-        "created_at": c.created_at.isoformat() if c.created_at else None,
-    }
-
-
-def _can_view_case(user: models.User, case: models.RiskCase, db: Session) -> bool:
-    """SV xem được case của mình. GV xem được case SV thuộc nhóm. Admin xem hết."""
-    if user.role == "admin":
-        return True
-    if user.role == "student":
-        return case.student_id == user.id
-    if user.role == "advisor":
-        # GV phải có assignment với SV này
-        link = db.query(models.AdvisorAssignment).filter(
-            models.AdvisorAssignment.advisor_id == user.id,
-            models.AdvisorAssignment.student_id == case.student_id,
-        ).first()
-        return link is not None
-    return False
-
-
-# ── Risk score endpoints ────────────────────────────────────────────────────
-
-@app.get("/risk/me")
-def get_my_risk(authorization: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """SV xem risk score của mình + factors + dự đoán kỳ TN."""
-    user = _get_user_by_token(authorization, db)
-    if user.role != "student":
-        raise HTTPException(status_code=403, detail="Chỉ sinh viên mới có risk score")
-    try:
-        return _risk.predict_risk_for_student(db, user.id)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Lỗi tính risk: {exc}")
-
-
-@app.get("/advisor/risk-summary")
-def get_advisor_risk_summary(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """GV: tổng quan rủi ro toàn nhóm SV phụ trách. Sort theo risk DESC."""
-    advisor = _require_advisor(authorization, db)
-    advisor_id = advisor.id if advisor.role == "advisor" else None
-    items = _risk.predict_risk_for_all_students(db, advisor_id=advisor_id)
-
-    # Stats agg
-    high = sum(1 for r in items if r["risk_score"] >= _risk.RISK_THRESHOLD_HIGH)
-    med = sum(1 for r in items if _risk.RISK_THRESHOLD_MED <= r["risk_score"] < _risk.RISK_THRESHOLD_HIGH)
-    low = len(items) - high - med
-    open_cases = db.query(models.RiskCase).filter(
-        models.RiskCase.state.in_(["open", "in_progress"])
-    )
-    if advisor_id is not None:
-        student_ids = [r["student_id"] for r in items]
-        open_cases = open_cases.filter(models.RiskCase.student_id.in_(student_ids))
-    open_count = open_cases.count()
-
-    return {
-        "items": items,
-        "stats": {
-            "total": len(items),
-            "high_risk": high,
-            "medium_risk": med,
-            "low_risk": low,
-            "open_cases": open_count,
-        },
-    }
-
-
-@app.get("/advisor/students/{student_id}/risk")
-def get_student_risk(
-    student_id: int,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """GV xem risk + history 1 SV cụ thể."""
-    advisor = _require_advisor(authorization, db)
-    _check_advisor_has_student(advisor, student_id, db)
-
-    pred = _risk.predict_risk_for_student(db, student_id)
-    history = db.query(models.RiskHistory).filter(
-        models.RiskHistory.student_id == student_id
-    ).order_by(models.RiskHistory.snapshot_date.desc()).limit(30).all()
-
-    pred["history"] = [
-        {
-            "date": h.snapshot_date.isoformat() if h.snapshot_date else None,
-            "risk_score": float(h.risk_score) if h.risk_score is not None else None,
-            "earned_credits": float(h.earned_credits) if h.earned_credits is not None else None,
-            "gpa4": float(h.gpa4) if h.gpa4 is not None else None,
-            "predicted_grad_term": h.predicted_grad_term,
-        }
-        for h in reversed(history)
-    ]
-    return pred
-
-
-# ── Case management endpoints ───────────────────────────────────────────────
-
-@app.get("/cases/queue")
-def get_case_queue(
-    state: str = "open,in_progress",
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """GV: queue cases sort theo opened_risk_score DESC."""
-    advisor = _require_advisor(authorization, db)
-    states = [s.strip() for s in state.split(",") if s.strip()]
-
-    q = db.query(models.RiskCase).filter(models.RiskCase.state.in_(states))
-    if advisor.role == "advisor":
-        # Filter cases của SV thuộc nhóm
-        student_ids = [
-            a.student_id for a in db.query(models.AdvisorAssignment).filter(
-                models.AdvisorAssignment.advisor_id == advisor.id
-            ).all()
-        ]
-        q = q.filter(models.RiskCase.student_id.in_(student_ids))
-
-    cases = q.order_by(models.RiskCase.opened_risk_score.desc(), models.RiskCase.opened_at.desc()).all()
-    return [_serialize_case(c, db) for c in cases]
-
-
-@app.get("/cases/me")
-def get_my_case(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """SV: case mở hiện tại của tôi (nếu có) + history."""
-    user = _get_user_by_token(authorization, db)
-    if user.role != "student":
-        raise HTTPException(status_code=403, detail="Chỉ sinh viên mới có case riêng")
-
-    open_cases = db.query(models.RiskCase).filter(
-        models.RiskCase.student_id == user.id,
-        models.RiskCase.state.in_(["open", "in_progress"]),
-    ).order_by(models.RiskCase.opened_at.desc()).all()
-
-    closed_cases = db.query(models.RiskCase).filter(
-        models.RiskCase.student_id == user.id,
-        models.RiskCase.state.in_(["resolved", "escalated", "dismissed"]),
-    ).order_by(models.RiskCase.closed_at.desc()).limit(5).all()
-
-    return {
-        "open": [_serialize_case(c, db, include_comments=True, include_actions=True) for c in open_cases],
-        "closed_recent": [_serialize_case(c, db) for c in closed_cases],
-    }
-
-
-@app.get("/cases/{case_id}")
-def get_case_detail(
-    case_id: int,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    user = _get_user_by_token(authorization, db)
-    case = db.query(models.RiskCase).filter(models.RiskCase.id == case_id).first()
-    if not case:
-        raise HTTPException(status_code=404, detail="Case không tồn tại")
-    if not _can_view_case(user, case, db):
-        raise HTTPException(status_code=403, detail="Bạn không có quyền xem case này")
-    return _serialize_case(case, db, include_comments=True, include_actions=True)
-
-
-@app.post("/cases/{case_id}/state")
-def change_case_state(
-    case_id: int,
-    payload: dict,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """GV thay đổi state của case. payload: {state, reason?}"""
-    advisor = _require_advisor(authorization, db)
-    case = db.query(models.RiskCase).filter(models.RiskCase.id == case_id).first()
-    if not case:
-        raise HTTPException(status_code=404, detail="Case không tồn tại")
-    if not _can_view_case(advisor, case, db):
-        raise HTTPException(status_code=403, detail="Bạn không phụ trách SV này")
-
-    new_state = (payload or {}).get("state", "").strip()
-    if new_state not in ("open", "in_progress", "resolved", "escalated", "dismissed"):
-        raise HTTPException(status_code=400, detail=f"State không hợp lệ: {new_state}")
-
-    reason = (payload or {}).get("reason")
-    case.state = new_state
-    if new_state in ("resolved", "escalated", "dismissed"):
-        case.closed_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        case.close_reason = reason
-    elif new_state == "in_progress" and not case.advisor_id:
-        case.advisor_id = advisor.id
-    case.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    db.commit()
-    db.refresh(case)
-    return _serialize_case(case, db, include_comments=True, include_actions=True)
-
-
-@app.post("/cases/{case_id}/comments")
-def add_case_comment(
-    case_id: int,
-    payload: dict,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    user = _get_user_by_token(authorization, db)
-    case = db.query(models.RiskCase).filter(models.RiskCase.id == case_id).first()
-    if not case:
-        raise HTTPException(status_code=404, detail="Case không tồn tại")
-    if not _can_view_case(user, case, db):
-        raise HTTPException(status_code=403, detail="Không có quyền")
-    content = ((payload or {}).get("content") or "").strip()
-    if not content:
-        raise HTTPException(status_code=400, detail="Comment không được rỗng")
-    c = models.CaseComment(case_id=case_id, author_id=user.id, content=content)
-    db.add(c)
-    db.commit()
-    db.refresh(c)
-    return _serialize_comment(c, db)
-
-
-@app.post("/cases/{case_id}/actions")
-def add_case_action(
-    case_id: int,
-    payload: dict,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """GV thêm 1 action/task vào case. payload: {action_type, title, description?, assigned_to?, deadline?}"""
-    advisor = _require_advisor(authorization, db)
-    case = db.query(models.RiskCase).filter(models.RiskCase.id == case_id).first()
-    if not case:
-        raise HTTPException(status_code=404, detail="Case không tồn tại")
-    if not _can_view_case(advisor, case, db):
-        raise HTTPException(status_code=403, detail="Không có quyền")
-
-    title = ((payload or {}).get("title") or "").strip()
-    if not title:
-        raise HTTPException(status_code=400, detail="Title không được rỗng")
-    action_type = (payload or {}).get("action_type", "other")
-    description = (payload or {}).get("description")
-    assigned_to = (payload or {}).get("assigned_to") or advisor.id
-    deadline_str = (payload or {}).get("deadline")
-    deadline = None
-    if deadline_str:
-        try:
-            deadline = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
-            if deadline.tzinfo:
-                deadline = deadline.astimezone(timezone.utc).replace(tzinfo=None)
-        except Exception:
-            raise HTTPException(status_code=400, detail="deadline phải là ISO date")
-
-    a = models.CaseAction(
-        case_id=case_id,
-        action_type=action_type,
-        title=title,
-        description=description,
-        assigned_to=assigned_to,
-        created_by=advisor.id,
-        deadline=deadline,
-        state="pending",
-    )
-    db.add(a)
-    # Nếu case đang open mà GV thêm action → chuyển sang in_progress
-    if case.state == "open":
-        case.state = "in_progress"
-        if not case.advisor_id:
-            case.advisor_id = advisor.id
-    db.commit()
-    db.refresh(a)
-    return _serialize_action(a, db)
-
-
-@app.patch("/cases/actions/{action_id}/done")
-def mark_action_done(
-    action_id: int,
-    payload: dict | None = None,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """Mark 1 action xong. Chỉ assignee hoặc GV phụ trách / admin."""
-    user = _get_user_by_token(authorization, db)
-    action = db.query(models.CaseAction).filter(models.CaseAction.id == action_id).first()
-    if not action:
-        raise HTTPException(status_code=404, detail="Action không tồn tại")
-    case = db.query(models.RiskCase).filter(models.RiskCase.id == action.case_id).first()
-    if not case or not _can_view_case(user, case, db):
-        raise HTTPException(status_code=403, detail="Không có quyền")
-    if user.id != action.assigned_to and user.role not in ("advisor", "admin"):
-        raise HTTPException(status_code=403, detail="Chỉ assignee hoặc GV/admin mới mark được")
-    action.state = "done"
-    action.done_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    if payload and isinstance(payload, dict):
-        action.done_note = payload.get("note")
-    db.commit()
-    db.refresh(action)
-    return _serialize_action(action, db)
-
-
-@app.post("/admin/risk/recompute")
-def admin_recompute_all_risk(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """Admin trigger: chạy snapshot risk cho mọi SV + auto-create cases."""
-    _require_admin(authorization, db)
-    return _run_risk_snapshot_job(db)
-
-
-def _run_risk_snapshot_job(db: Session) -> dict:
-    """Background-callable: snapshot mọi SV + auto-open case cho SV mới vượt threshold."""
-    students = db.query(models.User).filter(models.User.role == "student").all()
-    snapshots_created = 0
-    cases_opened = 0
-    cases_updated = 0
-
-    for s in students:
-        try:
-            pred = _risk.predict_risk_for_student(db, s.id)
-        except Exception as exc:
-            print(f"[risk_job] predict failed for {s.id}: {exc}")
-            continue
-
-        # 1. Lưu snapshot
-        snap = models.RiskHistory(
-            student_id=s.id,
-            risk_score=pred["risk_score"],
-            predicted_grad_term=pred["predicted_grad_term"],
-            on_time=pred["on_time"],
-            factors=pred["factors"],
-            earned_credits=pred["earned_credits"],
-            gpa4=pred["gpa4"],
-            terms_studied=pred["main_terms_studied"],
-        )
-        db.add(snap)
-        snapshots_created += 1
-
-        # 2. Auto open/update case
-        existing_open = db.query(models.RiskCase).filter(
-            models.RiskCase.student_id == s.id,
-            models.RiskCase.state.in_(["open", "in_progress"]),
-        ).first()
-
-        if pred["risk_score"] >= _risk.RISK_THRESHOLD_OPEN_CASE:
-            # Tìm advisor phụ trách
-            link = db.query(models.AdvisorAssignment).filter(
-                models.AdvisorAssignment.student_id == s.id
-            ).first()
-            advisor_id = link.advisor_id if link else None
-
-            if existing_open:
-                # Update current_risk_score
-                existing_open.current_risk_score = pred["risk_score"]
-                existing_open.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-                # Escalate nếu risk tăng đáng kể
-                if (
-                    existing_open.opened_risk_score
-                    and pred["risk_score"] > float(existing_open.opened_risk_score) + 0.10
-                    and existing_open.state != "escalated"
-                ):
-                    existing_open.state = "escalated"
-                cases_updated += 1
-            else:
-                top_factor_label = pred["factors"][0]["label"] if pred["factors"] else "Risk vượt ngưỡng"
-                new_case = models.RiskCase(
-                    student_id=s.id,
-                    advisor_id=advisor_id,
-                    state="open",
-                    opened_risk_score=pred["risk_score"],
-                    current_risk_score=pred["risk_score"],
-                    opened_reason=f"Risk score {pred['risk_score']:.2f} vượt ngưỡng {_risk.RISK_THRESHOLD_OPEN_CASE:.2f}. Lý do chính: {top_factor_label}",
-                    opened_factors=pred["factors"],
-                )
-                db.add(new_case)
-                cases_opened += 1
-        else:
-            # Risk dưới ngưỡng — nếu còn case open mà risk giảm 20%+, đề xuất resolve
-            if existing_open and existing_open.opened_risk_score:
-                if pred["risk_score"] <= float(existing_open.opened_risk_score) - 0.20:
-                    existing_open.current_risk_score = pred["risk_score"]
-                    # Không tự đóng — để GV review
-                    cases_updated += 1
-                else:
-                    existing_open.current_risk_score = pred["risk_score"]
-                    cases_updated += 1
-
-    db.commit()
-    return {
-        "snapshots_created": snapshots_created,
-        "cases_opened": cases_opened,
-        "cases_updated": cases_updated,
-        "total_students": len(students),
-    }
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# LUỒNG 2: CAREER ACTION CHECKLIST (formerly Discovery Journey)
-# Mục đích: 4 hành động cụ thể giúp SV chốt nghề có evidence — không có timeline.
-# Outcome chính: chốt nghề → tự động set user_career_choice.primary
-# ══════════════════════════════════════════════════════════════════════════════
-
-# 4 task khám phá nghề — không gắn deadline, làm theo nhịp riêng
-MILESTONE_TEMPLATES = [
-    {
-        "sequence": 1,
-        "title_template": "Tìm hiểu nghề {career_name}",
-        "description": "Đọc 1 bài viết + xem 1 video tổng quan về nghề. Note lại 3 ý ấn tượng nhất.",
-    },
-    {
-        "sequence": 2,
-        "title_template": "Audit 1 skill module liên quan {career_name}",
-        "description": "Học miễn phí 1 module skill nền tảng (Coursera, FreeCodeCamp, YouTube). Hoàn thành quiz cuối module nếu có.",
-    },
-    {
-        "sequence": 3,
-        "title_template": "Hỏi 1 anh/chị khoá trên về nghề {career_name}",
-        "description": "Hỏi 1 anh/chị đã đi làm hoặc thực tập nghề này — qua tin nhắn cũng được. 3 câu: ngày làm gì? cần kỹ năng gì? tiếc gì khi học ĐH?",
-    },
-    {
-        "sequence": 4,
-        "title_template": "Reflection — chốt nghề chính",
-        "description": "Sau khi thử qua 3 task trên, nghề nào hợp với em nhất? Chốt 1 hoặc khám phá tiếp.",
-    },
-]
-
-
-def _serialize_journey(j: models.CareerJourney, db: Session, *, include_milestones: bool = True) -> dict:
-    out = {
-        "id": j.id,
-        "student_id": j.student_id,
-        "started_at": j.started_at.isoformat() if j.started_at else None,
-        "target_end_at": j.target_end_at.isoformat() if j.target_end_at else None,
-        "candidate_careers": j.candidate_careers or [],
-        "primary_riasec": j.primary_riasec,
-        "state": j.state,
-        "chosen_career": j.chosen_career,
-        "final_reflection": j.final_reflection,
-        "closed_at": j.closed_at.isoformat() if j.closed_at else None,
-    }
-    if include_milestones:
-        ms = db.query(models.JourneyMilestone).filter(
-            models.JourneyMilestone.journey_id == j.id
-        ).order_by(models.JourneyMilestone.sequence.asc()).all()
-        out["milestones"] = [_serialize_milestone(m) for m in ms]
-        out["completed_count"] = sum(1 for m in ms if m.state == "done")
-        out["total_milestones"] = len(ms)
-    return out
-
-
-def _serialize_milestone(m: models.JourneyMilestone) -> dict:
-    from backend.core.career_journey_resources import get_resources, get_task_kind
-    return {
-        "id": m.id,
-        "journey_id": m.journey_id,
-        "sequence": m.sequence,
-        "title": m.title,
-        "description": m.description,
-        "target_career": m.target_career,
-        "task_kind": get_task_kind(m.sequence),
-        "resources": get_resources(m.target_career, m.sequence),
-        "due_at": m.due_at.isoformat() if m.due_at else None,
-        "state": m.state,
-        "completion_evidence": m.completion_evidence,
-        "completion_rating": m.completion_rating,
-        "completed_at": m.completed_at.isoformat() if m.completed_at else None,
-    }
-
-
-def _resolve_career_name(db: Session, code: str) -> str:
-    if not code:
-        return "—"
-    p = db.query(models.CareerPath).filter(models.CareerPath.code == code).first()
-    return p.name if p else code
-
-
-@app.post("/journeys/me", status_code=201)
-def start_my_journey(
-    payload: dict = Body(...),
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """SV bắt đầu checklist khám phá nghề (4 task, không có deadline).
-
-    Input: {
-      candidate_careers: [str] (top 2-3 career codes từ kết quả quiz),
-      primary_riasec?: str (vd "RIA")
-    }
-    Auto-tạo 4 task. SV làm theo nhịp riêng, không bắt buộc thứ tự.
-    """
-    user = _get_user_by_token(authorization, db)
-    if user.role != "student":
-        raise HTTPException(status_code=403, detail="Chỉ sinh viên")
-
-    careers = (payload or {}).get("candidate_careers") or []
-    if not isinstance(careers, list) or not careers:
-        raise HTTPException(status_code=400, detail="candidate_careers phải là list không rỗng")
-    if len(careers) > 3:
-        careers = careers[:3]
-
-    # Verify careers exist
-    valid_careers = []
-    for code in careers:
-        if not code:
-            continue
-        p = db.query(models.CareerPath).filter(models.CareerPath.code == str(code)).first()
-        if p:
-            valid_careers.append(p.code)
-    if not valid_careers:
-        raise HTTPException(status_code=400, detail="Không có nghề nào hợp lệ trong candidate_careers")
-
-    # Block: 1 SV chỉ 1 active journey tại 1 thời điểm
-    existing = db.query(models.CareerJourney).filter(
-        models.CareerJourney.student_id == user.id,
-        models.CareerJourney.state == "active",
-    ).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Em đã có hành trình đang chạy. Đóng hành trình cũ trước.")
-
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    # Không enforce deadline — schema có target_end_at nhưng để xa, không hiển thị
-    target_end = now + timedelta(days=365)
-
-    journey = models.CareerJourney(
-        student_id=user.id,
-        started_at=now,
-        target_end_at=target_end,
-        candidate_careers=valid_careers,
-        primary_riasec=(payload or {}).get("primary_riasec"),
-        state="active",
-    )
-    db.add(journey)
-    db.flush()  # get id
-
-    # Auto-create 4 task — không có due_at để không tạo áp lực thời gian
-    primary_career = valid_careers[0]
-    primary_career_name = _resolve_career_name(db, primary_career)
-    for tmpl in MILESTONE_TEMPLATES:
-        title = tmpl["title_template"].replace("{career_name}", primary_career_name)
-        ms = models.JourneyMilestone(
-            journey_id=journey.id,
-            sequence=tmpl["sequence"],
-            title=title,
-            description=tmpl["description"],
-            target_career=primary_career,
-            due_at=target_end,  # placeholder để satisfy NOT NULL — không hiển thị
-            state="pending",
-        )
-        db.add(ms)
-    db.commit()
-    db.refresh(journey)
-    return _serialize_journey(journey, db)
-
-
-@app.get("/journeys/me/active")
-def get_my_active_journey(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """SV xem hành trình đang chạy (nếu có)."""
-    user = _get_user_by_token(authorization, db)
-    if user.role != "student":
-        raise HTTPException(status_code=403, detail="Chỉ sinh viên")
-    j = db.query(models.CareerJourney).filter(
-        models.CareerJourney.student_id == user.id,
-        models.CareerJourney.state == "active",
-    ).order_by(models.CareerJourney.started_at.desc()).first()
-    if not j:
-        return {"active_journey": None}
-    return {"active_journey": _serialize_journey(j, db)}
-
-
-@app.get("/journeys/me/history")
-def get_my_journey_history(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    user = _get_user_by_token(authorization, db)
-    if user.role != "student":
-        raise HTTPException(status_code=403, detail="Chỉ sinh viên")
-    js = db.query(models.CareerJourney).filter(
-        models.CareerJourney.student_id == user.id
-    ).order_by(models.CareerJourney.started_at.desc()).all()
-    return [_serialize_journey(j, db, include_milestones=False) for j in js]
-
-
-@app.patch("/journeys/me/milestones/{milestone_id}/done")
-def complete_milestone(
-    milestone_id: int,
-    payload: dict = Body(default={}),
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """SV mark 1 milestone xong với evidence + rating.
-
-    Input: { evidence: str, rating: int (1-5) }
-    """
-    user = _get_user_by_token(authorization, db)
-    ms = db.query(models.JourneyMilestone).filter(models.JourneyMilestone.id == milestone_id).first()
-    if not ms:
-        raise HTTPException(status_code=404, detail="Milestone không tồn tại")
-    j = db.query(models.CareerJourney).filter(models.CareerJourney.id == ms.journey_id).first()
-    if not j or j.student_id != user.id:
-        raise HTTPException(status_code=403, detail="Không có quyền")
-    if j.state != "active":
-        raise HTTPException(status_code=400, detail="Hành trình đã đóng")
-
-    rating = (payload or {}).get("rating")
-    if rating is not None:
-        try:
-            rating = int(rating)
-            if not (1 <= rating <= 5):
-                raise ValueError()
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=400, detail="rating phải 1-5")
-
-    ms.state = "done"
-    ms.completion_evidence = (payload or {}).get("evidence")
-    ms.completion_rating = rating
-    ms.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    db.commit()
-    db.refresh(ms)
-    return _serialize_milestone(ms)
-
-
-@app.patch("/journeys/me/milestones/{milestone_id}/skip")
-def skip_milestone(
-    milestone_id: int,
-    payload: dict = Body(default={}),
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    user = _get_user_by_token(authorization, db)
-    ms = db.query(models.JourneyMilestone).filter(models.JourneyMilestone.id == milestone_id).first()
-    if not ms:
-        raise HTTPException(status_code=404, detail="Milestone không tồn tại")
-    j = db.query(models.CareerJourney).filter(models.CareerJourney.id == ms.journey_id).first()
-    if not j or j.student_id != user.id:
-        raise HTTPException(status_code=403, detail="Không có quyền")
-    ms.state = "skipped"
-    ms.completion_evidence = (payload or {}).get("reason")
-    ms.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    db.commit()
-    db.refresh(ms)
-    return _serialize_milestone(ms)
-
-
-@app.post("/journeys/me/{journey_id}/close")
-def close_journey(
-    journey_id: int,
-    payload: dict = Body(...),
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """SV đóng hành trình với reflection.
-
-    Input: {
-      outcome: "chosen" | "explore_more" | "abandoned",
-      chosen_career?: str (nếu outcome=chosen),
-      final_reflection: str
-    }
-    Nếu outcome=chosen + có chosen_career → auto-set user_career_choice.primary.
-    """
-    user = _get_user_by_token(authorization, db)
-    j = db.query(models.CareerJourney).filter(models.CareerJourney.id == journey_id).first()
-    if not j:
-        raise HTTPException(status_code=404, detail="Journey không tồn tại")
-    if j.student_id != user.id:
-        raise HTTPException(status_code=403, detail="Không có quyền")
-    if j.state != "active":
-        raise HTTPException(status_code=400, detail="Hành trình đã đóng")
-
-    outcome = (payload or {}).get("outcome", "").strip()
-    if outcome not in ("chosen", "explore_more", "abandoned"):
-        raise HTTPException(status_code=400, detail="outcome phải: chosen | explore_more | abandoned")
-
-    chosen = (payload or {}).get("chosen_career")
-    if outcome == "chosen":
-        if not chosen:
-            raise HTTPException(status_code=400, detail="Khi outcome=chosen phải có chosen_career")
-        path = db.query(models.CareerPath).filter(models.CareerPath.code == chosen).first()
-        if not path:
-            raise HTTPException(status_code=400, detail="chosen_career không tồn tại")
-        # Auto-set user_career_choice
-        choice = db.query(models.UserCareerChoice).filter(models.UserCareerChoice.user_id == user.id).first()
-        if choice:
-            choice.primary_path_id = path.id
-            choice.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        else:
-            db.add(models.UserCareerChoice(user_id=user.id, primary_path_id=path.id))
-
-    j.state = "completed_chosen" if outcome == "chosen" else (
-        "completed_explore_more" if outcome == "explore_more" else "abandoned"
-    )
-    j.chosen_career = chosen if outcome == "chosen" else None
-    j.final_reflection = (payload or {}).get("final_reflection")
-    j.closed_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    db.commit()
-    db.refresh(j)
-    return _serialize_journey(j, db)
-
-
-@app.get("/advisor/students/{student_id}/journey")
-def get_student_journey(
-    student_id: int,
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    """GV xem journey của 1 SV."""
-    advisor = _require_advisor(authorization, db)
-    _check_advisor_has_student(advisor, student_id, db)
-    active = db.query(models.CareerJourney).filter(
-        models.CareerJourney.student_id == student_id,
-        models.CareerJourney.state == "active",
-    ).first()
-    history = db.query(models.CareerJourney).filter(
-        models.CareerJourney.student_id == student_id,
-        models.CareerJourney.state != "active",
-    ).order_by(models.CareerJourney.closed_at.desc()).all()
-    return {
-        "active_journey": _serialize_journey(active, db) if active else None,
-        "history": [_serialize_journey(h, db, include_milestones=False) for h in history],
     }
 
 
@@ -12945,8 +11992,8 @@ def v2_set_my_career_choice(
         )
         db.add(choice)
 
-    # Backward compat: cập nhật legacy career_goal
-    user.career_goal = primary.code
+    # Note: legacy users.career_goal đã DROP 2026-05-05.
+    # Career choice giờ chỉ track qua bảng UserCareerChoice (primary/secondary path).
     db.commit()
 
     # Nếu user ĐỔI nghề (không phải lần đầu chọn) → wipe TC để re-pick

@@ -12,22 +12,13 @@ class User(Base):
     full_name = Column(Text, nullable=True)
     specialization = Column(Text, nullable=True)
     cohort = Column(Text, nullable=True, index=True)  # student only: khoá tuyển (vd "K20", "2020")
-    official_earned_credits = Column(Numeric(5, 1), nullable=True)
     role = Column(Text, nullable=False, server_default="student")  # "student" | "advisor" | "admin"
-    google_sub = Column(Text, unique=True, nullable=True)  # Google account ID
-    # Career & learning preferences
-    career_goal = Column(Text, nullable=True)           # sub-direction key from SPECIALIZATION_TRACKS, or "general"
-    career_skills = Column(JSON, nullable=True)         # list[str] of skill codes user is interested in
-    difficulty_preference = Column(Text, nullable=True) # "easy", "balanced", "challenging"
-    max_credits_per_term = Column(Numeric(4, 1), nullable=True)
     managed_specialization = Column(Text, nullable=True)  # advisor only: chuyên ngành SV được phụ trách
-    is_head_of_department = Column(Boolean, nullable=False, server_default="false")  # advisor only: trưởng bộ môn
     teacher_code = Column(Text, unique=True, nullable=True)  # advisor only: mã GV (VD: GV0001)
-    email = Column(Text, unique=True, nullable=True)      # email Google, dùng cho quên mật khẩu
+    # student only: thuộc lớp nào. ON DELETE SET NULL → khi xoá lớp, SV về NULL tạm thời (admin re-assign)
+    class_group_id = Column(BigInteger, ForeignKey("class_groups.id", ondelete="SET NULL"), nullable=True, index=True)
     is_first_login = Column(Boolean, nullable=False, server_default="true")
     default_password = Column(Text, nullable=True)  # plain-text default pw; cleared when user changes password
-    # Khoá bảng điểm: True = SV không tự upload được (admin chỉ định hoặc tự động set sau admin import)
-    grades_locked = Column(Boolean, nullable=False, server_default="false")
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
 
@@ -66,8 +57,9 @@ class UserGrade(Base):
     passed = Column(Boolean, nullable=False, default=False)
     term = Column(Text, nullable=True)
     uploaded_at = Column(DateTime, nullable=False, server_default=func.now())
-    # Nguồn điểm: 'self' (SV tự upload) | 'admin' (admin import - đã xác thực)
-    source = Column(Text, nullable=False, server_default="self", index=True)
+    # Note: cột `source` đã DROP ở refactor 2026-05-05. EduGuide là tool cá nhân,
+    # tất cả điểm đều do SV tự upload. Admin không import điểm chính thức nữa
+    # (đã có SIS riêng của trường).
 
 
 class CourseElectiveGroup(Base):
@@ -303,21 +295,6 @@ class NotificationRead(Base):
     )
 
 
-class UserMessage(Base):
-    """Personal message from admin to a specific student."""
-    __tablename__ = "user_messages"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    sender_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    sender_username = Column(Text, nullable=True)          # snapshot
-    recipient_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    title = Column(Text, nullable=False)
-    body = Column(Text, nullable=False)
-    type = Column(Text, nullable=False, server_default="info")  # info | warning | success | danger
-    is_read = Column(Boolean, nullable=False, server_default="false")
-    created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)
-
-
 class UserSkillProgress(Base):
     __tablename__ = "user_skill_progress"
 
@@ -396,7 +373,6 @@ class ChatGroupMember(Base):
 
     group_id = Column(BigInteger, ForeignKey("chat_groups.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    joined_at = Column(DateTime, nullable=False, server_default=func.now())
 
     __table_args__ = (PrimaryKeyConstraint("group_id", "user_id"),)
 
@@ -438,16 +414,8 @@ class PlannedElective(Base):
     __table_args__ = (PrimaryKeyConstraint("user_id", "term_label", "slot_id"),)
 
 
-class PasswordResetToken(Base):
-    """Token đặt lại mật khẩu — hết hạn sau 30 phút."""
-    __tablename__ = "password_reset_tokens"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    token_hash = Column(Text, unique=True, nullable=False, index=True)
-    expires_at = Column(DateTime, nullable=False)
-    used_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
+# PasswordResetToken model REMOVED 2026-05-05 (Phase 6) — không còn forgot
+# password flow. SV quên pw → admin reset thủ công qua /admin/users/{id}/reset-password.
 
 
 class CourseRating(Base):
@@ -456,6 +424,9 @@ class CourseRating(Base):
     Hai kênh feedback song song:
     - rating + review: hiển thị công khai cho SV khác (giúp chọn TC). Có thể ẩn danh (is_anonymous=True).
     - admin_feedback: chỉ admin/khoa thấy — góp ý chất lượng giảng dạy, GV, hàm lượng kiến thức.
+
+    Soft delete (hidden=True): admin moderation — review bị ẩn không hiển thị public
+    nhưng vẫn lưu trong DB cho audit / khả năng restore.
     """
     __tablename__ = "course_ratings"
 
@@ -466,9 +437,44 @@ class CourseRating(Base):
     review = Column(Text, nullable=True)              # nhận xét công khai (tùy chọn)
     is_anonymous = Column(Boolean, nullable=False, server_default="false")  # ẩn tên trong public reviews
     admin_feedback = Column(Text, nullable=True)      # góp ý riêng cho admin (không công khai)
+    # Soft delete: admin có thể ẩn review spam/sai, vẫn giữ data cho audit
+    hidden = Column(Boolean, nullable=False, server_default="false", index=True)
+    hidden_by = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    hidden_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)
 
     __table_args__ = (UniqueConstraint("user_id", "course_code", name="uq_course_rating"),)
+
+
+class ClassGroup(Base):
+    """Lớp sinh hoạt — đơn vị tổ chức học vụ truyền thống của đại học VN.
+
+    Mỗi lớp có duy nhất 1 GVCN (NOT NULL). 1 GV có thể chủ nhiệm nhiều lớp.
+    SV thuộc 1 lớp → tự động được gán advisor = class_group.advisor_id và derive
+    specialization = class_group.specialization (không cần nhập riêng).
+
+    Format mã lớp: DCCTCT{cohort}_{spec_2digit}{letter}, vd 'DCCTCT66_07C'
+      • 66       = khoá tuyển (User.cohort)
+      • 07       = mã chuyên ngành 2 chữ (suffix của 7480201_07)
+      • C        = thứ tự lớp (A, B, C, ...) trong cùng cohort+spec
+
+    ON DELETE RESTRICT trên advisor_id: không cho xoá GV nếu còn chủ nhiệm lớp,
+    admin phải chuyển GVCN trước.
+    """
+    __tablename__ = "class_groups"
+
+    id = Column(BigInteger, primary_key=True, index=True)
+    code = Column(String(20), unique=True, nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    cohort = Column(String(10), nullable=False, index=True)
+    specialization = Column(String(20), nullable=False, index=True)
+    advisor_id = Column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
 
 
 class CareerPath(Base):
@@ -538,23 +544,6 @@ class CareerPathSkill(Base):
     )
 
 
-class UserQuizResult(Base):
-    """Kết quả quiz hướng nghiệp Holland-lite (RIASEC) của SV.
-
-    Mỗi SV có thể làm quiz nhiều lần — chỉ giữ result mới nhất qua UNIQUE.
-    """
-    __tablename__ = "user_quiz_results"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
-    quiz_type = Column(String(32), nullable=False, server_default="holland")  # 'holland' | future types
-    answers = Column(JSON, nullable=False)             # [{q: int, a: int 1-5}, ...] — raw responses
-    riasec_scores = Column(JSON, nullable=False)       # {R: int, I: int, A: int, S: int, E: int, C: int}
-    primary_codes = Column(JSON, nullable=False)       # ["I","A","R"] — top 3 RIASEC ưu thế
-    suggested_paths = Column(JSON, nullable=True)      # [path_code, ...] — gợi ý dựa trên primary
-    taken_at = Column(DateTime, nullable=False, server_default=func.now())
-
-
 class UserCareerChoice(Base):
     """Lựa chọn định hướng nghề của sinh viên (1 primary + 1 secondary)."""
     __tablename__ = "user_career_choice"
@@ -584,187 +573,9 @@ class UserCareerSkillProgress(Base):
 # để cố vấn xử lý theo workflow (open → in_progress → resolved/escalated).
 # ════════════════════════════════════════════════════════════════════════════
 
-class RiskHistory(Base):
-    """Snapshot rủi ro TN của SV — chạy daily job để track trend."""
-    __tablename__ = "risk_history"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    student_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    snapshot_date = Column(DateTime, nullable=False, server_default=func.now(), index=True)
-    risk_score = Column(Numeric(4, 3), nullable=False)  # 0.000 - 1.000
-    predicted_grad_term = Column(Text, nullable=True)   # "HK1/2027" hoặc null nếu không dự đoán được
-    on_time = Column(Boolean, nullable=True)            # True nếu predicted == standard schedule
-    factors = Column(JSON, nullable=True)               # [{"code":"slow_credits","label":"...","weight":0.42}, ...]
-    earned_credits = Column(Numeric(5, 1), nullable=True)
-    gpa4 = Column(Numeric(3, 2), nullable=True)
-    terms_studied = Column(Integer, nullable=True)
-
-    __table_args__ = (
-        Index("ix_risk_history_student_date", "student_id", "snapshot_date"),
-    )
-
-
-class RiskCase(Base):
-    """Ca rủi ro mở khi snapshot vượt ngưỡng. Workflow: open → in_progress → resolved | escalated."""
-    __tablename__ = "risk_cases"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    student_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    advisor_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    state = Column(String(20), nullable=False, server_default="open", index=True)
-    # "open"        — vừa tạo, chưa GV xử lý
-    # "in_progress" — GV đã xem + lập kế hoạch
-    # "resolved"    — risk giảm hoặc đã giải quyết
-    # "escalated"   — risk tăng / SV không phản hồi → đẩy lên cao hơn
-    # "dismissed"   — GV cho rằng false positive
-    opened_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)
-    closed_at = Column(DateTime, nullable=True)
-    opened_risk_score = Column(Numeric(4, 3), nullable=False)
-    current_risk_score = Column(Numeric(4, 3), nullable=True)  # cập nhật khi recompute
-    opened_reason = Column(Text, nullable=True)        # "Risk score 0.78 — vượt ngưỡng 0.6"
-    opened_factors = Column(JSON, nullable=True)       # snapshot factors khi mở case
-    close_reason = Column(Text, nullable=True)
-    next_check_at = Column(DateTime, nullable=True)    # ngày check-in tiếp
-    updated_at = Column(DateTime, nullable=False, server_default=func.now())
-
-
-class CaseAction(Base):
-    """Hành động/task trong 1 case — GV gán cho mình hoặc cho SV."""
-    __tablename__ = "case_actions"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    case_id = Column(BigInteger, ForeignKey("risk_cases.id", ondelete="CASCADE"), nullable=False, index=True)
-    action_type = Column(String(32), nullable=False)
-    # "meeting"      — gặp trực tiếp
-    # "message"      — nhắn tin
-    # "warn_parent"  — báo phụ huynh
-    # "study_plan"   — đề xuất kế hoạch học
-    # "retake_advice"— khuyên học lại môn
-    # "self_task"    — task SV tự làm
-    # "other"
-    title = Column(Text, nullable=False)
-    description = Column(Text, nullable=True)
-    assigned_to = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    created_by = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    deadline = Column(DateTime, nullable=True)
-    state = Column(String(16), nullable=False, server_default="pending")  # pending | done | skipped
-    done_at = Column(DateTime, nullable=True)
-    done_note = Column(Text, nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
-
-
-class CaseComment(Base):
-    """Comment thread trong case — GV ↔ SV trao đổi."""
-    __tablename__ = "case_comments"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    case_id = Column(BigInteger, ForeignKey("risk_cases.id", ondelete="CASCADE"), nullable=False, index=True)
-    author_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    content = Column(Text, nullable=False)
-    created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)
-
-
-# ════════════════════════════════════════════════════════════════════════════
-# LUỒNG 3: SEMESTER LEARNING CONTRACT
-# Mục đích: SV cam kết đầu kỳ + check-in hàng tuần → phát hiện drift sớm.
-# ════════════════════════════════════════════════════════════════════════════
-
-class LearningContract(Base):
-    """Hợp đồng học tập SV ký đầu kỳ với cố vấn."""
-    __tablename__ = "learning_contracts"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    student_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    advisor_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    semester_label = Column(Text, nullable=False, index=True)  # "HK2/2025-2026"
-    target_gpa4 = Column(Numeric(3, 2), nullable=True)
-    committed_courses = Column(JSON, nullable=True)   # [{"course_code": "...", "course_name": "..."}]
-    weekly_study_hours = Column(Integer, nullable=True)
-    commitments = Column(JSON, nullable=True)         # [{"id":1,"text":"Đi học đủ"}, ...]
-    state = Column(String(16), nullable=False, server_default="active", index=True)
-    # active | completed | abandoned
-    signed_at = Column(DateTime, nullable=False, server_default=func.now())
-    closed_at = Column(DateTime, nullable=True)
-    final_gpa4 = Column(Numeric(3, 2), nullable=True)        # điền cuối kỳ
-    final_satisfaction = Column(Integer, nullable=True)       # 1-5
-    final_reflection = Column(Text, nullable=True)
-
-    __table_args__ = (
-        UniqueConstraint("student_id", "semester_label", name="uq_contract_student_semester"),
-    )
-
-
-class ContractCheckin(Base):
-    """Weekly check-in — SV log progress mỗi thứ 6."""
-    __tablename__ = "contract_checkins"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    contract_id = Column(BigInteger, ForeignKey("learning_contracts.id", ondelete="CASCADE"), nullable=False, index=True)
-    week_number = Column(Integer, nullable=False)             # 1, 2, 3, ... 15
-    week_start_date = Column(DateTime, nullable=False)         # ngày bắt đầu tuần (thứ 2)
-    state = Column(String(16), nullable=False, server_default="pending")
-    # pending — chưa SV làm
-    # done    — SV đã log
-    # skipped — bỏ qua tuần này
-    completed_tasks = Column(JSON, nullable=True)              # ["Đi học đủ", "Làm BTL", ...]
-    missed_tasks = Column(JSON, nullable=True)
-    miss_reason = Column(Text, nullable=True)
-    self_satisfaction = Column(Integer, nullable=True)         # 1-5
-    estimated_study_hours = Column(Integer, nullable=True)
-    note = Column(Text, nullable=True)
-    submitted_at = Column(DateTime, nullable=True)
-
-    __table_args__ = (
-        UniqueConstraint("contract_id", "week_number", name="uq_checkin_contract_week"),
-    )
-
-
-# ════════════════════════════════════════════════════════════════════════════
-# LUỒNG 2: CAREER DISCOVERY JOURNEY
-# Mục đích: biến quiz Holland 1 lần thành hành trình 12 tuần với milestones.
-# ════════════════════════════════════════════════════════════════════════════
-
-class CareerJourney(Base):
-    """Hành trình khám phá nghề 12 tuần."""
-    __tablename__ = "career_journeys"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    student_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    started_at = Column(DateTime, nullable=False, server_default=func.now())
-    target_end_at = Column(DateTime, nullable=False)            # started_at + 12 tuần
-    candidate_careers = Column(JSON, nullable=False)            # ["se","data","mmt"] - top 2-3 nghề ứng viên
-    primary_riasec = Column(Text, nullable=True)                # "RIA"
-    state = Column(String(16), nullable=False, server_default="active", index=True)
-    # active | completed_chosen | completed_explore_more | abandoned
-    chosen_career = Column(Text, nullable=True)                 # nghề SV chốt cuối hành trình
-    final_reflection = Column(Text, nullable=True)
-    closed_at = Column(DateTime, nullable=True)
-
-    __table_args__ = (
-        Index("ix_journey_student_state", "student_id", "state"),
-    )
-
-
-class JourneyMilestone(Base):
-    """4 milestone trong hành trình: Read → Skill → Interview → Reflect."""
-    __tablename__ = "journey_milestones"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    journey_id = Column(BigInteger, ForeignKey("career_journeys.id", ondelete="CASCADE"), nullable=False, index=True)
-    sequence = Column(Integer, nullable=False)                  # 1, 2, 3, 4
-    title = Column(Text, nullable=False)
-    description = Column(Text, nullable=True)
-    target_career = Column(Text, nullable=True)                 # nghề liên quan đến milestone này
-    due_at = Column(DateTime, nullable=False)
-    state = Column(String(16), nullable=False, server_default="pending")
-    # pending | done | skipped
-    completion_evidence = Column(Text, nullable=True)            # SV note về cái đã làm
-    completion_rating = Column(Integer, nullable=True)           # 1-5: SV thấy hữu ích cỡ nào
-    completed_at = Column(DateTime, nullable=True)
-
-    __table_args__ = (
-        UniqueConstraint("journey_id", "sequence", name="uq_milestone_journey_seq"),
-    )
+# RiskCase model REMOVED 2026-05-05.
+# Mô hình tool nội bộ không cần workflow risk tracking — advisor xem trực tiếp
+# progress của SV trong lớp; SV tự biết tình trạng học của mình qua progress page.
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -795,20 +606,3 @@ class SkillEvidence(Base):
     )
 
 
-class SkillResource(Base):
-    """Tài nguyên học admin curate cho 1 skill — tối đa 5/skill."""
-    __tablename__ = "skill_resources"
-
-    id = Column(BigInteger, primary_key=True, index=True)
-    skill_code = Column(String(64), nullable=False, index=True)
-    resource_type = Column(String(32), nullable=False)
-    # "tutorial" | "video" | "book" | "course" | "doc" | "article"
-    url = Column(Text, nullable=False)
-    title = Column(Text, nullable=False)
-    description = Column(Text, nullable=True)
-    duration_minutes = Column(Integer, nullable=True)  # thời gian ước tính
-    difficulty = Column(String(16), nullable=True)      # "beginner" | "intermediate" | "advanced"
-    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
-    sort_order = Column(Integer, nullable=False, default=0, server_default="0")
-    created_by = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.now())

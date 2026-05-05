@@ -1,0 +1,3221 @@
+CHNG TRÌNH K S CÔNG NGH THÔNG TIN
+
+Tên chng trình:  Chng trình K s Công ngh Thông tin
+Trình  ào to:    i hc
+Ngành ào to:     Công ngh Thông tin
+Mã ngành:        7480201
+Bng tt nghip:    K s
+
+ I. Mc tiêu
+
+    Chng trình K s Công ngh Thông tin (CNTT) trang b cho ngi tt nghip:
+    A. Kin thc c s chuyên môn vng chc  thích ng tt vi nhng công vic khác nhau
+
+         trong lnh vc rng ng thi có kin thc chuyên sâu ca mt chuyên ngành hp ca ngành
+         Công ngh Thông tin.
+    B. K nng chuyên nghip và phm cht cá nhân cn thit  thành công trong ngh nghip.
+    C. K nng xã hi cn thit  làm vic hiu qu trong nhóm a ngành và trong môi trng
+         quc t.
+
+    D. K nng C-D-I-O bao gm: t duy xây dng ý tng ng dng CNTT  gii quyt các vn
+          thc t; Thit k các chc nng, quy trình, h thng t nhng ý tng ban u; Xây dng
+         ng dng, thc thi quy trình, xây dng h thng t ý tng và thit k và vnn hành các
+         ng dng, quy trình h thng ã c xây dng.
+
+    E. Phm cht chính tr, ý thc phc v nhân dân, có sc kho, áp ng yêu cu xây dng và
+         bo v T quc.
+
+    F. Ngi tt nghip chng trình K s Công ngh Thông tin có th m nhim công vic vi
+         vai trò là:
+
+    · K s kho sát, phân tích, thit k, lp trình, kim th, trin khai và bo trì phn mm trên
+         các nn tng Desktop, Web, Mobile
+
+    · K s t vn, thit k, qun tr và trin khai h thng thông tin, h thng truyn thông
+         và mng máy tính
+
+    · K s x lý, phân tích và khai phá d liêu
+    ti các b phn CNTT trong n v, t chc; các c quan qun lý nhà nc v CNTT; các c
+s ào to CNTT; các các công ty t vn, thit k, cung cp gii pháp CNTT nh: h thng thông
+tin, mng máy tính và truyn thông, phát trin phn mm, khoa hc máy tính... c bit là các
+lnh vc và công ngh mi nh: Công ngh di ng, D liu ln, Hc máy, Khai phá d liu,
+Trí tu nhân to, in toán ám mây, IoT
+
+ II. Chun u ra
+
+    Chun u ra K s Công ngh Thông tin ca Trng M - a cht bao gm Chun u
+ra c s ngành và Chun u ra chuyên ngành.
+
+    · Chun u ra c s ngành
+    Sinh viên khoa CNTT s c ào to các kin thc chung, nn tng ca ngành CNTT
+cùng vi các kin thc v toán và khoa hc t nhiên, kinh t chính tr, quc phòng an ninh và
+th dc. Kt thúc giai on này sinh viên s có c:
+1. Kin thc c s chuyên môn vng chc  có th thích ng tt vi nhng công vic khác
+
+    nhau thuc lnh vc rng ca ngành công ngh thông tin nói chung và lnh vc chuyên sâu
+    ca tng chuyên ngành nói riêng:
+    1.1. Kh nng áp dng kin thc c s toán, khoa hc c bn, kin thc c s ngành và chuyên
+
+          ngành  kho sát, mô t, phân tích, thit k, mô phng, xây dng và ánh giá các gii pháp
+          h thng/quá trình/sn phm công ngh thông tin;
+    1.2. Kh nng mô t, gii thích các khái nim nn tng v CNTT
+    1.3. Kh nng xây dng các chng trình ng dng CNTT, xây dng các ng dng web trong
+          lnh vc mt s lnh vc.
+2. K nng chuyên nghip và phm cht cá nhân cn thit  thành công trong ngh nghip:
+    2.1 Có kh nng t hc, t cp nht kin thc mi
+    2.2 o c và trách nhim ngh nghip
+3. K nng xã hi cn thit  làm vic hiu qu trong nhóm a ngành và trong môi trng
+    quc t:
+    3.1 Có k nng giao tip tt (trình bày vn bn và kh nng thuyt trình)
+    3.2 Có k nng làm vic nhóm trong môi trng a lnh vc
+    3.3 Có th c, hiu c các tài liu ting Anh v các ch  liên quan ti công vic chuyên
+          môn, t chun nng lc ngoi ng theo khung nng lc ngoi ng Vit Nam.
+4. Phm cht chính tr, ý thc phc v nhân dân, có sc kho, áp ng yêu cu xây dng và
+    bo v T quc:
+    4.1 Có trình  lý lun chính tr theo chng trình quy nh chung ca B Giáo dc và ào
+          to;
+    4.2 Có chng ch Giáo dc quc phòng-an ninh, và hoàn thành các hc phn v Giáo dc th
+          cht theo quy nh chung ca B Giáo dc và ào to.
+    · Chun u ra chuyên ngành
+    Sinh viên khoa CNTT s c chia vào các chuyên ngành khác nhau. Trong giai on này,
+sinh viên s c tp trung ào to v nhóm k nng C-D-I-O. Vi mi chuyên ngành, sau khi
+tt nghip sinh viên s có c kin thc và k nng khác nhau:
+
+    A. Vi chuyên ngành Công ngh thông tin a hc, K s sau khi tt nghip s có c:
+
+    A.1.Có kh nng thit lp và vn hành h qun tr CSDL PostgreSQL (và MongoDB) (4)
+    A.2.Có kh nng s dng phn mm ArcGIS trong vic gii quyt các bài toán v phân
+
+          tích, hin th d liu không gian a lý (ln) (4)
+    A.3.Có kh nng xác nh nhu cu ca các t chc và doanh nghip vi d liu không gian
+
+          a lý và d liu không gian a lý ln (4)
+    A.4.Có kh nng phân tích thit k các tính nng cn thit cho các phn mm ng dng
+          da trên d liu không gian a lý (ln) (4)
+
+    A.5.Có kh nng xây dng và trin khai ng dng web (GIS) hoc ng dng mobile (GIS)
+          da trên các thit k ã có (4)
+
+    A.6.Có kh nng kim th phn mm, tìm ra li và ci thin UI/UX (3)
+    A.7.Có kh nng vn hành, bo trì và nâng cp phn mm ng dng (3)
+
+    B. Vi chuyên ngành Khoa hc máy tính:
+
+    K s Công ngh Thông tin chuyên ngành Khoa hc máy tính s c trang b nhng kin
+thc chuyên sâu v công ngh, h thng, thut toán  giúp cho máy tính tr nên thông minh
+hn. Ngi hc có th la chn theo nh hng chuyên sâu phù hp vi nng lc và s thích
+ca bn thân bng cách chn mt trong hai nh hng sau:
+
+    1. nh hng "Lp trình ng dng và thut toán":
+    B.1.Có kh nng phân tích, thit k, phát trin phn mm ng dng, Game trên các nn
+
+          tng khác nhau; Qun lý các d án phn mm nói chung.
+    B.2.Có kh nng và c trang b các k thut cn thit  kim th phn mm, s dng
+
+          c mt s công c kim th t ng ph bin.
+    B.3.Có kh nng phân tích, thit k và ánh giá  phc tp thut toán cho nhng bài toán
+
+          c bn.
+    2. nh hng "Khai phá và phân tích d liu":
+    B.4.Có kh nng thu thp, phân tích, khai phá d liu nhm cung cp gii pháp tim nng
+
+          da trên d liu vi các ng dng c th trong thc t.
+    B.5.Có kh nng làm vic vi các công ngh, công c mi trong phân tích d liu ln;
+
+          c trang b các kin thc, công c và phng pháp c bn v trc quan hóa d liu
+          trong khai phá và phân tích d liu.
+    B.6.Có kh nng s dng c các công c, nn tng trong phát trin các ng dng ca trí
+          tu nhân to nói chung và hc máy nói riêng cho các bài toán x lý ngôn ng t nhiên,
+          th giác máy tính...
+
+    C. Vi chuyên ngành Tin hc kinh t:
+
+    K s chuyên ngành Tin hc kinh t s c trang b nhng kin thc chuyên sâu v ng
+dng công ngh thông tin trong lnh vc kinh t tài chính. Tùy theo s la chn, k s Tin hc
+kinh t s có c nhng kin thc và k nng theo tng nh hng chuyên sâu, c th nh
+sau:
+
+    1. nh hng "CNTT trong qun lý kinh t tài chính"
+    C.1.Có kh nng s dng thành tho các phn mm k toán, các phn mm ng dng trong
+
+          kinh t tài chính.
+    C.2.Có kh nng nm bt các quy trình nghip v trong qun lý và khai thác các ngun lc
+
+          kinh t, mô hình hóa các quy trình nghip v cho h thng công ngh thông tin.
+           C.3.Có kh nng phân tích s liu và d liu trong kinh t tài chính theo chui thi gian,
+                 trc quan hóa d liu, phát hin quy lut và xây dng mô hình d báo.
+
+           C.4.Có kh nng qun lý các d án phn mm; có kh nng phân tích, tit k, phát trin
+                 phn mm qun lý nói chung và các phn mm qun lý trong lnh vc kinh t, tài chính
+                 nói riêng.
+
+           C.5.Có kh nng kim th phn mm, s dng mt s công c kim th t ng ph bin.
+
+           2. nh hng "Kinh doanh k thut s"
+
+           C.6.Có kh nng s dng thành tho các phn mm k toán, các phn mm ng dng trong
+                 kinh t tài chính.
+
+           C.7.Có kh nng nm bt các quy trình nghip v trong qun lý và khai thác các ngun lc
+                 kinh t, mô hình hóa các quy trình nghip v cho h thng công ngh thông tin.
+
+           C.8.Có kh nng phân tích s liu và d liu trong kinh t tài chính theo chui thi gian,
+                 trc quan hóa d liu, phát hin quy lut và xây dng mô hình d báo.
+
+           C.9.Có kh nng qun lý các d án phn mm; có kh nng phân tích, tit k, phát trin
+                 phn mm qun lý nói chung và các phn mm qun lý trong lnh vc kinh t, tài chính
+                 nói riêng.
+
+           C.10. Có kh nng vn dng kt hp gia kin thc kinh doanh truyn thng và hin
+                 i; vn dng các công c nn tng  phát trin các ng dng trí tu nhân to phâ tích
+                 hành vi khách hàng, d báo xu hng th trng, marketing sn phm, xây dng
+                 thng hiu,...
+
+           D. Vi chuyên ngành Mng máy tính
+
+           K s chuyên ngành Mng máy tính s c trang b nhng kin thc chuyên sâu v ng dng
+       công ngh thông tin trong lnh vc mng máy tính.
+
+           D.1. Có kh nng phân tích và thit k h thng mng, mng Internet, bo mt mng, thit k
+                 và trin khai các ng dng IoT.
+
+           D.2. Có kh nng thit k xây dng, bo trì, sn xut,, th nghim, qun tr các h thng mng
+                 máy tính và truyn thông s, mng LAN, mng WAN. Có th m nhim vai trò cán b
+                 qun lý các d án, giám c thông tin (CIO).
+
+           D.3. Có kh nng làm vic trong các công ty cung cp gii pháp công ngh thông tin, công ty
+                 cung cp dch v Internet và vin thông (ISP), công ty t vn - thit k gii pháp mng và
+                 truyn thông, bo mt h thng, công ty cung cp, phân phi thit b mng và vin
+                 thông,...
+
+           D.4. Có kh nng làm cán b vn hành, qun tr h thng mng và công ngh thông tin  tt c
+                 các loi hình doanh nghip trong nn kinh t quc dân hoc các c quan qun lý nhà nc.
+
+           D.5. Có kh nng làm vic  các c s ào to, trng i hc, các t chc nghiên cu v công
+                 ngh thông tin. Có kh nng t hc tp nâng cao trình  chuyên môn và tham gia các
+                 khóa ào to sau i hc nh thc s, tin s.
+
+I.
+
+           E. Vi chuyên ngành H thng thông tin:
+    K s chuyên ngành H thng thông tin c trang b các kin thc và k nng trong vic
+xây dng, vn hành, nghiên cu và phát trin các h thng thông tin; k nng thu thp, t chc,
+qun tr và khai thác các d liu, thông tin, tri thc hu ích nhm tr giúp cho các công vic
+qun lý, vn hành, tng hp, phân tích, d báo, ra quyt nh,... mt cách c trng trong hoàn
+cnh ca t chc. Sinh viên theo hc chuyên ngành H thng thông tin vi các nh hng
+sau: (1) X lý d liu, d liu ln, phát hin tri thc và h tr d báo, ra quyt nh; (2) Qun
+tr, tích hp d liu và h thng thông tin.
+
+    Các k s chuyên ngành H thng thông tin c trang b các kin thc và k nng trong
+vic xây dng, vn hành, nghiên cu và phát trin các h thng thông tin, c th:
+
+    E.1. Có kin thc nn tng và chuyên sâu và các công ngh mi v HTTT
+    E.2. Có k nng nghiên cu lý thuyt, xây dng mô hình ý tng và làm vic trong lnh
+
+          vc chuyên ngành HTTT.
+    E.3. Có k nng thit k và phát trin các h thng thông minh s dng công ngh d liu
+
+          và tri thc; tích hp h thng; qun tr c s d liu; phân tích h thng thông tin; qun
+          tr h thng thông tin trong t chc; lp trình qun lý c s d liu;
+    E.4. H tr d báo và ra quyt nh cho các lãnh o, các nhà qun lý và các t chc.
+    E.5. K nng thit k và phát trin các phn mm ng dng các loi h thng thông tin
+          trong môi trng tp trung, phân tán, áp ng các yêu cu k thut t ra trong iu
+          kin thc t.
+    F. Vi chuyên ngành Công ngh phn mm, K s sau khi tt nghip s có c:
+    F.1. Có kh nng kho sát, c t, phân tích, thit k, lp trình, kim th, trin khai và bo trì
+          phn mm trên các nn tng Desktop, Web và Mobile;
+    F.2. Có kh nng tham gia qun lý các d án phn mm nói riêng và d án CNTT nói chung;
+    F.3. Có kh nng s dng các ngôn ng, công c, nn tng tiên tin  phát trin phn mm.
+
+   Bng 1. Ma trn tích hp mc tiêu và chun u ra sau khi kt thúc chng trình ào to
+
+Mc tiêu  Kin thc  K nng  Phm cht CDIO
+
+  A      1.1 1.2 1.3 2.1 2.2 3.1 3.2 3.3 4.1 4.2 CDIO
+  B
+  C                        
+  D
+  E                 
+  F
+                    
+
+                           
+
+                         
+
+                           
+    Chun u ra óng vai trò quan trng cho vic phát trin và ánh giá chng trình ào to.
+Các ch báo ánh giá ca tng chun u ra c dùng làm tham chiu  ánh giá chun u
+ra ca chng trình.
+
+ III. Thi gian ào to và khi lng kin thc
+
+   3.1 Chng trình i hc
+    · Thi gian ào to theo thit k: 4.5 nm.
+    · Khi lng kin thc toàn khoá: 157 tín ch (TC)
+   3.2 Chng trình liên thông t Cao ng
+   Áp dng cho sinh viên ã tt nghip cao ng ngành Công ngh Thông tin (3 nm) hoc
+các ngành gn. Thi gian ào to và khi lng kin thc ph thuc nh hng sinh viên la
+chn  chng trình Cao ng:
+    · Thi gian ào to theo thit k: 1 nm.
+    · Khi lng kin thc toàn khoá: 30 tín ch (TC)
+
+ IV. i tng tuyn sinh
+
+   4.1 Hc sinh tt nghip ph thông trung hc và trúng tuyn vào i hc ng ký theo nhóm ngành
+phù hp ca Trng i hc M- a cht s theo hc chng trình 4.5 nm.
+
+   4.2 Ngi tt nghip Cao ng, Cao ng ngh ngành Công ngh Thông tin , Cao ng k thut
+in ca Trng i hc M- a cht trúng tuyn vào hc chng trình liên thông 1 nm.
+
+   4.3 Ngi tt nghip i hc các ngành khác ca Trng i hc M- a cht hoc ca các
+trng i hc khác có th hc chng trình th hai theo quy ch chung ca B Giáo dc và ào to
+và theo nhng quy nh c th ca Trng i hc M - a cht.
+
+ V. Quy trình ào to, iu kin tt nghip
+
+   Quy trình ào to và iu kin tt nghip áp dng Quy ch ào to i hc chính quy theo
+hc ch tín ch ca Trng i hc M - a cht.
+
+ VI. Kim tra và ánh giá
+ 6.1. Quy trình ánh giá
+
+       Cn c quy nh ào to theo hc ch tín ch, vic ánh giá m bo tính giá tr, tin tng và
+ công bng. ánh giá sinh viên bao gm thi u vào, kh sát sinh viên v môn hc gia k và ánh
+ gi tng th cui k. Các phng pháp ánh giá bao gm: trc nghim khác quan a la chn, bài
+ kim tra ngn, bài lun vn, bài thi thc hành, tham quan doanh nghip, thc tp doanh nghip,
+ o lng trong phòng thí nghim, bài trình bày, nghiên cu tình hung, nghiên cu projects, trình
+ bày poster. Chun ánh giá là các rubrics môn hc gm rubrics thang im, rubrics phân tích và
+ mt s rubrics tng hp và áp án môn hc. Vic cho im, phn hi ca ging viên, sinh viên
+ c thc hin theo qui trình [Hình 1].
+         Hình 1. Quy trình ging dy hc tp và ánh giá sinh viên
+
+6.2. im
+
+im ch (A, B, C, D, F) và thang im 4 quy i tng ng c s dng  ánh giá kt
+
+qu hc tp chính thc. Thang im 10 c s dng cho im thành phn ca hc phn.
+
+         im theo thang          im theo h 4  Xp loi
+
+         10                 im ch  im s
+
+         T 9,0 n 10,0       A+     4,0
+
+         T 8,5 n cn 9,0     A      3,7
+
+         T 8,0 n cn 8,4     B+     3,5
+
+         T 7,0 n cn 7,9     B      3,0
+
+                                             t
+
+         T 6,5 n cn 7,0     C+     2,5
+
+         T 5,5 n cn 6,5     C      2,0
+
+         T 5,0 n cn 5,5     D+     1,5
+
+         T 4,0 n cn 5,0     D      1,0
+
+         T 0,0 n cn 4,0     F      0         Không t
+
+6.3. Rubric ánh giá lun vn
+RUBRIC ÁNH GIÁ K NNG BÁO CÁO THC TP TT NGHIP
+
+1. im Thuyt trình (2)
+
+1.1. Cách trình bày slide (1 im)
+
+0.5 im                                    0.5 im                        1 im
+
+Slide không s dng hình nh, Slide có s dng hình nh, biu . Tuy Slide c trình
+
+ch toàn ch               nhiên phn ch vn còn nhiu                 bày hp lý, p
+
+                                                                  mt. Slide có
+
+                                                                  nhiu hình nh,
+
+                                                                  các ch trên slide
+
+                                                                  ch yu là các
+
+                                                                  keywords.
+
+1.2. Cách trình bày  án ca sinh viên (1 im) (mi phn tích 0.5 im)
+     1.3.2 Sinh viên trình bày úng thi gian quy nh (4-6 phút)
+
+1.3.3 Sinh viên khi trình bày có s dng ngôn ng c th và giao tip ánh mt vi
+ngi nghe
+
+2. im báo cáo (2)
+
+0.5 im                            1 im            1.5 im                2 im
+
+Trong báo cáo sinh viên ch trình Trong báo cáo sinh Trong báo cáo Trong báo cáo
+
+bày c ni dung ca 1 phn viên trình bày c sinh viên trình sinh viên trình
+
+trong 4 phn theo yêu cu  ni dung ca 2 phn bày c ni bày c ni
+
+                         trong 4 phn theo yêu dung ca 3 phn dung ca 4 phn
+
+                         cu               trong 4 phn theo trong 4 phn theo
+
+                                          yêu cu                  yêu cu
+
+3. Phn 2 Trình bày v các công vic ang c thc hin  công ty có liên quan n ngành hc ca
+    mình (2)
+
+    3.1. Sinh viên trình bày các công vic ang c thc hin  công ty có liên quan n ngành hc
+          ca mình (1 im)
+
+0.25 im                           0.5 im                          1 im
+
+Các công vic sinh viên a ra Các sinh công vic Các công vic sinh viên a ra hoàn
+không phù hp vi ngành ào to sinh viên a ra có toàn phù hp vi ngành ào to
+                          phù hp vi ngành
+                          ào to
+
+3.2. Sinh viên liên h các công vic ó vi nhng kin thc/môn hc ã c hc (công vic nào
+     cn kin thc ca môn hc nào)(1 im)
+
+0.25 im                   0.5 im                        1 im
+
+Sinh viên cha liên h c gia Mi liên h c gia Mi liên h c gia công vic và
+
+công vic và kin thc/môn hc công vic và kin kin thc/môn hc ã c hc c
+
+ã c hc                    thc/môn hc ã c sinh viên a ra hoàn toàn hp lý
+
+                          hc c sinh viên
+
+                          a ra cha hp lý
+
+3.3. Sinh viên trình bày v các kin thc mi (ngoài chng trình hc) mà sinh viên c tip
+     cn trong quá trình thc tp (1 im thng)
+
+4. Phn 3: a ra ý kin, cm nhn ca mình v các công vic ã tìm hiu hoc c gii thiu 
+    công ty (2)
+
+4.1. Sinh viên a ra ý kin v công vic mình mun c/có th m nhn  công ty thc tp
+     (nu sinh viên cm thy không có công vic nào phù hp vi mình thì a ra lý do ti sao) (1
+     im)
+
+                    0 im                                1 im
+
+Sinh viên không cm thy có công vic phù hp và cng Sinh viên a ra c s la chn
+
+không nêu lý do hoc không a ra ý kin       công vic cho mình và a ra lý do
+
+                                           mình chn hoc Sinh viên không cm
+
+                                           thy có công vic phù hp và a ra
+
+                                           lý do hp lý
+
+4.2. Sinh vin t a ra ánh giá kh nng mình có áp ng c yêu cu ca công vic hay
+     không; Nu thy mình cha áp ng c yêu câu công vic, a ra các yu t còn thiu ca
+     mình  áp ng c công vic (1 im)
+
+                    0                                   1 im
+
+Sinh viên không a ra c lý do hay gii thích v vic Sinh viên a ra c các ánh giá
+
+mình có kh nng áp ng c nhu cu công vic mà kh nng áp ng công vic ca mình
+
+mình chn hay không                         hoc a ra ánh giá v các yu t còn
+
+                                           thiu ca mình  áp ng c công
+
+                                           vic
+
+5. Phn 4: Trình bày v hng nghiên cu d kin ca  án tt nghip ca mình (2)
+
+5.1. Hng nghiên cu d kin phù hp vi ngành CNTT (1 im)
+5.2. Hng nghiên cu d kin ca sinh viên phù hp vi chuyên ngành và có tính thi
+     s (1 im)
+            RUBRIC ÁNH GIÁ NI DUNG  ÁN TT NGHIP
+                                    (Final thesis)
+
+Môn hc:  án tt nghip
+Loi hình ánh giá: Rubric ánh giá ni dung thc:
+
+     · Dành cho cán b phn bin
+
+1.  án có c trình bày theo mu ­ mc 1 (2 im) (mi mc nh 0.4 im) (2.8)
+
+    1.1. Ni dung ca các mc trong trang Thông tin kt qu nghiên cu có rõ ràng và phù hp vi tiêu 
+          các mc?
+
+      1.2. Cht lng ngôn ng, vn phong s dng trong  án là tt?
+      1.3. Không có nhiu li trình bày v hình, bng và chính t?
+      1.4. Hình nh c s dng trong  án có c trình bày hp lý, p và rõ ràng
+      1.5. Hình nh c chon phù hp vi ni dung cn minh ha
+
+2. Chng 1 - Có kin thc v mt lnh vc trong ngành CNTT - hiu (understand-2) (1 im) (2.1)
+
+      0.25 im   0.5 im                              0.75 im              1 im
+
+Kin thc c a vào Kin thc c a vào Kin thc c a vào Kin thc c a vào
+
+mt các qua loa, không có chn lc nhng ch có chn lc và c vit có chn lc và c vit
+
+chn lc và ch yu là yu là copy and paste li theo ngôn ng ca li theo ngôn ng ca
+
+copy and paste                       sinh viên                           sinh viên. Ngoài ra có
+
+                                                                         các nhn xét ca sinh
+
+                                                                         viên cho tng phn
+
+      2.1. Ngun tài liu tham kho v công ngh có cp nht mi? (có cp nht các tài liu tham kho trong
+           5 nm gn ây) (0.25 - im thng) (2.9, 2.10)
+
+3. Chng 1 + 2: Có a ra gii pháp  gii quyt mt vn  t ra ­ phân tích (analyze -4) (2 im)
+    (2.3, 2.4, 2.5)
+    3.1. Phng pháp a ra  gii quyt vn  có hp lý (1 im)
+
+      0.25 im   0.5 im                              0.75 im              1 im
+
+a ra gii pháp nhng a ra gii pháp cùng a ra gii pháp cùng a ra gii pháp cùng
+
+ mc  qua loa cha vi gii thích và phân vi gii thích v phân tích vi gii thích hp lý +
+
+có gii thích hay phân tích nhng gii thích và hp lý                       có s so sánh vi các
+
+tích            phân tích cha hp lý                                      gii pháp khác
+
+                hoc cha thuyt phc
+3.2. Phng pháp gii quyt vn  có c mô t y ? (gii thích rõ các bc trong quy trình) (1
+     im)
+
+0.25 im                  0.5 im                       0.75 im        1 im
+
+a ra quy trình nhng a ra quy trình cùng a ra quy trình cùng a ra quy trình cùng
+
+ mc  qua loa cha vi gii thích nhng vi gii thích hp lý có vi gii thích hp lý có
+
+có gii thích hay mô t cha có mô t       mô t                        mô t chi tit
+
+4. Chng 3: Kt qu thc nghim -3 (1 im) (2.2, 2.6, 2.7, 2.10)
+
+4.1. ng dng có s dng 1 h qun tr CSDL (0.5 im)
+
+4.2. Phn trình bày các bc  xây dng các tính nng ca ng dung (0.5 im)
+
+           0 im                    0.25 im                           0.5 im
+
+Các bc xây dng tính nng ca Các bc xây dng tính nng ca Các bc xây dng tính nng ca
+
+ng dng trong  án cha c ng dng trong  án cha c ng dng trong  án c trình
+
+trình bày hp lý, rõ ràng. Ngi trình bày hp lý, rõ ràng. Tuy bày hp lý, d hiu. Ngi c có
+
+c rt khó có th xây dng các nhiên, Ngi c vn có th xây th d dàng xây dng các tính
+
+tính nng ng dng tng t da dng các tính nng ng dng nng ng dng tng t da vào
+
+vào các bc ã c trình bày tng t da vào các bc ã các bc ã c trình bày trong
+
+trong  án                c trình bày trong  án                  án
+
+4.3. Ngôn ng lp trình, th viên hoc frame work c s dng  xây dng ng dng có nm trong
+     chng trình ào to hay không? Nu không + 0.5 im bonus
+
+5. Chng 3: ánh giá sn phm - mc 2.5 (1 im) (2.6, 2.7)
+
+0.25 im                  0.5 im                       0.75 im        1 im
+
+Sn phm ca  án Sn phm ca  án Sn phm ca  án Sn phm ca  án
+
+c ánh giá qua loa, c ánh giá da vào c ánh giá da vào c ánh giá da vào
+
+ch yu là ý kin ch nhn xét ca ngi dùng nhn xét ca ngi dùng nhn xét ca ngi dùng
+
+quan ca sinh viên.  th.                 th da trên kch bn th da trên kch bn
+
+                    i vi sn phm là sn test.                         test hp lý, s lng
+
+                    phm ca phn mm: i vi sn phm là sn ngi test phù hp vi
+
+                    sn phm ca  án c phm ca phn mm: end user ca ng dng.
+
+                    ánh giá da vào b tiêu sn phm ca  án c i vi sn phm là sn
+
+                    chun tng ng khi ánh giá da vào nhiu phm ca phn mm:
+
+                    ánh giá sn phm (ví tiêu chí tiêu chun           sn phm ca  án
+
+                    d: khi ánh giá cht                              c ánh giá da vào
+
+                    lng ca bn  bin                                  b tiêu chun
+                  ng lp ph, sn phm
+                  bn  bin ng cn
+                  phi ánh giá theo các
+                  tiêu chun quc gia)
+
+6. Tính sáng to ­ mc 4.3 (2 im)
+
+    6.1. Có tính sáng to (ci tin hoc nâng cp mt tính nng ca các sn phm ã có hoc a ra phng
+          pháp/ gii pháp  gii quyt 1 vn  mi) (1 im)
+
+0.25 im                       0.5 im                  0.75 im        1 im
+
+Sn phm ca  án a Sn phm ca  án a Sn phm ca  án a Sn phm ca  án là
+
+ra mt ci tin cho 1 tính ra mt ci tin cho nhiu ra mt ci tin cho nhiu mi so vi các  án
+
+nng ã có          hn 3 tính nng ã có và hn 3 tính nng ã có, khác
+
+                  có phân tích và gii thích ngoài ra sn phm ca
+
+                                         án có các tính nng
+
+                                        mi cùng vi các phân
+
+                                        tích và gii thích
+
+6.2. Sn phm có kh nng ng dng trong thc tin (1 im)
+
+0.25 im                       0.5 im                  0.75 im        1 im
+
+Sn phm ca  án có Sn phm ca  án có Sn phm ca  án có Sn phm ca  án ã
+
+kh nng a vào s kh nng a vào s kh nng s dng ngay bc u c ng
+
+dng trong thc tin nu dng trong thc tin nu trong thc tin         dng/s dng trong thc
+
+khi nâng cp thêm  c chnh sa li các                              tin
+
+                  li nh
+
+7. Kt lun: Kt qu t c ­ mc 2.6 (1 im)
+    7.1. Kt qu t c có bám sát mc tiêu t ra? (0.5 im)
+    7.2. Kt qu t c là tin cy, rõ ràng? (0.5 im)
+
+· Rubric dành cho hi ng
+
+1. im trình bày (2 im) (2.8)
+
+1.1. Cách trình bày slide (1 im)
+
+0 im                          0.25 im                 0.5 im               1 im
+                                                                Slide c trình bày hp
+Slide không s dng Slide s dng ch là ch                          lý, p mt. Slide có
+hình nh, ch toàn ch o, ít hình nh
+                                        Slide có s dng hình nhiu hình nh, các ch
+                                        nh, biu . Tuy nhiên trên slide ch yu là các
+                                        phn ch vn còn nhiu keywords.
+
+      1.2. Sinh viên có s chun b tt: trình bày t tin, trôi chy, rõ ràng (0.5 im)
+
+             0 im          0.25 im                                                0.5 im
+
+Sinh viên ch c nhng ch có Sinh viên có trình bày cha t tin, Sinh viên có s chun b tt: trình
+
+trong slide        còn ngt ng                            bày t tin, trôi chy, rõ ràng.
+
+      1.3. Cách trình bày  án ca sinh viên (0.5 im) (mi phn tích 0.25 im)
+           1.3.2 Sinh viên trình bày úng thi gian quy nh (10-15 phút)
+           1.3.3 Sinh viên khi trình bày có s dng ngôn ng c th và giao tip ánh mt vi ngi nghe
+
+2. Chng 1 - Có kin thc v mt lnh vc trong ngành CNTT - hiu (understand-2) (1 im) (2.1)
+
+      0.25 im      0.5 im                           0.75 im                       1 im
+
+Kin thc c a vào Kin thc c a vào Kin thc c a vào Kin thc c a vào
+
+mt các qua loa, không có chn lc nhng ch có chn lc và c vit có chn lc và c vit
+
+chn lc và ch yu là yu là copy and paste li theo ngôn ng ca li theo ngôn ng ca
+
+copy and paste                          sinh viên                                 sinh viên. Ngoài ra có
+
+                                                                                  các nhn xét ca sinh
+
+                                                                                  viên cho tng phn
+
+      2.1. Ngun tài liu tham kho v công ngh có cp nht mi? (có cp nht các tài liu tham kho trong
+           5 nm gn ây) (0.25 - im thng) (2.9, 2.10)
+
+3. Chng 1 + 2: Có a ra gii pháp  gii quyt mt vn  t ra ­ phân tích (analyze -4) (2 im)
+    (2.3, 2.4, 2.5)
+
+      3.1. Phng pháp a ra  gii quyt vn  có hp lý (1 im)
+
+      0.25 im      0.5 im                           0.75 im                       1 im
+
+a ra gii pháp nhng a ra gii pháp cùng a ra gii pháp cùng a ra gii pháp cùng
+
+ mc  qua loa cha vi gii thích và phân vi gii thích v phân tích vi gii thích hp lý +
+
+có gii thích hay phân tích nhng gii thích và hp lý                                có s so sánh vi các
+
+tích               phân tích cha hp lý                                            gii pháp khác
+
+                   hoc cha thuyt phc
+
+      3.2. Phng pháp gii quyt vn  có c mô t y ? (gii thích rõ các bc trong quy trình) (1
+           im)
+
+      0.25 im      0.5 im                           0.75 im                       1 im
+a ra quy trình nhng a ra quy trình cùng a ra quy trình cùng a ra quy trình cùng
+
+ mc  qua loa cha vi gii thích nhng vi gii thích hp lý có vi gii thích hp lý có
+
+có gii thích hay mô t cha có mô t         mô t                      mô t chi tit
+
+4. Chng 3: Kt qu thc nghim -3 (1 im) (2.2, 2.6, 2.7, 2.10)
+
+4.1. ng dng có s dng 1 h qun tr CSDL (0.5 im)
+
+4.2. Phn trình bày các bc  xây dng các tính nng ca ng dung (0.5 im)
+
+           0 im                         0.25 im                      0.5 im
+
+Các bc xây dng tính nng ca Các bc xây dng tính nng ca Các bc xây dng tính nng ca
+
+ng dng trong  án cha c ng dng trong  án cha c ng dng trong  án c trình
+
+trình bày hp lý, rõ ràng. Ngi trình bày hp lý, rõ ràng. Tuy bày hp lý, d hiu. Ngi c có
+
+c rt khó có th xây dng các nhiên, Ngi c vn có th xây th d dàng xây dng các tính
+
+tính nng ng dng tng t da dng các tính nng ng dng nng ng dng tng t da vào
+
+vào các bc ã c trình bày tng t da vào các bc ã các bc ã c trình bày trong
+
+trong  án                c trình bày trong  án                  án
+
+4.3. Ngôn ng lp trình, th viên hoc framework c s dng  xây dng ng dng có nm trong
+     chng trình ào to hay không? Nu không + 0.5 im bonus
+
+5. Chng 3: ánh giá sn phm - mc 2.5 (1 im) (2.6, 2.7)
+
+0.25 im                  0.5 im                       0.75 im        1 im
+
+Sn phm ca  án Sn phm ca  án Sn phm ca  án Sn phm ca  án
+
+c ánh giá qua loa, c ánh giá da vào c ánh giá da vào c ánh giá da vào
+
+ch yu là ý kin ch nhn xét ca ngi dùng nhn xét ca ngi dùng nhn xét ca ngi dùng
+
+quan ca sinh viên.  th.                   th da trên kch bn th da trên kch bn
+
+                    i vi sn phm là sn test.                         test hp lý, s lng
+
+                    phm ca phn mm: i vi sn phm là sn ngi test phù hp vi
+
+                    sn phm ca  án c phm ca phn mm: end user ca ng dng.
+
+                    ánh giá da vào b tiêu sn phm ca  án c i vi sn phm là sn
+
+                    chun tng ng khi ánh giá da vào nhiu phm ca phn mm:
+
+                    ánh giá sn phm (ví tiêu chí tiêu chun           sn phm ca  án
+
+                    d: khi ánh giá cht                              c ánh giá da vào
+
+                    lng ca bn  bin                                  b tiêu chun
+
+                    ng lp ph, sn phm
+
+                    bn  bin ng cn
+
+                    phi ánh giá theo các
+
+                    tiêu chun quc gia)
+6. Tính sáng to ­ mc 4.3 (2 im)
+
+    6.1. Có tính sáng to (ci tin hoc nâng cp mt tính nng ca các sn phm ã có hoc a ra phng
+          pháp/ gii pháp  gii quyt 1 vn  mi) (1 im)
+
+0.25 im                     0.5 im                    0.75 im           1 im
+
+Sn phm ca  án a Sn phm ca  án a Sn phm ca  án a Sn phm ca  án là
+
+ra mt ci tin cho 1 tính ra mt ci tin cho nhiu ra mt ci tin cho nhiu mi so vi các  án
+
+nng ã có             hn 3 tính nng ã có và hn 3 tính nng ã có, khác
+
+                     có phân tích và gii thích ngoài ra sn phm ca
+
+                                        án có các tính nng
+
+                                       mi cùng vi các phân
+
+                                       tích và gii thích
+
+6.2. Sn phm có kh nng ng dng trong thc tin (1 im)
+
+0.25 im                     0.5 im                    0.75 im           1 im
+
+Sn phm ca  án có Sn phm ca  án có Sn phm ca  án có Sn phm ca  án ã
+
+kh nng a vào s kh nng a vào s kh nng s dng ngay bc u c ng
+
+dng trong thc tin nu dng trong thc tin nu trong thc tin            dng/s dng trong thc
+
+khi nâng cp thêm     c chnh sa li các                              tin
+
+                     li nh
+
+7. Kt lun: Kt qu t c ­ mc 2.6 (1 im)
+    7.1. Kt qu t c có bám sát mc tiêu t ra? (0.5 im)
+    7.2. Kt qu t c là tin cy, rõ ràng? (0.5 im)
+
+8. Tr li câu hi (2)
+
+8.1. Tng s câu hi
+
+8.2. Tng s câu hi sinh viên tra li c
+
+2. Nhn xét v sinh viên: có du hiu sinh viên không hiu ni dung  án
+
+im  án bng 0                70% im  án                             100% im 
+
+Nu sinh viên có du hiu không Sinh viên ch nm c 1 phn Sinh viên nm c phn ln (70%
+hiu  án thì im  án s bng ni dung  án ca mình (sinh tr lên) ni dung  án ca mình
+0 (sinh viên không tr li c viên ch tr li c t 1 n 3 (sinh viên tr li c hu ht các
+câu hi nào hoc các câu tr li câu hi ca hi ng hoc các câu hi có trong ni dung  án
+không úng vi ni dung câu hi) câu tr li ca sinh viên tr li ca hi ng. Câu tr li ca sinh
+cha úng vi trong tâm câu hi viên tr li a phn úng vi trng
+
+)  tâm câu hi)
+II. Ni dung chng trình
+             7.1. Cu trúc chng trình ào to
+
+ TT    Phn chng trình                       S tín ch
+  1    Giáo dc i cng                            65
+       Toán và khoa hc c bn                     32
+ 1.1   Bt buc toàn khi ngành                    26
+       Tng ngành t chn (T chn A)                 6
+ 1.2   Lý lun chính tr                          11
+ 1.3   Pháp lut i cng                            2
+ 1.4   Giáo dc th cht                            3
+ 1.5   Giáo dc quc phòng - an ninh              11
+ 1.6   Ting Anh                                  6
+  2    Giáo dc chuyên nghip                     92
+ 2.1   C s ngành/nhóm ngành                     52
+ 2.2   Chuyên ngành                             40
+2.2.1  nh hng chuyên ngành                      12
+2.2.2  T chn bt buc                              9
+2.2.3  T chn t do                                9
+2.2.4  Thc tp tt nghip                           2
+2.2.5   án tt nghip                              8
+                                               157
+            Tng khi lng
+7.2. Danh mc hc phn chi tit
+
+          Mã hc      Tên hc phn        Khi     K HC THEO K HOCH
+STT                                    lng                  CHUN
+
+           phn
+
+                                       A(X-Y-Z) 1 2 3 4 5 6 7 8 9
+
+    Toán & KH T nhiên (Bt buc)         26
+
+1 7010103 Gii tích 1                   4    4
+
+2 7010120 Xác sut thng kê              3    3
+
+3 7010111 Phng pháp tính               3       3
+4 7010102 i s tuyn tính
+5 7010104 Gii tích 2                   4    4
+
+                                       4       4
+
+6 7010204 Vt lý 1                      4       4
+
+7 7010202 Thí nghim vt lý              1       1
+
+8 7010304 Hóa i cng                    3          3
+
+9                Các môn t chn nhóm A  6          33
+
+                 (ti thiu 6 TC)
+
+    Chính tr, Kinh t, Vn hóa, Xã hi    13
+
+10  7020202 Ch ngha xã hi khoa         2          2
+
+                 hc
+
+        7020302 Kinh t chính tr Mác-   2       2
+11
+                                       2                       2
+                       Lênin                         2
+12 7020103 Pháp lut i cng              2
+13 7020201 T tng H Chí Minh
+13 7020105 Trit hc Mác-Lênin           3    3
+
+14  7020301 Lch s ng Cng Sn            2              2
+
+                 Vit Nam
+
+    Giáo dc Quc phòng ­ Th cht
+
+15               Giáo dc quc phòng     11            33 5
+16           Giáo dc th cht         3   111
+
+             Ngoi ng                6
+
+17 7010601 Ting Anh 1               3   3
+
+18 7010602 Ting Anh 2               3      3
+
+         C s ngành/nhóm ngành       52
+19 7080514 Nhp môn ngành CNTT
+20 7080112 Nguyên lý H iu hành      3   3
+21 7080717 Mng máy tính + BTL
+22 7080207 C s d liu                2         2
+23 7080208 C s lp trình
+24 7080509 Khoa hc d liu            3            3
+25 7080211 H qun tr c s d liu
+                                    3         3
+
+                                    3      3
+
+                                    2               2
+
+                                    2            2
+
+26  7080713  Kin trúc và h tng      2               2
+
+             mng IoT
+
+27  7080206  Cu trúc d liu và gii   3            3
+
+             thut
+
+28  7080113  Phân tích và thit k h  3                  3
+
+             thng + BTL
+
+29  7080216  K thut lp trình hng    2         2
+
+             i tng vi C++ + BTL
+
+30  7080116  Phát trin ng dng Web   4               4
+
+             + BTL
+
+31 7080111 Mã ngun m                2               2
+
+32  7080504  in toán ám mây và      2                          2
+
+             ng dng                                      3
+                                                    3
+33 7080626 Thng mi in t             3
+                                                         2
+34 7080703 C s an ninh mng          3
+
+35 7080517 Phát trin ng dng IoT     2
+36 7080122 Trí tu nhân to + BTL    3                                       3
+
+37  7080512  Lp trình hng i        3                                            3
+                                                                                      3
+             tng vi Java                                                3
+                                                                   2             3
+38 7080712 Kin trúc máy tính       2                                                  3
+
+II. Chuyên ngành/ Các môn bt buc và t                                           63
+                                                               40               36
+
+            chn ca chuyên ngành                                                             0
+                                                                                            2
+                    A. Chuyên ngành Công ngh thông tin a hc                                 8
+
+1   7080313  Thông tin a hc i      3                                            3
+                                                                                3
+             cng
+
+2   7080309  H thng c s d liu      3
+
+             không gian
+
+3   7050303  C s H thông tin a lý  3
+
+             (GIS)
+
+4 7080403  án Thông tin a hc       3
+
+5            Các môn t chn nhóm B  9
+
+             (ti thiu 9 TC)
+
+6            Các môn t chn nhóm C  9
+
+             (ti thiu 9 TC)
+
+7             cng thc tp tt        0
+
+             nghip
+
+8 7080314 Thc tp tt nghip          2
+
+             CNTTDH
+
+9 7080311  án tt nghip             8
+
+             CNTTDH
+
+             Tng                   157
+
+                         B. Chuyên ngành Khoa hc máy tính
+
+1 7080508 Khai phá d liu           3
+
+2 7080515 Phân tích và thit k      3
+
+             hng i tng
+3 7080510 K ngh tri thc và hc    3                        3
+                                                          3
+   máy                                               63
+                                                     36
+4 7080506  án KHMT               3
+                                                                 0
+5  Các môn T chn B (ti           9                               2
+                                                                 8
+   thiu 9 TC)
+                                                     3
+6  Các môn T chn C (ti           9                   3
+
+   thiu 9 TC)                                              3
+
+7   cng thc tp tt                                          3
+                                                     63
+   nghip                                             36
+
+8 7080519 Thc tp tt nghip        2                               0
+                                                                 2
+   KHMT
+
+9 7080513  án tt nghip KHMT      8
+
+   Tng                           157
+
+                      C. Chuyên ngành Tin hc kinh t
+
+1 7080633 K toán máy             3
+
+2 7080616 Thut toán hóa các bài  3
+
+   toán kinh t
+
+3 7080638 Phát trin phn mm       3
+
+   qun lý
+
+4 7080603  án Tin hc kinh t      3
+
+5  Các môn t chn nhóm B          9
+
+   (ti thiu 9 TC)
+
+6  Các môn t chn nhóm C          9
+
+   (ti thiu 9 TC)
+
+7   cng thc tp tt                0
+
+   nghip
+
+8 7080617 Thc tp tt nghip        2
+
+   THKT
+9 7080604  án tt nghip THKT    8                               8
+
+   Tng                         157                       3
+                                                    3
+                    D. Chuyên ngành Mng máy tính
+                                                         3
+1 7080728 An ninh mng + BTL    3                         3
+                                                    63
+2 7080721 Qun tr mng + BTL     3                    63
+
+3 7080720 Qun tr h thng + BTL  3                               2
+                                                               8
+4 7080729  án MMT              3
+                                                    3
+5  Các môn t chn nhóm B                                  3
+
+   (ti thiu 9 TC)                                   3
+                                                          3
+6  Các môn t chn nhóm C
+                                                    63
+   (ti thiu 9 TC)                                   36
+
+7   cng thc tp tt                                              0
+
+   nghip
+
+8 7080723 Thc tp tt nghip      2
+
+   MMT
+
+9 7080715  án tt nghip MMT     8
+
+   Tng                         157
+
+                  E. Chuyên ngành H thng thông tin
+
+1 7080212 H thng phân tán      3
+
+2 7080204 Các h c s tri thc    3
+
+3 7080213 Hc máy               3
+
+4 7080210  án HTTT             3
+
+5  Các môn t chn nhóm B        9
+
+   (ti thiu 9 TC)
+
+6  Các môn t chn nhóm C        9
+
+   (ti thiu 9 TC)
+
+7   cng thc tp tt              0
+
+   nghip
+8 7080224 Thc tp tt nghip                  2                      2
+                                                                  8
+            HTTT
+                                                           2
+9 7080218  án tt nghip HTTT                8         2
+
+            Tng                            157             3
+                                                     3
+                  F. Chuyên ngành Công ngh phn mm    2
+                                                     63
+1 7080102 Chuyên  (nh hng 2                          36
+                      doanh nghip phn mm)
+                                                                  2
+2 7080104 Công ngh phn mm 2                                       8
+
+3 7080106  án CNPM               3                 S tín ch
+                                                        3
+4 7080108 Lp trình .NET 1 + BTL            3            4
+                                                        2
+5 7080114 Phân tích, thit k hng 2                       3
+                      i tng vi UML                      3
+
+6           Các môn T chn B (ti            9
+
+            thiu 9 TC)
+
+7           Các môn T chn C (ti            9
+
+            thiu 9 TC)
+
+8 7080119 Thc tp tt nghip                  2
+
+            CNPM
+
+9 7080110  án tt nghip CNPM                8
+
+            Tng                            157
+
+7.3.Danh mc hc phn t chn
+
+T chn A
+
+TT Mã môn hc                         Tên môn hc
+              Logic i cng
+1  7010108    Toán ri rc cho CNTT
+              Lý thuyt  th cho tin hc
+2  7080121    Tin hc i cng + TH (khi k thut)
+              Tin hc vn phòng nâng cao
+3  7080219
+
+4  7080226
+
+5  7080636
+6  7080622 Ti u hóa thut toán                             2
+
+   A. Chuyên ngành CNTT a hc                         S tín ch
+                                                          3
+T chn B                                                   3
+                                                          3
+TT Mã môn hc                  Tên môn hc                  3
+                                                          3
+1  7080324    Phát trin ng dng web GIS vi Python và       3
+              Javascript                                  3
+2  7080323    Dch v da trên a im
+              Phân tích thông tin a lý               S tín ch
+3  7080321    C s x lý nh s                               3
+              Thông tin a hc trong ánh giá cnh quan       3
+4  7080302    a thng kê + BTL                             3
+              C s vin thám và ng dng                      3
+5  7080405                                                3
+                                                          3
+6  7080402                                                3
+                                                          3
+7  7050362
+                                                     S tín ch
+T chn C                                                   3
+                                                          3
+TT Mã môn hc                  Tên môn hc                  3
+                                                          3
+1  7080307 GIS cho ngi phát trin ng dng
+
+2  7080325 Phát trin ng dng di ng a nn tng 1
+
+3  7080301 C s d liu phân tán
+
+4  7080507 D liu ln và ng dng
+
+5  7080541 Khai phá d liu
+
+6  7080408 ng dng Matlab trong khoa hc Trái t
+
+7  7080406 Thông tin a hc trong ánh giá tài nguyên
+
+8  7080407 Thông tin a hc trong ánh giá thiên tai
+
+   B. Chuyên ngành Khoa hc máy tính
+
+T chn B
+
+TT Mã môn hc                  Tên môn hc
+
+1  7080107 Kim th và m bo cht lng phn mm
+
+2  7080316 Lp trình Python 2
+
+3  7080516 Phân tích và thit k thut toán
+
+4  7080518 Th giác máy tính
+5        7080520  Web ng ngha                                   3
+                  X lý ngôn ng t nhiên                          3
+6        7080124
+                                                           S tín ch
+T chn C                                                         3
+                                                                3
+TT Mã môn hc                            Tên môn hc              3
+                                                                3
+1        7080505 in toán di ng                                  3
+                                                                3
+2        7080634 Qun tr d án CNTT
+                                                           S tín ch
+3        7080511 Lp trình game                                  3
+                                                                3
+4        7080507 D liu ln và ng dng                             3
+                                                                3
+5        7080316 Lp trình Python 2                              3
+
+6        7080319 Trc quan hóa d liu                        S tín ch
+                                                                3
+   C. Chuyên ngành Tin hc kinh t                                3
+                                                                3
+T chn B                                                         3
+                                                                3
+TT Mã môn hc                             Tên môn hc
+                  H thng Thông tin qun lý                  S tín ch
+1        7080605  Thng kê & ng dng tin hc                       3
+                  Kinh t lng ng dng                             3
+2        7080615  Kinh t thông tin                              3
+                  Marketing in t                                3
+3        7080628
+                                         Tên môn hc
+4        7080627  Qun tr d án CNTT
+                  Qun tr các ngun lc thông tin
+5        7080635  Kim th và m bo cht lng phn mm + BTL
+                  Tin hc vn phòng nâng cao
+T chn C           Trí tu nhân to trong marketing
+
+TT Mã môn hc
+
+1        7080634
+
+2        7080637
+
+3        7080107
+
+4        7080636
+
+5        7080631
+
+          D. Chuyên ngành Mng máy tính
+T chn B
+
+TT Mã môn hc                            Tên môn hc
+
+1        7080716 Mã ngun m chuyên ngành mng +BTL
+
+2        7080731 Thit k mng+ BTL
+
+3        7080732 Truyn d liu và mng máy tính nâng cao+BTL
+
+4        7080730 Lp trình mng +BTL
+5        7080108  Lp trình .NET 1 + BTL                     3
+                  Lp trình game                             3
+6        7080511  Ting Anh chuyên ngành mng                 2
+
+7        7080724                         Tên môn hc    S tín ch
+                  K nng giao tip và làm vic theo nhóm       2
+T chn C           K nng t duy phn bin                       2
+                  Thit k Website                            2
+TT Mã môn hc      H qun tr ni dung mã ngun m                2
+                  Chun k nng s dng Công ngh Thông tin       3
+1        7000002  Qun tr d án CNTT                          3
+                  D liu ln và ng dng                        3
+2        7000004  Phân tích và thit k thut toán             3
+                  Th giác máy tính                          3
+3        7080118
+                                                       S tín ch
+4        7080308
+                                                            3
+5        7080234                                            3
+                                                            3
+6        7080634                                            3
+                                                            3
+7        7080507                                            3
+
+8        7080516                                       S tín ch
+                                                            3
+9        7080518                                            3
+                                                            3
+        E. Chuyên ngành H thng thông tin                    3
+T chn B                                                     3
+                                                            2
+TT Mã môn hc                    Tên môn hc                  2
+
+1        7080217  Lp trình nâng cao
+                  Công ngh a phng tin
+2        7080209  Các h thng thông tin thông minh
+                  An toàn và bo mt HTTT
+3        7080205  Qun tr d án CNTT
+                  Kho d liu
+4        7080202
+
+5        7080634
+
+6        7080214
+
+T chn C
+
+TT Mã môn hc                    Tên môn hc
+
+1        7080220 Ngôn ng lp trình Python
+
+2        7080230 Các công ngh d liu ln
+
+3        7080107 Kim th và m bo cht lng phn mm + BTL
+
+4        7080505 in toán di ng
+
+5        7080234 Chun k nng s dng Công ngh Thông tin
+
+6        7000002 K nng giao tip và làm vic theo nhóm
+
+7        7000004 K nng t duy phê phán
+8   7080120 Ting Anh cho ngành CNTT                             2
+                                                                3
+9   7080232 Ngôn ng lp trình R cho phân tích d liu              3
+                                                                3
+10  7080215 K thut Hadoop/Mapreduce                             2
+                                                                3
+11  7080518 Th giác máy tính
+                                                           S tín ch
+12  7080609 Marketing in t c bn
+                                                                3
+13  7080310 H thông tin a lý                                    3
+                                                                3
+        F. Chuyên ngành Công ngh phn mm                         3
+T chn B                                                         3
+
+TT Mã môn hc                  Tên môn hc                   S tín ch
+                                                                3
+1        7080109 Lp trình .NET 2 + BTL                          2
+                                                                3
+2        7080115  Phát trin ng dng cho thit b di ng + BTL       2
+                  Phân tích và thit k thut toán                 2
+3        7080516  Tng tác ngi máy + BTL                         2
+                  Chun k nng s dng Công ngh Thông tin           2
+4        7080123
+                                        Tên môn hc
+6        7080234  Kim th và m bo cht lng phn mm +
+                  BTL
+T chn C           K nng giao tip và làm vic theo nhóm
+                  Qun tr d án CNTT
+TT Mã môn hc      o c máy tính
+                  C s d liu nâng cao
+1        7080107  o c máy tính
+                  Thit k Website
+2        7000002
+
+3        7080634
+
+4        7080105
+
+6        7080103
+
+7        7080105
+
+8        7080118
+7.4. Ma trn tích hp môn hc - chun u ra ngành Công ngh thông tin
+
+STT  Mã HP                    Tên HP                                      Chun u ra
+
+                                                                 Kin thc  Nng lc     Phm
+                                                                                      cht
+
+                                                                        1.1 1.2 1.3 2.1 2.2 3.1 3.2 3.3 5.1 5.2
+                                  I. Toán & KH T nhiên (Bt buc)
+
+1    7010103 Gii tích 1                                          32
+
+2    7010120 Xác sut thng kê                                     32
+
+3    7010111 Phng pháp tính                                      32
+                                                                 32
+4    7010102 i s tuyn tính
+
+5    7010104 Gii tích 2                                          32
+                                                                 2
+6    7010204 Vt lý 1                                             2
+
+7    7010202 Thí nghim vt lý
+
+8    7010304 Hóa i cng                                           2
+
+                              II Chính tr, Kinh t, Vn hóa, Xã hi
+
+10   7020105 Trit hc Mác ­ Lênin                                          2          3
+
+11   7020302 Kinh t chính tr Mác ­ Lênin                                  2          3
+
+12   7020103 Pháp lut i cng                                               2          3
+
+13   7020202 Ch ngha xã hi khoa                                           2          3
+
+14   7020201 T tng H Chí Minh                                             2          3
+15  7020301 Lch s ng Cng sn Vit Nam                           2
+
+                                        III. Chng ch
+
+16.1 7300101 ng li quân s ca ng                                     23
+
+16.2 7300102 Công tác quc phòng                                     23
+
+16.3 7300201 Quân s chung và chin thut                              23
+
+17.1 7010701 Giáo dc th cht 1                                       22
+
+17.2 7010702 Giáo dc th cht 2                                       22
+
+17.3 7010703 Giáo dc th cht 3                                       22
+
+                                        IV. Ngoi ng
+
+18  7010601 Ting Anh 1                                     2     3
+
+19  7010602 Ting Anh 2                                     2     3
+
+                                 V. C s ngành/ nhóm ngành
+
+19  7080514 Nhp môn ngành CNTT                             3322123
+
+20  7080112 Nguyên lý H iu hành                            3331123
+
+21  7080717 Mng máy tính + BTL                             3321221
+                                                           3323112
+22  7080207 C s d liu                                      3322223
+                                                           3322111
+23  7080208 C s lp trình                                   3313313
+
+24  7080509 Khoa hc d liu
+
+25  7080211 H qun tr c s d liu
+26  7080713 Kin trúc và h tng mng IoT               3322121
+                                                    3321323
+27  7080206 Cu trúc d liu và gii thut               3321133
+
+28  7080113 Phân tích và thit k h thng + BTL        3321123
+
+29  7080216 K thut lp trình hng i tng vi C++ + BTL  3322111
+                                                    3332322
+30  7080116 Phát trin ng dng Web + BTL              3323311
+                                                    3313313
+31  7080111 Mã ngun m                               3323222
+                                                    3322111
+32  7080504 in toán ám mây và ng dng                3331132
+                                                    3322223
+33  7080626 Thng mi in t                            3313133
+
+34  7080703 C s an ninh mng +BTL
+
+35  7080517 Phát trin ng dng IoT
+
+36  7080122 Trí tu nhân to + BTL
+
+37  7080512 Lp trình hng i tng vi Java
+
+38  7080712 Kin trúc máy tính
+
+    Chú thích: 3: áp ng cao, 2: áp ng trung bình, 1: áp ng thp; rng: không áp ng
+G. Chuyên ngành CNTT a hc
+
+STT  Mã HP                                 Tên HP  A1 A2 A3 A4 A5 A6 A7
+                                                                 322
+1    7080313 Thông tin a hc i cng
+                                                    xxxxxxx
+2    B                            T chn B           xxxxxxx
+                                                    xxxxxxx
+3    B                            T chn B           3221
+
+4    C                            T chn C                 213
+                                                                 33333
+5    7080309 H thng c s d liu không gian
+                                                    xxxxxxx
+6    7050303 C s H thông tin a lý (GIS)             xxxxxxx
+                                                    xxxxxxx
+7    7080403  án CNTTDH                             xxx3xxx
+                                                    xxx3333
+8    B                            T chn B
+
+9    C                            T chn C
+
+10   C                            T chn C
+
+11   7080314 Thc tp tt nghip CNTTDH
+
+12   7080311  án tt nghip CNTTDH
+
+H. Chuyên ngành Khoa hc máy tính
+
+STT  Mã HP                                 Tên HP  B1  B2  B3
+
+1    7080508 Khai phá d liu                        3   2   1
+
+     7080515 Phân tích và thit k hng i             x   2   3
+
+2                                 tng
+                               T chn B             x  x     x
+
+                               T chn B             x  x     x
+
+3                              T chn C             x  x     x
+
+4    7080510 K ngh tri thc và hc máy               2  x     3
+
+5    7080506  án KHMT                              3  3     3
+
+6                              T chn B             x  x     x
+
+7                              T chn C             x  x     x
+
+8                              T chn C             x  x     x
+
+9    7080519 Thc tp tt nghip KHMT                  3  3     x
+
+10   7080513  án tt nghip KHMT                     3  3     3
+
+I. Chuyên ngành Tin hc kinh t
+
+STT  Mã HP                              Tên HP  C1 C2 C3 C4 C5
+
+1    7080633 K toán máy                         3     21
+
+2    7080616 Thut toán hóa các bài toán kinh t        31
+
+3    B                         T chn B          x     x xx x
+
+4    B                         T chn B          x     x xx x
+
+5    C                         T chn C          x     x xx x
+
+6    7080611 Phát trin phn mm qun lý + TH             3 x3
+
+7    7080603  án Tin hc kinh t                        3 x3
+8    B                        T chn B               x  x xx x
+                              T chn C
+9    C                        T chn C               x  x xx x
+                              Thc tp tt nghip THKT
+10   C                         án tt nghip THKT     x  x xx x
+
+11   7080617                                        x  3 x3 x
+
+12   7080604                                        x  3 x3 x
+
+J. Chuyên ngành Mng máy tính
+
+STT  Mã HP                             Tên HP       D1 D2 D3 D4 D5
+
+1    7080721 Qun tr mng + BTL                       3322  2
+
+2    B                        T chn B               xxxx  x
+
+3    B                        T chn B               xxxx  x
+
+4    C                        T chn C               xxxx  x
+
+10   C                        T chn C               xxxx  x
+
+5    7080720 Qun tr h thng + BTL                    3322  2
+
+6    7080728 An ninh mng + BTL                      3322  2
+
+7    7080729  án Mng máy tính                       3333  3
+
+8    B                        T chn B               xxxx  x
+
+9    C                        T chn C               xxxx  x
+
+11   7080723 Thc tp tt nghip MMT                    xxx3  x
+
+12   7080715  án tt nghip MMT                       3333  3
+K. Chuyên ngành H thng thông tin
+
+STT  Mã HP                                 Tên HP  D1 D2 D3 D4 D5
+
+1    7080212 H thng phân tán                       x     2333
+
+2    7080204 Các h c s tri thc                     1     x321
+
+3    B                            T chn B          x     xxxx
+
+4    B                            T chn B          x     xxxx
+
+5    C                            T chn C          x     xxxx
+
+6    C                            T chn C          x     xxxx
+
+6    7080210  án HTTT                              1     2332
+
+8    7080213 Hc máy + BTL                          1     3331
+
+9    B                            T chn B          x     xxxx
+
+10   C                            T chn C          x     xxxx
+
+11   C                            T chn C          x     xxxx
+
+12   7080224 Thc tp tt nghip HTTT                  x     3x3x
+
+13   7080218  án tt nghip HTTT                     x     3x3x
+
+L. Chuyên ngành Công ngh phn mm
+
+STT  Mã HP                                 Tên HP  F1    F2  F3
+
+1    7080104 Công ngh phn mm                          2  3   1
+
+2    7080108 Lp trình .NET 1 + BTL                    3  1   3
+    Phân tích, thit k hng i tng    3  2  3
+
+3   7080114 vi UML
+
+4   T chn B                        x  x  x
+
+5   T chn B                        x  x  x
+
+6   T chn C                        x  x  x
+
+    7080102 Chuyên  (nh hng doanh  3  x  3
+
+7   nghip phn mm)
+
+8   7080106  án CNPM               3  2  3
+
+9   T chn B                        x  x  x
+
+10  T chn C                        x  x  x
+
+11  T chn C                        x  x  x
+
+12  7080119 Thc tp tt nghip CNPM   3  x  3
+
+13  7080110  án tt nghip CNPM      3  2  3
+
+    Chú thích: 3: áp ng cao, 2: áp ng trung bình, 1: áp ng thp; x: có th áp ng tùy thuc vào môn hc và ch  project, rng:
+    không áp ng
+
+7.5. K hoch hc tp
+7.6.Mô t tóm tt ni dung hc phn
+
+TOÁN VÀ KHOA HC T NHIÊN
+7010103 (4-0-8) Gii tích 1
+Hc phn hc trc: Mã môn hc (Tên hc phn), Mã môn hc (Tên hc phn)
+Mc tiêu: Trang b cho sinh viên các kin thc c bn v hàm s mt bin s. Hc phn này gii
+thiu cho sinh viên các khái nim, cách tính và ng dng ca phép tính gii hn; hàm liên tc;
+o hàm, vi phân các cp, tích phân và chui.
+Ni dung: Ni dung hc phn gm 4 chng:
+Chng 1. Gii hn và tính liên tc ca hàm s mt bin s thc.
+Chng 2. o hàm và vi phân ca hàm s mt bin s thc.
+Chng 3. Tích phân hàm s mt bin s thc.
+Chng 4. Chui.
+7010102 (4-0-8), i s tuyn tính
+Hc phn hc trc: Mã môn hc (Tên hc phn), Mã môn hc (Tên hc phn)
+Mc tiêu: Cung cp cho sinh viên kin thc v i s tuyn tính. Hng dn sinh viên gii các
+dng bài tp và gii thiu mt s ng dng ca i s tuyn tính.
+Ni dung: Chng 1: S phc - a thc
+Chng 2: Ma trn - nh thc - H phng trình tuyn tính.
+Chng 3: Không gian véc t
+Chng 4: Ánh x tuyn tính - Giá tr riêng và véc t riêng
+Chng 5: Không gian Euclide, dng song tuyn tính và dng toàn phng.
+7010104 (4-0-8), Gii tích 2
+Hc phn hc trc: Mã môn hc (Tên hc phn), Mã môn hc (Tên hc phn)
+Mc tiêu: Cung cp cho sinh viên nhng kin thc c bn v hàm nhiu bin, tích phân bi, tích
+phân ng, tích phân mt và phng trình vi phân, h phng trình vi phân; ng thi hng
+dn sinh viên cách gii các bài toán trên. Trên c s ó, nh hng sinh viên ng dng các kin
+thc ca môn hc vào thc tin cuc sng và khoa hc k thut. ây là công c cn thit  giúp
+sinh viên hc các môn chuyên ngành tip theo và tin ti ng dng gii quyt các vn  trong
+thc t công vic sau này.
+Ni dung: Ni dung hc phn gm 5 chng.
++ Chng 1: Hàm nhiu bin (ch yu là hàm 2 bin). Chng này bao gm các khái nim v
+hàm nhiu bin, min xác nh, o hàm riêng, vi phân toàn phn, cc tr và giá tr ln nht, giá
+tr bé nht ca hàm nhiu bin.
++ Chng 2: Tích phân bi (khái nim và cách tính tích phân kép, tích phân bi ba, tích phân ph
+thuc tham s và mt s ng dng).
++ Chng 3: Tích phân ng (nêu ra nh ngha tích phân ng loi 1, tích phân ng loi 2).
++ Chng 4: Tích phân mt (nêu ra nh ngha tích phân mt loi 1, tích phân mt loi 2, và cách
+tính ng thi a ra khái nim s lc v trng vô hng)
++ Chng 5: Phng trình vi phân (nêu nh ngha và cách tính phng trình vi phân cp 1,
+phng trình vi phân cp 2, nêu phng trình vi phân tuyn tính cp 2, a ra cách gii phng
+trình vi phân tuyn tính cp 2 có h s hng). H phng trình vi phân và cách gii tìm nghim
+ca h phng trình vi phân tuyn tính thun nht h s hng s.
+7010119 3(3-0-6), Xác sut thng kê
+Hc phn hc trc:
+Mc tiêu: Trang b cho sinh viên kin thc c bn ca Lý thuyt xác sut và thng kê toán hc,
+áp dng gii quyt các bài toán thc tin.
+Ni dung: Lý thuyt xác sut: Các khái nim v xác sut; bin ngu nhiên mt chiu; lut phân
+phi ca bin ngu nhiên; bin ngu ngu nhiên nhiu chiu;
+Thng kê: Lý thuyt mu; c lng tham s thng kê; kim nh gi thuyt thng kê; tng
+quan và hi quy.
+ 7010111 (3-0-6), Phng pháp tính
+ Hc phn hc trc: Mã môn hc (Tên hc phn), Mã môn hc (Tên hc phn)
+ Mc tiêu: Cung cp cho sinh viên các dng bài toán gii tích s c bn: c s, ni dung chính,
+ mt s tính cht quan trng nht ca nhng phng pháp thông dng  gii gn úng các bài
+ toán ó và ánh giá sai s; hiu c mi liên h gia vic gii các bài toán thc t và tính toán
+ khoa hc trong khoa hc ­ công ngh, kinh t và xã hi; nm c thut toán và bit mt s u
+ nhc im ca các phng pháp ã hc nh:  tin cy, hiu qu và kh nng thc hin c
+ trong thc t. Bit áp dng các phng pháp tính gn úng ã hc vào các bài toán ng dng
+ chuyên ngành; ngoài ra có th nâng cao: bit s dng mt s phn mm toán hc nh Matlab,
+ Maple, Mathematica vào các bài tính toán khoa hc
+ Ni dung:
+ Ni dung môn hc gm 7 chng, bao gm:
+ Chng 1: S gn úng và sai s;
+ Chng 2: Gii phng trình f(x) = 0;
+ Chng 3: Gii h phng trình i s tuyn tính;
+ Chng 4: Ni suy a thc và phng pháp xp x bình phng cc tiu;
+ Chng 5: Tính gn úng o hàm, tích phân;
+ Chng 6: Gii gn úng phng trình vi phân thng;
+ Chng 7: Gii gn úng phng trình o hàm riêng.
+
+CHÍNH TR KINH T VN HÓA XÃ HI
+7020105 Trit hc Mác ­ Lênin
+Hc phn hc trc: Mã môn hc7080226 (Tên hc phn Tin hc i cng + thc hành (dùng
+cho khi k thut), Mã môn hc (Tên hc phn)
+Mc tiêu: Trang b cho ngi hc nhng kin thc c bn v th gii quan, phng pháp lun
+trit hc ca ch ngha Mác ­ Lênin vi tính cách là th gii quan, phng pháp lun khoa hc,
+trên c s ó góp phn hình thành  ngi hc th gii quan khoa hc, nhân sinh quan cách mng
+úng n, t duy lý lun và phng pháp t duy khoa hc chung nht; to lp cn c  hiu c
+s lý lun trit hc ca các b phn cu thành khác ca ch ngha Mác-Lênin, t tng H Chí
+Minh, ng li cách mng ca ng Cng sn Vit Nam; bc u hình thành k nng vn dng
+các nguyên tc phng pháp lun trit hc khoa hc vào nhn thc và thc tin, trong rèn luyn
+tu dng o c áp ng yêu cu ca s nghip xây dng và bo v T quc Xã hi ch ngha.
+Ni dung: Hc phn Trit hc Mác ­ Lênin cung cp cho sinh viên nhng kin thc c bn v
+th gii quan và phng pháp lun ca ch ngha Mác ­ Lênin; ch ngha duy vt bin chng vi
+nhng ni dung c bn nh: vt cht và ý thc; phép bin chng duy vt và lý lun nhn thc;
+các quy lut vn ng và phát trin ca xã hi loài ngi t quan im ca ch ngha duy vt lch
+s. Nhng vn  chính tr xã hi ca s phát trin ca xã hi loài ngi nh: vn  u tranh
+giai cp, dân tc, con ngi, nhân loi...
+7020302 Kinh t chính tr Mác ­ Lênin
+Hc phn hc trc: Mã môn hc7080226 (Tên hc phn Tin hc i cng + thc hành (dùng
+cho khi k thut), Mã môn hc (Tên hc phn)
+Mc tiêu: Sau khi hc xong hc phn Kinh t chính tr Mác ­ Lê nin, sinh viên c cung cp
+nhng tri thc c bn, ct lõi ca Kinh t chính tr Mác ­ Lênin trong bi cnh phát trin kinh t
+- xã hi ca t nc và th gii ngày nay
+Ni dung: Ni dung hc phn gm 6 chng: Trong ó, chng 1 bàn v i tng, phng
+pháp nghiên cu và chc nng ca Kinh t chính tr Mác ­ Lênin;T chng 2 n chng 6 trình
+bày ni dung ct lõi ca kinh t chính tr Mác ­ Lê nin theo mc tiêu ca môn hc, c th: Hàng
+hóa, th trng và vai trò ca các ch th tham gia th trng; Giá tr thng d trong nn kinh t
+th trng; Cnh tranh và c quyn trong nn kinh t th trng;Kinh t th trng nh hng
+xã hi ch ngha và các quan h li ích kinh t  Vit Nam;Công nghip hóa, hin i hóa và hi
+nhp kinh t quc t ca Vit Nam.
+7020104 Pháp lut i cng (General Law)
+Mc tiêu: Hc phn Pháp lut i cng cung cp cho sinh viên nhng kin thc c bn sau:
+
+\Nm c các kin thc lý lun c bn v nhà nc, bao gm: Khái nim nhà nc; ngun gc,
+c trng, bn cht nhà nc; các kiu, hình thc ca nhà nc, ch  chính tr; b máy nhà
+nc và b máy Nhà nc pháp quyn xã hi ch ngha Vit Nam.
+
+Nm c các kin thc lý lun c bn v pháp lut bao gm: Khái nim pháp lut; ngun gc
+ca pháp lut; bn cht pháp lut; các kiu, hình thc ca pháp lut; mi quan h gia pháp lut
+và mt s hin tng xã hi tác ng mnh n i sng xã hi hoc có tác dng iu chnh các
+quan h xã hi nh kinh t, chính tr, nhà nc, o c.
+
+Nm c kin thc c bn v quy phm pháp lut ­ n v c s cu thành ca pháp lut; vn
+bn quy phm pháp lut, các loi vn bn quy phm pháp lut ca Vit Nam; pháp ch, nguyên
+tc pháp ch xã hi ch ngha.
+Nm c kin thc c bn v quan h pháp lut; các loi ch th quan h pháp lut, ni dung
+quan h pháp lut; hành vi pháp lý.
+Nm c kin thc c bn v thc hin pháp lut, vi phm pháp lut, các loi vi phm pháp lut:
+ti phm, vi phm dân s, vi phm hành chính, vi phm k lut và trách nhim pháp lý.
+Nm c ni dung ch yu ca Hin pháp và mt s b lut, lut c bn ca Vit Nam.
+Ni dung: Hc phn Pháp lut i cng trang b cho sinh viên nhng kin thc lý lun c bn
+v nhà nc và v pháp lut; nhn thc và vn dng các quy phm pháp lut, vn bn quy phm
+pháp lut trong cuc sng. Các ni dung c bn bao gm: Ngun gc, bn cht, c trng, chc
+nng, kiu và hình thc ca nhà nc và ca pháp lut; b máy Nhà nc cng hòa xã hi ch
+ngha Vit Nam; mi quan h gia pháp lut và mt s hin tng xã hi quan trng; quy phm
+pháp lut; vn bn quy phm pháp lut, h thng vn bn quy phm pháp lut ca Vit Nam;
+nguyên tc áp dng vn bn quy phm pháp lut; quan h pháp lut, cu thành ca quan h pháp
+lut; thc hin pháp lut, vi phm pháp lut và trách nhim pháp lý; ni dung c bn ca Hin
+pháp và mt s o lut quan trng ca Vit Nam
+7020202 Ch ngha xã hi khoa hc
+Hc phn hc trc: Mã môn hc7080226 (Tên hc phn Tin hc i cng + thc hành (dùng
+cho khi k thut), Mã môn hc (Tên hc phn)
+Mc tiêu: Sau khi hc xong hc phn Ch ngha xã hi khoa hc, sinh viên c trang b nhng
+kin thc c bn sau:Bit c s ra i, các giai on phát trin, i tng, phng pháp và ý
+ngha ca vic hc tp, nghiên cu ch ngha xã hi khoa hc.
+Hiu c khái nim giai cp công nhân, bit c giai cp công nhân có vai trò gì v mt lch
+s và làm th nào  h  thc hin vai trò lch s ca mình .
+Hiu c nhng quan im ca ch ngha Mác ­ Lenin v ch ngha xã hi, thi k quá  lên
+ch ngha xã hi và s vn dng sáng to ca ng Cng sn Vit nam vào iu kin c th ca
+Vit nam.
+Sinh viên nm c bn cht ca nn dân ch xã hi ch ngha và nhà nc xã hi ch ngha nói
+chung và  Vit Nam nói riêng.
+Sinh viên có kin thc nn tng v c cu xã hi ­ giai cp và liên minh giai cp, tng lp trong
+thi k quá  lên ch ngha xã hi.
+Sinh viên hiu rõ quan im ca ch ngha Mác ­ Lênin v vn  dân tc, tôn giáo và ni dung
+chính sách dân tc, tôn giáo ca ng và Nhà nc Vit Nam.
+Hiu rõ nhng quan im c bn ca ch ngha Mác ­ Lênin, ng Cng sn Vit nam v gia
+ình, xây dng gia ình trong thi k quá  lên ch ngha xã hi.
+Ni dung: Ch ngha xã hi khoa hc là môn hc nm trong h thng các môn khoa hc lý lun
+chính tr ca Ch ngha Mác-Lênin.Cùng vi các môn khoa hc Mác - Lênin, T tng H Chí
+Minh và các môn hc khác, môn hc này giúp sinh viên có nhn thc tng hp, toàn din v ch
+ngha Mác - Lênin, t tng H Chí Minh và con ng i lên ch ngha xã hi  Vit Nam. T
+ó hiu bit nn tng t tng ca ng, xây dng nim tin, lý tng cách mng cho sinh viên.
+Giúp cho sinh viên cng c th gii quan, nhân sinh quan và phng pháp lun chung nht 
+tip cn các khoa hc chuyên ngành ào to.
+
+Hc phn có 7 chng, bao gm nhng ni dung c bn ca ch ngha xã hi khoa hc, cung cp
+cho sinh viên nhng cn c lý lun khoa hc  hiu Cng lnh xây dng t nc, ng li
+chích sách xây dng ch ngha xã hi  Vit Nam; lý gii và có thái  úng n vi con ng
+i lên ch ngha xã hi - con ng mà ng và nhân dân ta ã la chn.
+7020201 T tng H Chí Minh
+Hc phn hc trc: Mã môn hc7080226 (Tên hc phn Tin hc i cng + thc hành (dùng
+cho khi k thut), Mã môn hc (Tên hc phn)
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn v mt s vn  chung ca môn hc
+T tng H Chí Minh.
+
+Giúp sinh viên hiu rõ c s thc tin, nhng tin  t tng, lý lun và nhân t ch quan hình
+thành t tng H Chí Minh; hiu rõ các giai on c bn trong quá trình hình thành và phát trin
+t tng H Chí Minh.
+
+Giúp sinh viên nhn thc c bn cht khoa hc, cách mng và nhng sáng to ca H Chí Minh
+v c lp dân tc và cách mng gii phóng dân tc, v ch ngha xã hi và con ng quá  lên
+ch ngha xã hi; nm c quy lut ca cách mng Vit Nam là c lp dân tc gn lin vi ch
+ngha xã hi.
+
+Trang b cho sinh viên nhng kin thc c bn ca t tng H Chí Minh v ng Cng sn Vit
+Nam, v xây dng nhà nc ca dân, do dân, vì dân.
+
+Cung cp cho sinh viên kin thc c bn ca t tng H Chí Minh v i oàn kt toàn dân tc,
+oàn kt quc t và s vn dng ca ng Cng sn Vit Nam vào s nghip i mi t nc.
+
+Cung cp cho sinh viên kin thc c bn ca t tng H Chí Minh v vn hóa, o c, con
+ngi. Trên c s ó, ngi hc bit vn dng vào thc tin, th hin trách nhim xây dng vn
+hóa, o c, con ngi Vit Nam hin nay theo t tng H Chí Minh.
+Ni dung: Hc phn T tng H Chí Minh gm 6 chng cung cp cho sinh viên kin thc c
+bn v: i tng, phng pháp nghiên cu và ý ngha hc tp môn T tng H Chí Minh; v
+c s, quá trình hình thành và phát trin t tng H Chí Minh; v c lp dân tc và ch ngha
+xã hi; v ng Cng sn và Nhà nc Vit Nam; v i oàn kt dân tc và oàn kt quc t;
+v vn hoá, o c và con ngi.
+7020301(2-0-4), Lch s ng Cng sn Vit Nam (Vietnamese Communist Party history)
+Hc phn hc trc: Trit hc Mác ­ Lênin; Kinh t chính tr Mác ­ Lênin, Ch ngha xã hi
+khoa hc, T tng H Chí Minh
+Mc tiêu:
+Kin thc
+
+- Trang b cho sinh viên nhng kin thc c bn v mt s vn  chung ca môn hc Lch
+s ng Cng sn Vit Nam.
+- Cung cp cho sinh viên nhng tri thc có tính h thng v quá trình ra i ca ng Cng
+sn Vit Nam (1920-1930), ni dung c bn, giá tr lch s ca Cng lnh chính tr u tiên ca
+ng và quá trình ng lãnh o cuc u tranh giành c lp, giành chính quyn (1930-1945).
+- Cung cp cho sinh viên nhng ni dung lch s c bn, h thng, khách quan v s lãnh o
+ca ng i vi hai cuc kháng chin chng thc dân Pháp và  quc M xâm lc, hoàn thành
+gii phóng dân tc, thng nht t nc thi k 1945-1975.
+- Giúp sinh viên nm c ng li, cng lnh, nhng tri thc có h thng v quá trình
+phát trin ng li và s lãnh o ca ng thi k c nc quá  lên ch ngha xã hi và tin
+hành công cuc i mi t nm 1975- 2018.
+T tng:
+
+- Cung cp c s lch s, góp phn cng c nim tin ca th h tr vào s nghip gii phóng
+dân tc và phát trin t nc theo con ng cách mng vô sn, s la chn úng n, tt yu,
+khách quan ca lãnh t Nguyn Ái Quc và ng Cng sn Vit Nam t thi k u dng ng.
+- Giúp sinh viên có nhn thc úng n thc tin lch s và nhng kinh nghim rút ra t quá
+trình ng lãnh o hai cuc kháng chin chng ngoi xâm thi k 1945-1975, nâng cao nim
+tin vào s lãnh o ca ng và sc mnh oàn kt ca toàn dân trong s nghip cách mng ca
+dân tc
+- Cng c nim tin ca sinh viên v nhng thng li ca ng trong lãnh o a c nc
+quá  lên ch ngha xã hi và tin hành công cuc i mi (1975-2018), cng c nim tin và
+lòng t hào vào s lãnh o ca ng i vi s nghip cách mng hin nay.
+K nng
+
+- Trang b phng pháp t duy khoa hc v lch s, k nng la chn tài liu nghiên cu, hc
+tp môn hc và kh nng vn dng nhn thc lch s vào công tác thc tin, phê phán quan nim
+sai trái v lch s ca ng.
+- Góp phn trang b cho sinh viên phng pháp nhn thc bin chng, khách quan v quá
+trình ng ra i và vai trò lãnh o ca ng trong cuc u tranh giành c lp dân tc, xác
+lp chính quyn cách mng.
+- Trang b nng lc phân tích s kin, phng pháp úc rút kinh nghim lch s v s lãnh
+o kháng chin ca ng.
+- Rèn luyn phong cách t duy lý lun gn lin vi thc tin, phát huy tính nng ng, sáng
+to ca sinh viên.
+Ni dung: Trang b cho sinh viên s hiu bit v i tng, mc ích, nhim v, phng pháp
+nghiên cu, hc tp môn Lch s ng Cng sn Vit Nam và nhng kin thc c bn, ct lõi,
+h thng v s ra i ca ng (1920-1930), quá trình ng lãnh o cuc u tranh giành chính
+quyn (1930- 1945), lãnh o hai cuc kháng chin chng thc dân Pháp và  quc M xâm
+lc, hoàn thành gii phóng dân tc, thng nht t nc (1945-1975), lãnh o c nc quá 
+lên ch ngha xã hi và tin hành công cuc i mi (1975-2018). Qua ó khng nh các thành
+công, nêu lên các hn ch, tng kt nhng kinh nghim v s lãnh o cách mng ca ng 
+giúp ngi hc nâng cao nhn thc, nim tin i vi ng và kh nng vn dng kin thc ã
+hc vào thc tin công tác, góp phn xây dng và bo v T quc Vit Nam xã hi ch ngha.
+NGOI NG
+7010601 3(3-0-6), Ting Anh 1
+Hc phn hc trc:
+Mc tiêu:
+Ni dung: Sinh viên nm c cách s dng và phân bit c các thì c bn ca ng t ting
+Anh bao gm các thì hin ti, quá kh và thì tng lai, bit s dng các dng câu trc tip, câu
+gián tip, mnh  quan h xác nh. Sinh viên có th áp dng các kin thc v ngôn ng bao
+gm các cu trúc ng pháp, t vng, ng âm ...  hiu c các bài c, nghe, nói hay trình bày
+quan im cá nhân, miêu t ngi hoc  vt, thc hin các bài hi thoi, vit mt on vn
+ngn.
+
+- Các k nng: Các k nng nghe, nói, c, vit c tích hp trong các bài ging theo giáo trình
+và k nng t duy phn bin.
+7010602 3 (3-0-6), Ting Anh 2
+Hc phn hc trc: 7010601 (Ting Anh 1)
+Mc tiêu: Phn t vng: Sinh viên hc cách thành lp t, cm t và các ng t hay s dng
+trong các bi cnh khác nhau, các ch  nh: công vic, công ngh, ngôn ng, du lch, lch s
+và thiên nhiên.
+
+Phn ng pháp: Sinh viên c hc các thì ting Anh: hin ti hoàn thành, và quá kh hoàn thành;
+các dng câu: câu iu kin loi không và loi 1, câu ch ng, b ng  thì hin ti n, câu
+trc tip, câu gián tip; mnh  quan h xác nh, danh t m c, danh t không m c
+và gii t ch thi gian và ni chn trong ting Anh.
+
+Ng âm: Sinh viên hc cách phát âm các t n l, trng âm ca t và ng iu trong câu iu
+kin, cách ni âm.
+Ni dung: Sinh viên nm c cách s dng và phân bit c các thì c bn ca ng t ting
+Anh bao gm các thì hin ti, quá kh và thì tng lai, bit s dng các dng câu trc tip, câu
+gián tip, mnh  quan h xác nh. Sinh viên có th áp dng các kin thc v ngôn ng bao
+gm các cu trúc ng pháp, t vng, ng âm...  hiu c các bài c, nghe, nói hay trình bày
+quan im cá nhân, miêu t ngi hoc  vt, thc hin các bài hi thoi, vit mt on vn
+ngn.
+
+- Các k nng: Các k nng nghe, nói, c, vit c tích hp trong các bài ging theo giáo trình
+và k nng phn bin.
+HC PHN C S NGÀNH CNTT
+
+7080514 3(3-0-6) Nhp môn ngành Công ngh thông tin
+Hc phn hc trc: Không
+Mc tiêu:
+Ni dung: Gii thiu v lch s phát trin, tm quan trng ca Công ngh thông tin, nhng v trí
+mà k s tin hc có th m nhn khi ra trng làm vic, nhng thách thc và c hi cho k s
+trong các lnh vc; Gii thiu các kin thc c s ca Công ngh thông tin, mi liên quan gia
+toán, khoa hc c bn và Công ngh thông tin; Các kin thc c bn liên quan n làm vic nhóm,
+các yêu cu, k nng, các mô hình t chc và mô hình quyt nh trong hot ng nhóm. Các k
+nng, phng pháp và qui trình cn thit  gii quyt vn ; Các k nng giao tip cn thit
+trong công vic; Các khái nim, nh ngha, bn cht ca o c, chun mc o c ca sinh
+viên trong trng i hc, các chun mc và tiêu chun o c ngh nghip ca k s tin hc.
+7080207 3 (3-0-6) C s d liu
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn nht v c s d liu.
+Ni dung: Môn hc tp trung tìm hiu các kin thc v c s d liu nh: c s d liu, h qun
+tr c s d liu, mô hình c s d liu, ngôn ng thao tác d liu, phng pháp thit k c s d
+liu dng quan h và xây dng truy vn, ti u hóa câu hi... Mt phn không nh thi lng ca
+môn hc c dành cho lý thuyt c s ca c s d liu là i s quan h và lý thuyt chun
+hóa. Môn hc còn gii thiu mt s thut toán c bn c dùng  t chc d liu  mc vt lý
+và k thut  chun hóa và kim tra tính úng n ca các dng chun. T ó giúp sinh viên có
+kh nng thit k các c s d liu quan h hoàn chnh t khi bt u thu thp yêu cu n khi
+khai thác c s d liu này  tr li các truy vn cho ngi dùng...
+7080208 3 (3-0-6) C s lp trình
+Mc tiêu: Trang b cho sinh viên cách gii bài toán trên máy tính Hiu ý ngha và cú pháp ca
+các khái nim c bn trong ngôn ng lp trình C. Nm vng kiu d liu n gin và các cu trúc
+d liu khác: struct, con tr, mng, file.
+Ni dung: Môn hc gii thiu các khái nim c bn v bài toán, thut toán, cách gii mt bài toán
+trên máy tính. Sau ó môn hc gii thiu chi tit các cú pháp, ng ngha ca ngôn ng lp trình
+C. Mc tiêu là giúp sinh viên hiu c mt bài toán trên máy tính bng ngôn ng lp trình. Sinh
+viên nm chc các k thut lp trình c s và nâng cao, có th áp dng  gii quyt các bài toán
+thông qua lp trình bi ngôn ng C.
+7080211 2 (2-0-4) H qun tr c s d liu
+Môn hc hc trc: C s d liu (mã s: 7080207)
+Mc tiêu: Cung cp cho sinh viên các kin thc c bn v mt h qun tr c s d liu.
+Ni dung: Hc phn cung cp nhng kin thc chung v thành phn và chc nng ca h qun
+tr c s d liu kiu quan h; kh nng nh ngha d liu, thao tác d liu và truy vn d liu
+bng ngôn ng SQL, áp dng trên h qun tr c s d liu SQL Server trong môi trng
+Windows. SV c thao tác vi các i tng ca h qun tr c s d liu SQL Server 2008.
+Cui hc phn, sinh viên có th t  xut và gii quyt mt s bài toán qun lý vi quy mô va
+và nh.
+7080206 3 (3-0-6) Cu trúc d liu và gii thut
+Môn hc hc trc: Môn C s lp trình (mã s 7080208)
+Mc tiêu: Sinh viên nm c các kin thc c bn v cu trúc d liu, các gii thut c bn tìm
+kim, sp xp trong tin hc
+Ni dung: Môn hc cung cp các kin thc nn tng v các cu trúc d liu cng nh các thut
+toán cho sinh viên. Phn u ca môn hc, sinh viên c hc các cu trúc d liu c bn nh
+danh sách, hàng i, ngn xp cho n các cu trúc d liu phc tp nh cây. Phn còn li ca
+môn hc trang b cho sinh viên các thut toán t n gin n phc tp  gii quyt mt lot các
+bài toán c bn nh sp xp, tìm kim, các bài toán trên cây.
+7080216 2(2-0-4) K thut lp trình hng i tng + BTL
+Môn hc trc: C s lp trình, mã s hc phn 7080208
+Mc tiêu: Trang b các kin thc c bn và nhng k nng v k thut lp trình hng i
+tng bng ngôn ng C++.
+
+Ni dung: Nhng kin thc c bn và k nng v k thut lp trình hng i tng bng ngôn
+ng C++, gm: Khái nim lp trình hng i tng. Phân tích các thành phn d liu, thành
+phn phng thc ca mt i tng. To lp và xây dng chng trình qun lý các i tng.
+Các u im ca chng hàm, khuôn hình, ng dng xây dng các phng thc trên lp và qun
+lý i tng. Ni dung mc ích ca k thut k tha, tính a hình trong k tha, xây dng và
+qun lý các i tng c to t nhiu lp.
+7080116 4(3-2-7) Phát trin ng dng web + BTL
+Hc phn hc trc: 7080207 (C s d liu)
+Mc tiêu:
+V kin thc:
+Kin thc cn bn v thit k và phát trin website ng s dng HTML, CSS, Javascript, web
+GIS API, PHP và h qun tr c s d liu MySQL.
+
+Kin thc nn tng v lp trình web theo mô hình Client/Server dùng ngôn ng lp trình PHP.
+V k nng:
+
+T thit k các website
+Vn dng các kin thc ã hc v HTML, CSS, Javascript, web GIS API, PHP và h qun tr c
+s d liu MySQL  to các trang web ng, web GIS có kh nng tng tác.
+
+Bit cách công b website trên internet.
+
+K nng làm vic theo nhóm, lp báo cáo, thuyt trình
+Ni dung:
+Ni dung hc phn gm 8 chng: Chng 1: Tng quan; Chng 2: HTML; Chng 3: CSS;
+Chng 4: Javascript; Chng 5: Web GIS; Chng 6: Lp trình web ng vi PHP; Chng 7:
+Lp trình c s d liu vi PHP & MySQL; Chng 8: Mt s vn  m rng
+7080111 2 (3-1-5) Mã ngun m
+Hc phn hc trc: 7080226 (Tin hc i cng + TH (khi k thut)
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn v phn mm mã ngun m (PMMNM).
+Hc phn cng gii thiu mt s sn phm mã ngun m tiêu biu, mô hình phát trin PMMNM,
+nhng ng lc và li ích mang li khi tham gia phát trin PMMNM. Ngoài ra, hc phn còn
+trang b cho sinh viên kin thc v ht nhân Linux và h iu hành Ubuntu.
+Ni dung:
+Ni dung hc phn gm 4 chng: Chng 1. Tng quan v PMMNM; Chng 2. Gii thiu mt
+s PMMNM tiêu biu; Chng 3. Chuyn i và phát trin PMMNM; Chng 4. Ht nhân Linux
+và H iu hành Ubuntu
+7080122 3 (3-1-5) Trí tu nhân to + BTL
+Hc phn hc trc: C s lp trình, Toán ri rc cho CNTT
+Mc tiêu: Cung cp nhng kin thc và k nng thc hành c bn v Trí tu nhân to
+Ni dung:
+Chng 1. Tng quan v trí tu nhân to
+Chng 2. Gii quyt vn  bng tìm kim
+Chng 3. Biu din tri thc
+Chng 4. Hc máy
+
+7080112(2-0-4) Nguyên lý h iu hành
+Hc phn hc trc:
+Mc tiêu: Môn hc giúp sinh viên nm bt các khái nim tng quan v h iu hành, kin trúc
+ca h iu hành, cách x lý khi h iu hành gp li và cách khôi phc khi li trên h iu hành
+xy ra.
+Ni dung: Ni dung hc phn gm 4 chng:
+Chng 1. Gii thiu chung v h iu hành
+Chng 2. Qun lý và lp lch tin trình
+Chng 3. ng b hoá tin trình và trng thái Deadlock ca h thng
+Chng 4. Qun lý b nh trong
+Chng 5. Thao tác n gin vi h iu hành
+7080113 (3-0-6) Phân tích thit k h thng + BTL
+Hc phn hc trc: 4080206 (C s d liu); 7080108 (Lp trình .NET 1)
+Mc tiêu: Giúp sinh viên phân tích thit k c h thng phn mm. Nm c nhng kin thc
+c bn v quá trình phát trin h thng thông tin, phng pháp lun, phng pháp và công c
+thit k mt h thng thông tin và cách vn dng nó trong thc tin
+Ni dung:
+Ni dung ca hc phn gm 8 chng: Chng 1: Tng quan, Chng 2: Tin trình phát trin h
+thng thông tin, Chng 3: Kho sát h thng, Chng 4: Mô hình nghip v, Chng 5: Mô
+hình tin trình nghip v, Chng 6: Mô hình d liu khái nim, Chng 7: Mô hình d liu
+logic, Chng 8: Thit k h thng vt lý
+7080717 3 (3-0-6), Mng máy tính + BTL
+Mc tiêu: Sinh viên nm c khái nim v mng máy tính, các thành phn ca mt mng máy
+tính, li ích ca mng máy tính. Nm c các khái nim nh giao thc, internet; Nm c kin
+trúc mng máy tính. Hiu và phân bit c mt s mng máy tính nh LAN, WAN. Nm c
+mô hình giao OSI và TCP/IP và so sánh chúng; Nm c các chc nng c bn ca tng vt lý;
+Nm c các c im cu to và c im truyn dn ca mt s môi trng truyn hu tuyn
+nh : Cáp xon ôi, cáp ng trc, cáp quang. Nm c các c im ca truyn dn vô tuyn;
+Nm c các chc nng ca tng liên kt d liu, cu trúc ca khung (Frame), a ch vt lý, các
+ch  a ch và vn  kim soát li; Nm c chc nng ca tng mng, các gii thut chn
+ng. Nm c các c im giao thc Ipv4, gói d liu Ipv4, các loi a ch Ipv4. Nm c
+cách chia mng con. Nm c các vn  v nh tuyn, bng nh tuyn, phân bit nh tuyn
+tnh và nh tuyn ng. Hiu và so sánh c mt s giao thc nh tuyn c bn. Hiu c
+mt s giao thc iu khin khác nh ICMP và ARP. Nm c mt s công c kim tra kt ni
+mng; Nm c các chc nng và c ch hot ng ca tng giao vn, các giao thc dch v ca
+tng giao vn. Nm c các c ch thit lp kt ni, ngt kt ni, c ch truyn li, iu khin
+lung.. ca giao thc TCP. So sánh hai giao thc TCP và UDP; Hiu c c im và c ch
+ca mt s dch v và ng dng mng thông dng nh dch v web, dch v mail, dns, ftp, dhcp..;
+Hiu c các k thut và các chun trong mng cc b, các phng thc truy cp môi trng
+truyn; Nm c mt s kin thc c bn v cu trúc mng din rng, các tiêu chun Wan, các
+thit b wan và các k thut chuyn mch dùng trong mng din rng;
+Ni dung: Ni dung chính ca môn hc bao gm các vn  chính sau: nh ngha mng máy
+tính. Li ích mng máy tính. Các khái nim trong lnh vc mng máy tính. Kin trúc mng máy
+tính. Phân loi mng máy tính. Giao thc mng. Mô hình tham chiu OSI và TCP/IP. Lch s
+hình thành Internet. Qun lý mng. Chc nng ca tng vt lý. Mt s phng tin truyn dn.
+
+Chc nng tng liên kt d liu. Các k thut truy cp môi trng truyn. óng gói d liu. a
+ch vt lý. Kim soát li. Chc nng tng mng. Gii thut chn ng. Giao thc liên mng IP
+v4. nh tuyn. Mt s giao thc iu khin. Kim tra tng mng. Các chc nng và c ch ca
+tng giao vn. TCP. UDP. Dch v Web, dch v Ftp, dch v DNS, dch v mail, DHCP.
+
+Ethernet và chun IEEE802. Mng Token Ring. Khái nim WAN. Mt s công ngh c bn kt
+ni WAN. Chuyn mch kênh. Chuyn mch gói.
+7080713 2(2-0-6) Kin trúc và h tng mng IoT
+Mc tiêu: Trang b cho sinh viên nhng kin thc v Khái nim mng IoT; Các c im và ng
+dng IoT; Các thành phn mng IoT và chc nng; Kin trúc mng IoT (Tng vt lý và tng
+MAC; Tng mng; Tng giao vn; Tng ng dng); Các giao thc truyn dn (WiFi; Bluetooth;
+ZigBee;....); Các bc xây dng h thng IoT; Thc hin xây dng h thng IoTs dng Arduino
+(Gii thiu Arduino; Cài t Arduino; Lp trình cho Arduino; ..); Gi lp arduino trên máy tính
+bng phn mm Proteus
+Ni dung: Hc phn cung cp kin thc c s v mng IoT (Internet of Things) trong ó tp
+trung vào kin trúc và h tng mng IoT hin i. Hc phn cung cp các kin thc v kin trúc
+và các thành phn ca IoT; các giao thc truyn thông s dng trong mng IoT, các ng dng ca
+IoT; nn tng cho s kt ni IoT bao gm các mng cm bin không dây, các h thng phân tán,
+h thng mng vin thông, giao thc truyn d liu .... ; Các bc xây dng ng dng IoT và
+trin khai thông qua Arduino và các phn mm mô phng.
+7080626 3(2-2-5) Thng mi in t
+Hc phn hc trc: Không
+Mc tiêu: Trang b cho sinh viên kin thc có bn v thng mi in t; bit cách t chc và
+nh hng cho vic xây dng website thng mi. Hc phn trang b kin thc c bn v SEO
+trong thng mi in t
+Ni dung: Hc phn gii thiu tng quan v Thng mi in t và c s h tng ca Thng
+mi in t; hng dn các k thut xây dng trang thng mi in t, hosting, cách xây dng
+chin lc marketing trong TMT, phân tích các nguy c và các gii pháp trin khai an ninh
+trong TMT. Bên cnh ó hc phn cng gii thiu các nn tng ng dng thng mi in t
+ph bin hin nay gm các phn mm TMT và các h thng thanh toán in t.
+7080703 3 (3-0-6) C s an ninh mng
+Hc phn hc trc: 7080717 (Mng máy tính + BTL)
+Mc tiêu: Sinh viên nm c Các khái nim và tm quan trng ca lý thuyt mt mã trong công
+ngh an toàn thông tin và an ninh mng máy tính; Nm c các thut toán mã hóa khóa bí mt,
+quan trng nht là h DES và AES; Nm c các k thut mã hóa khóa công khai, tiêu biu là
+thut toán RSA; Nm c các k thut s dng hàm bm trong công ngh xác thc và ch ký
+in t; Bit cách trin khai thut toán s dng khóa bí mt và khóa công khai trong thc t.
+Ni dung: Ni dung hc phn gm 5 chng:
+
+Chng 1. Lý thuyt thông tin trong các h mt.
+
+Chng 2. Các h mt khóa bí mt.
+
+Chng 3. Mt mã khoá công khai.
+
+Chng 4. Hàm bm xác thc và ch kí s.
+7080509 2(2-0-4) Khoa hc d liu
+Hc phn hc trc: Nhp môn ngành công ngh thông tin (7080514)
+Mc tiêu:
+Ni dung: Hc phn gii thiu nhng khái nim c bn v khoa hc d liu, xu th phát trin v
+d liu ln hin ti và tng lai. Gii thiu tng quan v các nn tng và tin trình khoa hc d
+liu. Ngôn ng lp trình Python trong khoa hc d liu. Khai thác và s dng mt s th vin
+Python trong khoa hc d liu nh: Th vin x lý d liu s (Numpy), Th vin trc quan hóa
+d liu (Matplotlib), Th vin phân tích d liu (Pandas); Th vin các gii thut hc máy (Scikit
+Learn).
+7080712 2(2-0-4) Kin trúc máy tính
+Hc phn hc trc: không
+Mc tiêu: V c bn sinh viên cn nm c nhng kin thc sau: Nm c khái nim máy
+tính, t chc cu to và hot ng ca máy tính; Nm c cách biu din d liu s hc và logic
+ca máy tính; Nm c cu trúc tng quát ca mt h thng máy tính. Nguyên tc hot ng;
+Chc nng, c im ca các thành phn c bn: CPU, B nh, H thng vào ra, Liên kt h
+thng (bus); Nm c cu trúc c bn và nguyên tc hot ng ca b x lý trung tâm CPU. Các
+thành phn tng cng trên các vi x lý tiên tin. Các dòng sn phm vi x lý hin nay; Nm
+c tng quan v h thng nh trong máy tính. Nm vng c im, chc nng ca các loi b
+nh chính và b nh ph trong h thng máy tính; Nm c các kin thc tng quan v h thng
+vào/ra, các phng pháp iu khin vào/ra, các cng vào / ra thông dng và các thit b vào/ ra
+chut, bàn phím, màn hình.
+Ni dung: Ni dung chính ca môn hc bao gm các vn  chính sau: Các khái nim v máy
+tính, phn cng, phn mm, phn sn. Các loi máy tính. Lch s máy tính. Biu din d liu s
+hc và logic máy tính: Các h m c bn, mã hóa và lu tr d liu trong máy tính, biu din ký
+t, s nguyên, s thc du phy ng...H thng máy tính: S  cu to h thng máy tính, chc
+nng các thành phn c bn máy tính. B x lý trung tâm: Cu trúc c bn ca CPU, tp lnh,
+hot ng ca CPU, các thành phn tng cng trên các b vi x lý tiên tin .B nh máy tính:
+Cu to, c im ca b nh chính (ROM, RAM..), b nh ph (HDD, CD..). H thng nh trên
+PC hin nay.H thng vào ra: Các phng pháp iu khin vào/ra, các cng vào ra thông dng
+trên PC, các thit b ngoi vi c bn.
+
+HC PHN CHUYÊN NGÀNH
+A. Công ngh thông tin a hc
+
+7080309 3(3-0-6) H thng c s d liu không gian
+Hc phn hc trc: 7080207 (C s d liu)
+Mc tiêu: Hc phn gii thiu cho sinh viên nhng kin thc c bn v Ni dung và Kin trúc ca
+H C s d liu, Mô hình c s d liu và mô hình d liu, D liu không gian và h thng c s
+d liu không gian, H thng c s d liu không gian trên nn Web, Khai phá d liu không gian.
+Hin trng và xu th ca công ngh thông tin không gian s c gii thiu cho sinh viên xuyên
+sut các chng hc.
+Ni dung: Hc phn tp trung vào các ni dung ca H thng c s d liu không gian nh Ni
+dung và Kin trúc ca H C s d liu, Mô hình c s d liu và mô hình d liu, D liu không
+gian và h thng c s d liu không gian, H thng c s d liu không gian trên nn Web, Khai
+phá d liu không gian.
+7080313 3(3-0-6) Thông tin a hc i cng
+Hc phn hc trc: Không
+Mc tiêu:
+
+Cung cp mt s khái nim v thông tin a hc, mt s phng pháp thu nhn d liu, mt s
+phng pháp x lý, phân tích d liu, các phng pháp hin th và phân phi d liu, ng dng a
+tin hc trong Khoa hc trái t và môi trng.
+Kt thúc hc phn, ngi hc s có th hiu:
+- Hiu bit c công ngh a tin hc và mt s ng dng.
+- Thành tho mt s thao tác c bn trên các thit b thu nhn thông tin và phn mm chuyên dng
+ng dng trong a tin hc.
+Ni dung: Ni dung hc phn gm: Thông tin a hc; Công ngh thu nhn d liu thông tin a
+hc; Công ngh x lý và phân tích d liu thông tin a hc; ng dng thông tin a hc.
+7080403 3(0-0-9)  án CNTTDH
+Mc tiêu:
+Kin thc
+Nm c kin thc c bn v ni dung, các bc gii quyt mt  án chuyên ngành;
+Kin thc v xây dng c s d liu khác nhau phc v  án chuyên ngành, u tiên c s d
+liu a không gian cho nhng bài toán c th v các khoa hc Trái t;
+Kin thc xây dng thut toán, các mô hình, chc nng h thông tin a lý gii quyt bài toán c
+th trong khoa hc Trái t c dn ra  các bng 1 và 3
+Kin thc v các phn mm ng dng  khai thác, phát trin phc v  án
+K nng
+K nng làm vic theo nhóm, tuyt trình mt  án/ án chuyên ngành;
+K nng phát hin và gii quyt vn ;
+K nng t duy, phân tích và ra quyt nh;
+K nng tìm kim, la chn phng pháp phù hp s dng cho nhng mc ích riêng bit ca
+chuyên ngành
+K nng trin khai và phát trin phn mm ng dng
+K nng trình bày mt  án/d án k thut
+Ni dung:
+Hc phn nhm tng kt và kim tra, vn dng các kin thc quan trng t các hc phn mà sinh
+viên ã c tip thu. Thông qua hc phn, sinh viên có c hi ôn tp, h thng hóa và nm vng
+các kin thc v công ngh Web/WebGIS/MobileGIS, vin thám, h thông tin a lý, trí tu nhân
+to (các thut toán hc máy, nh logic m, cây logic, cây quyt nh,...), a thng kê, ng thi
+là c hi b sung mt s kin thc a cht, môi trng,... vn dng  thit k, gii quyt mt
+bài toán c th trong qun lý, ánh giá, d báo tài nguyên, môi trng; bin ng lp ph b mt,
+thay i ng b và mt s ch  liên quan khác. Khuyn khích sinh viên phát trin mt s
+modul t các phn mm ng dng  gii quyt  án c giao.
+
+7080304 (2 - 0 - 4)C s x lý nh s
+Hc phn hc trc: Mã môn hc (Tên hc phn), Mã môn hc (Tên hc phn)
+Mc tiêu: Cung cp cho sinh viên nhng kin thc c bn v nh s, v cu hình ca mt h
+thng x lý nh, các phng pháp x lý nh s. Các k thut x lý và ci thin nh: lc nhiu,
+tách biên, làm trn nh, nén nh; s lc v trích chn c trng và nhn dng i tng trong
+nh.
+Ni dung: Hc phn cung cp các kin thc v:
+Khái nim và các thuc tính ca nh
+Các phép bin i nh
+Các phng pháp phân tích và x lý nh
+Khái nim nhn dng nh, nén nh
+
+7080307(2 - 0 - 4) C s d liu phân tán
+Hc phn hc trc: Mã môn hc (Tên hc phn), Mã môn hc (Tên hc phn)
+Mc tiêu: Cung cp nhng kin thc c bn v nguyên lý các h c s d liu phân tán, bao gm
+các ni dung v các chin lc thit k và kim soát d liu. Lý thuyt phân mnh không tn tht
+thông tin và bài toán cp phát d d liu phân tán trên mng máy tính. Vn  v qun lý giao
+dch, c trng và các tính cht giao dch. Vn  tng tranh và hiu nng x lý phân tán.
+Ni dung: Gii thiu v c s d liu phân tán.
+Các phng pháp phân mnh d liu, các kiu phân mnh và iu kin úng n phân mnh d
+liu.
+Bin i truy vn trong c s d liu phân tán.
+Qun tr các giao dch và gii quyt các tng tranh trong d liu phân tán.
+7080321 3 (2-2-5) Phân tích thông tin a lý
+Hc phn hc trc: 7050303 (C s h thông tin a lý), Xác sut thng kê.
+Mc tiêu:
+Kin thc
+
+Phân tích a không gian cung cp kin thc v các ng dng và k thut liên quan n d liu có
+các thành phn liên quan n không gian. Các bài hc bao gm các thao tác vi d liu không
+gian nh các phng pháp trc quan hóa (ví d: biu ,  th), khai phá d liu không gian (các
+bin ph thuc), xây dng các gi thuyt và xác minh li các gi thuyt cho các bài toán phân tích
+không gian. Phân tích không gian a lý da trên c s các quan sát các yu t ph thuc và c
+lp trong không gian  to thành các mu  phân tích (ví d:bnh truyn nhim trong cng
+ng) và thúc y ni suy d liu bng các k thut nh kriging hoc inverse distance weighting.
+Tuy nhiên, trong các ng dng khác (ví d: hi quy) s ph thuc không gian vi phm gi nh
+ca c lp d liu và do ó phi c tính toán  tránh a ra kt lun rt sai t thng kê tng
+cao. Môn hc nghiên cu tng tác không gian và có vai trò trong vic la chn các c s 
+phc v mô hình hóa nhu cu và phân cm không gian và vai trò ca nó trong vic to ra các
+nguyên tc phân loi không gian.
+K nng
+
+Cn yêu cu k nng làm vic theo nhóm, các kin thc v xác xut và thng kê c bn. K nng
+làm vic vi mt s phn mm thu thp và phân tích không gian c bn nh QGIS hoc ArcGIS.
+Ni dung:
+Phân tích không gian a lý nhm dy cho sinh viên cách áp dng các k thut thng kê và phân
+tích phù hp khác nhau vào d liu khi yu t v trí là mt tham s quan trng trong trong các bài
+toán phân tích. Môn hc s i phân tích các quy trình t các quy trình quy mô ln (ví d: t l ti
+phm gim dn theo hng bc-nam) cho n các quy trình quy mô nh hn (ví d: t l ti phm
+cao hn và tp trung  mt s vùng ngoi ô nht nh)  chúng ta có th hiu lý do ti sao có các
+yu t c phân tích trong bài toán(ví d: t l nghèo ói). Môn hc cung cp mt phng pháp
+n gin nhng hiu qu  hình dung, khám phá và sau ó xác nhn các gi thuyt. Kin thc
+môn hc s c áp dng thc t vào mt lot các b d liu và kch bn a lý trong th gii
+thc.
+7080323 3(2-0-6) Dch v da trên a im
+Môn hc hc trc: Không
+Mc tiêu:
+Mc tiêu chung: Cung cp cho hc viên kin thc v các nguyên tc c bn và hot ng ca
+Dch v da trên a im (LBS), gii thiu v các công ngh chính, phng pháp xác nh a
+im trong LBS. Ngoài ra, hc phn này cng s cung cp ngun tài nguyên hu ích cho các nhà
+phát trin và nhà nghiên cu trong lnh vc LBS.
+Ni dung:
+Phn lý thuyt s gii thiu cho hc viên tng quan v LBS, khái nim v a im và v trí không
+gian, c s d liu không gian và GIS, mng di ng và qun lý a im, các nguyên tc c bn
+ca các phng pháp nh v, hot ng LBS liên t chc và bo v quyn riêng t và tìm hiu
+LBS th h tip theo.
+Phn thc hành s cung cp cho hc viên các bài thc hành t n gin n nâng cao liên quan
+n biu din i tng không gian cho LBS, khai thác và s dng d liu không gian m. Hc
+viên s phi t hoàn thành các bài thc hành di s h tr ca giáo viên ph trách.
+Phn  án s gi ý cho hc viên v vic phát trin mt ng dng LBS, hc viên s phi t hoàn
+thành  án ca mình mt cách c lp hoc theo nhóm.
+7080324 3 (2-2-5) Xây dng ng dng webGIS vi Python and JavaScript
+Hc phn hc trc: C s d liu
+Hc phn hc song song: H thng c s d liu không gian
+Mc tiêu:
+- Sau khi hoàn thành môn hc này, sinh viên s có kh nng:
+
+- So sánh và phân bit gia 2 phng pháp lp trình hng th tc và lp trình hng i tng
+- S dng k thut ORM  làm vic vi d liu
+
+- Làm vic vi h qun tr CSDL PostgreSQL (PostGIS)
+- Xây dng mt ng dng web (webGIS) vi Python và JavaScript s dng các framework và
+
+    th vin ph bin
+
+- a mt ng dng web lên mt (free) web hosting
+- Làm vic nhóm mt cách hiu qu  hoàn thành mc tiêu chung
+
+- Trình bày mt báo cáo k thut di dng vn bn và thuyt trình trc nhóm ông ngi
+Ni dung:
+
+Hc phn này trc tiên s ôn tp li các kin thc c bn v HTML, CSS và JavaScript. Tip
+theo hc phn s tp trung trang b cho sinh viên kin thc và k nng ca lp trình hng i
+tng trong Python. Tip theo sinh viên s c hc cách xây dng các ng dng web (webGIS)
+bng cách s dng các framework và th vin ph bin kt hp vi h qun tr CSDL PostgreSQL
+(PostGIS). T nhng kin thc ã c hc và thc hành, sinh viên s c chia thành các nhóm.
+Mi nhóm s c yêu cu xây dng mt ng dng web (webGIS). Cui môn mi nhóm s vit
+báo cáo trình bày v bài tp ln và trình bày sn phm ca mình trc lp.
+7080402 3 (2-0-7) a thng kê +BTL
+Hc phn hc trc: C s vin thám và ng dng, C s H thông tin a lý
+Mc tiêu:
+
+Cung cp cho ngi hc có k nng nhn thc, ánh giá, tính bin i không gian các thông s
+nghiên cu bng các hàm cu trúc; gii các bài toán d báo không gian bng kriging hin i
+Ni dung:
+
+Cung cp cho sinh viên nhng kin thc v mô hình hàm cu trúc  nhn thc v mc , c
+tính, cu trúc; tính ng hng, d hng trong không gian ca các thông s nghiên cu; Gii các
+bài toán phân loi, ghép nhóm i tng nghiên cu; Xác lp, khai thác các loi phng sai; có
+kin thc v phng pháp ni suy, c lng, d báo im hoc khi trong không gian bng các
+thut toán Kriging và xác nh sai s các kt qu d báo; Khai thác, phát trin phn mm chuyên
+dng.
+7080408 3 (2-2-5) ng dng Matlab trong Khoa hc Trái t
+Hc phn hc trc: 7080313 (Thông tin a hc i cng)
+Mc tiêu:
+
+Trang b cho sinh viên nhng kin thc c bn v d liu không gian trong khoa hc Trái t;
+phân tích các d liu không gian bng phn mm ch o là Matlab
+Ni dung:
+
+Cung cp cho ngi hc v các phng pháp phân tích d liu trong khoa hc trái t và làm
+quen vi MATLAB. Phn mm MATLAB c s dng vì nó cung cp nhiu thut toán ng
+dng cho hu ht các phng pháp phân tích d liu, gii quyt các vn  in hình trong khoa
+hc trái t, chng hn nh thng kê n gin, phân tích d liu không gian, a thng kê và x
+lý nh.
+7080407 3(2-0-7) Thông tin a hc trong ánh giá thiên tai
+
+iu kin: Không
+Mc tiêu:
+Trang b kin thc v hin tng l và ng t; các phng thc áp dng mt s phng pháp
+Thông tin a hc  ánh giá, qun lý các hin tng thiên tai ó.
+
+Kt thúc hc phn, ngi hc s có th hiu:
+
+- Tng quan v bn cht ca các tai bin ng t và l
+- Thông tin a hc mà c bn là công ngh h thông tin a lý, vin thám, a thng kê trong ánh
+giá thiên tai
+
+- Cách khai thác, phát trin các phn mm liên quan trong ánh giá, qun lý thiên tai.
+Ni dung:
+
+Cung cp cho ngi hc nhng kin thc v c ch hình thành và c tính ni bt ca l và ng
+t; các phng thc áp dng mt s phng pháp Thông tin a hc mi  ánh giá, qun lý
+các hin tng thiên tai ó. Còn m rng n mt s tai bin khác  ngi hc tham kho, m
+rng kin thc.
+7080406 3 (2-0-7) Thông tin a hc trong ánh giá tài nguyên
+Hc phn hc trc: 7080313 Thông tin a hc i cng
+Mc tiêu:
+
+Trang b cho sinh viên nhng kin thc c bn v kho sát, thm dò, ánh giá tài nguyên, tr
+lng; k nng thu thp thông tin; ng dng a tin hc  nhn thc, ánh giá, biu din kt qu
+các công tác ánh giá tài nguyên khoáng sn rn.
+Ni dung:
+
+Cung cp cho sinh viên các kin thc c bn v phng pháp nghiên cu, ánh giá tài nguyên
+khoáng sn rn: K nng tng quát v c s, các dng công tác, phng thc thu thp tài liu ca
+công tác tìm kim, thm dò; c bit nm bt tt kh nng ng dng công ngh a tin hc  gia
+công x lý ánh giá kt qu công tác tìm kim, thm dò; xây dng mô hình  ánh giá khách
+quan, sát thc v s lng, cht lng khoáng sn rn.
+7080405 3 (2-2-5) Thông tin a hc trong ánh giá cnh quan
+Hc phn hc trc: 7080405 (H thông tin a lý), 7080403 (a thng kê)
+Mc tiêu:
+
+Cung cp cho ngi hc có k nng nhn thc, ánh giá các c tính, bin i không gian các
+thông s phn ánh a mo - cnh quan; ánh giá, qun lý mt s bài toán c th: các t gy a
+cht, trt l t, bin ng vùng ven bin, bi t xói l ven sông. Ngoài ra còn  cp n mt
+s ng dng khác  ngi hc tham kho, m rng kin thc.
+Ni dung:
+
+Cung cp cho ngi hc nhng kin thc tng quan và xu th phát trin tt yu ca a tin hc
+trong tng lai; nhng bài toán ng dng trong ánh giá, qun lý mt s bài toán c th, nh a
+mo-t gy a cht, trt l t, bin ng vùng ven bin, bi t xói l ven sông; khai thác,
+phát trin các thut toán, phn mm ng dng  gi quyt các bài toán ó. Chng 6 nh tài liu
+c thêm do ging viên cung cp và nh hng cho ngi hc.
+7080325 3(2-2-5) Phát trin ng dng a nn tng 1
+Hc phn hc trc:
+Mc tiêu:
+Cung cp cho hc viên kin thc và k nng c bn v lp trình phát trin ng dng di ng trên
+c hai nn tng iOS và Android.
+Ni dung: Phn lý thuyt s gii thiu cho hc viên tng quan, kin trúc ca ng dng Flutter và
+các Widgets c bn; gii thiu v ngôn ng lp trình Dart, kin thc v lp trình hng i tng
+và cách tip cn và quy trình phát trin phn mm, gii thiu v kin trúc trong phát trin ng
+dng di ng.
+Phn thc hành s cung cp cho hc viên các bài thc hành t n gin n nâng cao, các bài
+thc hành c to ra có liên quan vi nhau nhm cung cp k nng y   to ra mt ng
+dng hoàn chnh. Hc viên s phi t hoàn thành các bài thc hành di s h tr ca giáo viên
+ph trách.
+Phn  án s gi ý cho hc viên v vic phát trin mt ng dng hoàn chnh, hc viên s phi t
+hoàn thành  án ca mình mt cách c lp hoc theo nhóm.
+7080308 3(2-2-5) GIS cho ngi phát trin ng dng
+Hc phn hc trc:
+Mc tiêu:
+Cung cp kin thc chung v các k thut, công ngh chính cn thit  xây dng mt ng dng
+GIS phân tán, bao gm: h quy chiu và li chiu bn ; các kiu và nh dng d liu a
+không gian; phân bit s khác nhau gia d liu hình hc và d liu a lý trong d liu a không
+gian; chun d liu a không gian; tho lun các công ngh trong phát trin các ng dng GIS
+phân tán nh HTML, CSS, JavaScript, PHP, MySQL, GeoServer, OpenLayers, QGIS, ArcGIS
+Server, Google Maps API.
+Ni dung: Hc viên s c gii thiu v h quy chiu và li chiu bn , các kiu và nh
+dng d liu a không gian, chun d liu a không gian, tho lun v các công ngh trong phát
+trin các ng dng GIS phân tán.
+
+7080316 3(2-2-5) Lp trình Python 2
+Hc phn hc trc: 7080220 (Lp trình Python)
+Mc tiêu:
+Sau khi hoàn thành môn hc, sinh viên s có kh nng:
+- So sánh và phân bit gia 2 phng pháp lp trình hng th tc và lp trình hng i tng
+- ng dng phng pháp lp trình hng i tng trong vic gii quyt các bài toán lp trình
+- G li mt chng trình c code bng ngôn ng lp trình Python
+- S dng ngôn ng Python làm vic vi h qun tr CSDL MySQL
+- Làm vic nhóm mt cách hiu qu  hoàn thành mc tiêu chung
+- Trình bày mt báo cáo k thut di dng vn bn và thuyt trình trc nhóm ông ngi
+Ni dung: Hc phn này ôn tp li các kin thc c bn ca ngôn ng lp trình Python. Tip theo
+hc phn s tp trung trang b cho sinh viên kin thc và k nng ca lp trình hng i tng
+trong Python. Trong phn thc hành, sinh viên s tìm hiu thêm v mt s hàm trong th vin
+NumPy và t xây dng mt b th vin vi mt s tính nng tng t nh th vin NumPy. Cui
+cùng sinh viên s c trang b k nng s dng Python vi h qun tr c s d liu MySQL.
+7080319 3(2-2-5) Trc quan hóa d liu
+Hc phn hc trc: 7080220 (Lp trình Python)
+Mc tiêu:
+Sau khi hoàn thành môn hc, sinh viên s có kh nng:
+- Thit k và thit lp trc quan hóa d liu.
+- Trình bày trc quan d liu  giao tip hiu qu.
+- S dng kin thc v nhn thc  ánh giá các la chn thay th thit k trc quan.
+- Thit k và ánh giá các bng màu  trc quan hóa da trên các nguyên tc nhn thc.
+- Xác nh các c hi  áp dng trc quan hóa d liu trong các lnh vc khác nhau.
+- S dng ngôn ng lp trình Python trong các bài toán trc quan hóa d liu
+- Làm vic nhóm mt cách hiu qu  hoàn thành mc tiêu chung
+- Trình bày mt báo cáo k thut di dng vn bn và thuyt trình trc nhóm ông ngi
+Ni dung: Hc phn cung cp các kin thc c bn v trc quan hóa d liu. Sinh viên s c
+gii thiu v cách thit k và thit lp trc quan hóa d liu da trên các d liu có sn và các
+nhim v cn t c. Sinh viên s c hc cách ánh giá hiu qu ca các thit k trc quan
+thông qua la chn mu sc và mã hóa hình nh. Trong phn thc hành sinh viên s thit lp trc
+quan hóa d liu ca riêng mình và hc cách s dng các công c trc quan hóa trong Python,
+c bit là Matplotlib, Seaborn và Folium.
+
+7080314 2(0-0-6) Thc tp tt nghip CNTTDH
+Môn hc hc trc:
+Mc tiêu:
+To môi trng và iu kin cho sinh viên làm quen vi thc t ngh nghip, b sung nhng kin
+thc hc trong trng, hiu bit thêm v quan h tác ng qua li gia gii pháp k thut vi bi
+cnh kinh t và xã hi.
+Giúp sinh viên hiu bit thêm v ý ngha thit thc ca các hc phn trong chng trình ào to,
+dn hình thành c nh hng chuyên môn cho mình.
+To iu kin cho sinh viên tham gia trong mt tp th a ngành  gii quyt mt vn  c th
+ca thc t công nghip, qua ó nhn thc rõ hn nhng yêu cu v nng lc hành ngh ca ngi
+tt nghip bên cnh kin thc chuyên môn.
+Kin thc
+Sinh viên nm c ni dung, yêu cu ca t thc tp, ca  tài tt nghip d kin; nghiên
+cu/tìm hiu/lp trình theo hng  tài c  xut.
+Sinh viên có th bt u theo hng  tài  án tt nghip trong hc phn này.
+K nng
+T nghiên cu/tìm hiu/lp trình ni dung  tài c giao di s hng dn ca ging viên,
+ca các cán b khoa hc ni thc tp;
+
+Trình bày ni dung  tài di dng quyn báo cáo thc tp;
+Thuyt trình ni dung  tài trc hi ng chm báo cáo s dng slide, demo kt qu
+Ni dung:
+Sinh viên thu thp tài liu khoa hc; t chn hoc c ging viên hng dn giao  tài nghiên
+cu/tìm hiu/lp trình v các công ngh, công c lp trình, lp trình theo các thut toán ã hc...,
+vit báo cáo theo mu và trình bày kt qu thc tp trc hi ng chm ca B môn. Sinh viên
+có th bt u làm  tài  án tt nghip theo hng các d liu thu thp c ti c s thc tp.
+Kt qu thc tp s là tài liu cn thit cho  tài tt nghip i hc.
+7080311 8(0-0-24)  án tt nghip CNTTDH
+Môn hc hc trc: ã hoàn thành chng trình lý thuyt, thc tp và các iu kin khác theo
+quy nh ca Nhà trng.
+Mc tiêu:
+Thc hin và hoàn thành mt nhim v khoa hc c th di dng mt  án  kt thúc quá trình
+hc tp bc i hc và nhn bng tt nghip.
+Kin thc
+Liên kt và cng c kin thc ct lõi, m rng và nâng cao kin thc chuyên môn ca ngành và
+chuyên ngành. Thông qua  án tt nghip sinh viên có th hiu: Cách thc hin mt nhim v
+khoa hc c giao. Cách vn dng, tng hp các kin thc ã hc  thc hin mt nhim v
+khoa hc c th. Hiu sâu ni dung vn  nghiên cu. Cách trình bày và bo v mt vn  khoa
+hc trc Hi ng ánh giá.
+K nng
+Nâng cao nng lc nghiên cu-xây dng ý tng-thit k-ch to thông qua gii quyt mt vn
+ khoa hc-k thut hoc tip cn mt phng pháp lun mi, c th là: Nng lc nghiên cu,
+áp dng và ánh giá các phng pháp, k thut và công c thit k. Nng lc áp dng phng
+pháp tip cn khoa hc, tích hp  gii quyt vn . K nng thu thp, ánh giá d liu, tho
+lun và khai thác tài liu khoa hc.
+Nâng cao các k nng chuyên nghip và k nng xã hi, c th là: K nng trình bày, thuyt trình.
+K nng giao tip và làm vic nhóm. K nng s dng ngoi ng
+Ni dung:
+ án tt nghip là công trình nghiên cu khoa hc ca sinh viên, tng hp kin thc và k nng
+c s ngành, chuyên ngành cùng vi kinh nghim thu c sau quá trình thc tp. S dng lý
+lun và phng pháp lun  gii quyt mt vn  khoa hc c th ca chuyên ngành Công ngh
+thông tin a hc.
+
+Sinh viên t  xut c cán b hng dn thông qua hoc c cán b hng dn giao  tài
+tt nghip, thc hin  tài, vit  án tt nghip theo  cng và trình bày kt qu thc hin
+trc hi ng chm  án tt nghip, s dng slide, demo kt qu.
+B. Khoa hc máy tính
+7080504 2(2-0-4) in toán ám mây và ng dng
+Hc phn hc trc: Nguyên lý H iu hành (7080112), Mng máy tính+BTL (7080717)
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn v in toán ám mây nh: kin trúc,
+các nn tng c bn nh: IaaS, SaaS, PaaS; bo mt và xây dng h thng c th vi in toán
+ám mây Google. Sau khi hc xong, ngi hc có th ánh giá và la chn c các gii pháp
+ám mây cho bài toán thc t; thit k và phát trin ng dng trên ám mây.
+Ni dung: Gii thiu tng quan v in toán ám mây bao gm khái nim, kin trúc, phn cng,
+công ngh; Các công ngh nn tng ca in toán ám mây: IaaS, SaaS và PaaS; Các vn  v
+an toàn và bo mt d liu trong in toán ám mây; Phát trin ng dng vi công ngh in toán
+ám mât ca Google.
+7080505 3(3-0-6) in toán di ng
+Hc phn hc trc: Lp trình hng i tng vi Java (7080512)
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn v in toán di ng nh: kin trúc,
+môi trng; phát trin ng dng Android, dch v truyn thông nh tin nhn SMS, email; dch v
+nh v GPS và bn . Sau khi hc xong, sinh viên có th hiu rõ hn v truyn d liu trong
+mng di ng cng nh phát trin các ng dng t n gin n phc tp trên Android. ây là
+mt trong nhng xu hng phát trin mnh m hin nay trong ngành Công ngh thông tin và Vin
+thông.
+Ni dung: Hc phn gii thiu tng quan và các khái nim v in toán di ng và ng dng ca
+nó trong các lnh vc. Các ni dung nâng cao v phát trin ng dng di ng vi Android cng
+c gii thiu bao gm: chng trình a tuyn, lp trình truyn thông trên di ng, phát trin
+ng dng bn  và các dch v nh v. Mô hình v in toán di ng ám mây cng s c
+gii thiu.
+7080506 3(0-0-9)  án Khoa hc máy tính
+Hc phn hc trc: Lp trình hng i tng vi Java (7080512); Phát trin ng dng
+Web+BTL(7080116); Phân tích và thit k h thng+BTL(7080113); Phân tích và thit k hng
+i tng(7080515).
+Mc tiêu: Hc phn này nhm cng c và m rng kin thc chuyên ngành cho sinh viên, giúp
+sinh viên bit cách kt hp nhun nhuyn gia các kin thc ã hc vi các bài toán ngoài thc
+t.
+Ni dung: Hc phn c xây dng nhm tng kt và kim tra các kin thc quan trng mà sinh
+viên ã c tip thu. Thông qua hc phn, sinh viên s có c hi ôn li và nm vng các khái
+nim liên quan n phân tích và thit k h thng c th, bc u làm quen vi các qui trình phát
+trin d án phn mm, vn dng nhng kin thc ca các hc phn khác nhau  xây dng mt
+sn phm phn mm hoàn chnh.
+7080507 3(2-2-5) D liu ln và ng dng
+Hc phn hc trc: H qun tr c s d liu (7080211)
+Mc tiêu:
+Ni dung: Hc phn cung cp các kin thc c bn v d liu ln, gii thiu v h sinh thái
+Hadoop. Hc phn cng cung cp các kin thc v kin trúc lu tr HDFS, và mô hình lp trình
+Map/Reduce. Các kin thc v NoSQL và thành phn ca h sinh thái Hadoop v CSDL dng ct
+nh HBase. Hc phn cung cp các k nng lp trình trên nn tng Hadoop.
+7080508 3(2-2-5) Khai phá d liu
+Môn hc hc trc: Khoa hc d liu (7080509)
+Mc tiêu:
+Ni dung: Cung cp các kin thc c bn v khai phá d liu và phát hin tri thc: Khái nim,
+kin trúc h thng và chc nng ca KPDL; Gii thiu mt s ng dng ca KPDL và tính liên
+ngành ca KPDL; Tin x lý d liu và các ni dung chính liên quan n kho d liu nh khái
+nim, mô hình, kin trúc và thi hành kho d liu; Trình bày mt s bài toán in hình trong phân
+lp, phân cm d liu....Các vn  tng quan v Khai phá d liu Web cng s c gii thiu.
+7080510 3(3-0-6) K ngh tri thc và Hc máy + BTL
+Hc phn tiên quyt: Trí tu nhân to + BTL (7080122)
+Môn hc hc trc: Khoa hc d liu (7080509); Khai phá d liu(7080508)
+Mc tiêu:
+Ni dung: Môn hc s trang b cho sinh viên nhng kin thc c bn v K ngh tri thc và Hc
+máy; Mô hình chung cho các bài toán hc máy và các thut ng liên quan; Mt s k thut trích
+chn c trng quan trng; Ni dung môn hc cng gii thiu các nhóm thut toán hc máy c
+bn bao gm: Hc có giám sát (Supervised Learning), Phân tích hi quy (Regression Analysis);
+Hc không giám sát (Unsupervised Learning), H thng  xut (Recommender System); Môn
+hc cng dành mt phn  gii thiu v mt s mng hc sâu c bn (CNN, RNN, LTSM) và
+ng dng.
+7080511 3(4-0-8) Lp trình Game
+Hc phn hc trc: Không
+Mc tiêu: Trang b cho sinh viên các kin thc c bn v các game engine và cách lp trình game
+trên các thit b máy (máy tính bng, destop, các thit b di ng). Hc phn này gii thiu cho
+sinh viên các khái nim, các bc  to ra mt game c bn và m rng ra làm mt s game
+phc tp.
+Ni dung: Gii thiu v lp trình game và các thit b di ng; Gii thiu ngôn ng lp trình
+Python và mt s th vin game; Hello Pong; Cocos Invaders; Building a Tower Defense Game;
+Hot cnh trong game; Pygame and 3D; PyPlatformer.
+7080512 3(2-2-5) Lp trình hng i tng vi Java
+Hc phn hc trc: C s lp trình (7080208)
+Mc tiêu: Cung cp các kin thc cn bn v ngôn ng lp trình Java và rèn luyn k nng lp
+trình cho sinh viên.
+Ni dung: Hc phn cung cp mt s kin thc c bn ca ngôn ng lp trình Java: cu trúc ca
+mt chng trình Java, các lp i tng, các kiu d liu, các phép toán, cu trúc iu khin...
+Phng pháp lp trình hng i tng: lp, thuc tính, phng thc, tính óng gói, k tha, a
+x và np chng,... Mt s kh nng lp trình ng dng ca ngôn ng Java.
+7080513 8(0-0-24)  án tt nghip Khoa hc máy tính
+Hc phn hc trc: ã hoàn thành chng trình lý thuyt, thc tp và các iu kin khác theo
+quy nh ca Nhà trng.
+Mc tiêu: Thc hin và hoàn thành mt nhim v khoa hc c th di dng mt  án  kt
+thúc quá trình hc tp bc i hc và nhn bng tt nghip.
+Ni dung:  án tt nghip là công trình nghiên cu khoa hc ca sinh viên, tng kt lý thuyt
+chuyên ngành, lý thuyt c s ngành, kinh nghim thu c sau quá trình thc tp, lý lun và
+phng pháp lun  gii quyt mt vn  khoa hc c th ca chuyên ngành Khoa hc máy tính
+ng dng.
+7080515 3(2-0-7) Phân tích và thit k hng i tng + A
+
+Hc phn hc trc: Lp trình hng i tng vi Java(7080512); Phân tích và thit k h thng
++ A (7080113).
+Mc tiêu:
+Ni dung: Hc phn gii thiu tng quan và các khái nim trong phân tích và thit k các h
+thng thông tin nói chung và theo cách tip cn hng i tng nói riêng. Ngôn ng mô hình
+hóa thng nht UML và các biu  ca nó  biu din các khung nhìn khác nhau ca h thng
+cng c gii thiu. Ni dung cui ca hc phn là phn thu thp và biu din yêu cu phn
+mm, các k thut phân tích và các k thut thit k h thng, các mu thit k.
+7080516 3(3-0-6) Phân tích và thit k thut toán 3
+Hc phn hc trc: Cu trúc d liu và gii thut(7080206); C s lp trình(7080208).
+Mc tiêu:
+Ni dung: Hc phn cung cp các kin thc cn bn v phân tích, thit k và ánh giá thut toán.
+Tng quan v thut toán và  phc tp ca thut toán; K thut xây dng gii thut; Các phng
+pháp thit k  xây dng các thut toán; Trình bày mt s vn  m rng và nâng cao.
+7080517 2(2-0-4) Phát trin ng dng IoT
+Hc phn hc trc: Kin trúc và h tng mng IoT(7080713)
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn v Internet of Things (IoT), nhng tim
+nng và thách thc ca vic ng dng IoT vào thc t. Sinh viên s có c hi thc hành trên thit
+b IoT, lp trình hin th d liu thu thp c t mt s b cm bin c bn lên máy tính, in
+thoi và ng b lên ám mây.
+Ni dung: Gii thiu tng quan v công ngh Internet of Things (IoT) cng nh các ng dng c
+bn ca IoT nh mng cm bin, nhà thông minh, thành ph thông minh, nông nghip thông
+minh, nuôi tôm thông minh... Tip theo là nhng ni dung c bn v module ESP8266 (mt loi
+chip IoT ph bin). Cui cùng là gii thiu v quy trình phát trin ng dng IoT trên loi thit b
+c th.
+7080518 3(3-0-6) Th giác máy tính
+Hc phn hc trc: C s lp trình(7080208); Cu trúc d liu và gii thut (7080206)
+Mc tiêu:
+Ni dung: Hc phn gii thiu nhng khái nim c bn c s dng trong th giác máy tính;
+tm nhìn tng quát v lnh vc th giác máy tính; ng thi gii thiu các phép x lý hình hc c
+bn ca các h thng th giác in t nh các phép chiu hình hc, các phép toán véc t, ma trn,
+quy hoch ng; các phép x lý nh, x lý mu sc; phát hin c tính và so khp; phát hin biên,
+phân vùng và nhn dng i tng.
+7080519 2(0-0-6) Thc tp tt nghip
+Hc phn hc trc: Sau khi hoàn thành tt c các hc phn trong chng trình ào to chuyn
+ngành Khoa hc máy tính.
+Mc tiêu: Nhm cng c thêm kin thc ã hc, nâng cao nng lc hot ng thc tin và rèn
+luyn k nng ngh nghip trong vic nghiên cu, ánh giá các vn  liên quan n Công ngh
+thông tin trong thc t sn xut; rèn luyn kh nng phát hin và gii quyt vn  trong thc t;
+thu thp y  d liu  làm  án tt nghip.
+Ni dung: Tìm hiu, nghiên cu, kho sát t mi, sâu sc và a ra nhng ánh giá v nhng vn
+ quan trng ca thc t sn xut và c bit là vn  ng dng công ngh thông tin (phn cng,
+phn mm, nhân lc, mng máy tính...) ti c quan thc tp.  xut các gii pháp công ngh,
+k thut hoc qun lý nhm ci tin hoc thay i quy trình sao cho có nng sut và hiu qu cao
+hn, làm tin  cho vic la chn  tài tt nghip. Thu thp các d liu khoa hc cn thit phc
+v cho vic làm  án tt nghip.
+7080520 3(2-2-5) Web ng ngha
+Hc phn hc trc: Phát trin ng dng Web + BTL (7080116)
+Mc tiêu: Cung cp các khái nim c bn và kin trúc ca Web ng ngha và các công ngh, các
+chun và mt s ng dng ca Web ng ngha.
+Ni dung: Môn hc s gii thiu vi ngi hc các kin thc v th h mi ca Web vi các tính
+cht khác bit  h tr vic s dng "ng ngha" mt cách hiu qu hn, thông minh hn. Các
+k thut qun lý thông tin và xây dng các ng dng trên Web ng ngha s c gii thiu n
+ngi hc. C th môn hc s gii thiu các kin trúc phân cp ca web ng ngha bao gm XML,
+RDF, Ontology, lut suy din và các công c  ng dng thc t.
+C. Tin hc kinh t
+7080638 3(2-2-5) Phát trin phn mm qun lý
+Hc phn hc trc: C s lp trình (7080208), Phân tích và thit k h thng + A (7080113)
+Mc tiêu: Sinh viên hiu và bit cách s dng ngôn ng lp trình C#.NET, h qun tr CSDL
+SQL Server và các công c tr giúp. Sinh viên nm c các bc lp trình kt ni và truy xut
+c s d liu. Bit cách xây dng và lp trình bài toán qun lý theo mô hình 3 lp.
+Ni dung: Hc phn gii thiu v Visual Studio.NET và C#.NET, k thut lp trình hng i
+tng vi C#.NET. Hc phn cng trang b cho sinh viên kin thc v quy trình nghip v ca
+các bài toán qun lý trong kinh t, các bc xây dng phn mm qun lý s dng C#.NET và h
+qun tr CSDL SQL Server.
+
+7080633 3(1-4-4) K toán máy
+Hc phn hc trc: không
+Mc tiêu: Môn hc cung cp cho ngi hc công c ng dng làm s sách k toán trên máy
+thông qua phn mm k toán Misa mt cách nhanh chóng thun tin và hiu qu
+Ni dung: Môn hc k toán máy giúp sinh viên làm quen vi phn mm k toán, tìm hiu quy
+trình hch toán k toán nói chung và quy trình hch toán k toán máy nói riêng. Sinh viên s c
+thc hin các thao tác cp nht, qun lý d liu trong tng phân h, nghip v k toán phát sinh
+trong k ca doanh nghip. ng thi có th lp các báo cáo tài chính, các phân tích tài chính
+thông qua các s liu k toán phát sinh trong k. T ó có th a ra nhng thông tin và nh
+hng cn thit cho s phát trin kinh doanh ca doanh nghip
+
+7080616 3(3-0-6) Thut toán hóa các bài toán kinh t
+Hc phn hc trc: Tin i cng + TH (7080225); C s lp trình (7080208); Ti u hóa -
+Thut toán (7080622).
+Mc tiêu: Cung cp nhng kin thc c bn v các phng pháp, các mô hình toán kinh t trong
+thc t. Trình bày các thut toán c bn  có th lp trình ng dng, tính toán th nghim nó
+trong lnh vc này. ây là nhng công c tính toán, nhng phng pháp x lý các quyt nh
+qun tr thng gp trong trong thc t sn xut kinh doanh cng nh trong khoa hc k thut
+Ni dung: Hc phn gm sáu chng:
+Các mô hình toán kinh t ­ thut toán: Gii thiu phng pháp mô hình toán hc trong kinh t:
+Mô hình ti u trong kinh t, Mô hình cân bng kinh t, Mô hình kinh t ng và Mô hình thng
+kê kinh t
+
+7080603 3(0-6-3)  án Tin hc kinh t
+Hc phn hc trc: Kin trúc máy tính (7080712)
+Mc tiêu: Nm chc c các kin thc c bn v phn cng máy tính, bit cách cài t h iu
+hành, driver cho thit b ngoi vi. Bit các linh kin s dng trong lp và cài t mng LAN, phát
+hin và sa cha mt s hng hóc c bn.
+Ni dung: - Gii thiu các linh kin phn cng máy tính
+- Hng dn lp ráp máy tính
+- Hng dn cài t h iu hành
+- Hng dn cài t mt s phn mm tin ích
+- Hng dn bm mng và lp t mng
+- Sa cha và bo trì máy tính
+
+7080605 3(2-2-5) H thng Thông tin qun lý
+Hc phn hc trc: C s d liu (4080206), Tin hc i cng (4080201)
+Mc tiêu: Hc phn gii thiu các khái nim v h thng, h thng thông tin và h thng thông
+tin qun lý. Hiu rõ v lnh vc HTTT QL và ng dng trong vic qun tr kinh doanh trong các
+t chc, doanh nghip trong thc t. Hc phn bc u giúp sinh viên tip cn vi mt mt s
+bài toán thc t, hc phng pháp gii quyt vn  và phng pháp làm vic theo nhóm
+Ni dung: Ni dung hc phn c c trình bày trong 4 chng
+- Trang b kin thc tng quan v H thng, H thông Thông tin, H thng Thông tin qun lý
+- H thng thông tin di góc  qun lý và ra quyt nh và qunr lý kinh doanh
+- H thng thông tin trong các t chc kinh t  Vit Nam
+- Qun tr các ngun lc h thng Thông tin trong t chc, doanh nghip
+
+7080615 3(2-2-5) Thng kê & ng dng tin hc
+Hc phn hc trc:
+Mc tiêu: Môn hc cung cp cho ngi hc cách ng dng phn mm SPSS nhm phân tích các
+tài liu thng kê theo nhng phng pháp nghiên cu thng kê thông dng
+Ni dung: Môn hc Thng kê và ng dng tin hc giúp sinh viên tìm hiu, nghiên cu các khái
+nim, các lý thuyt c bn trong thng kê; các phng pháp x lý, phân tích s liu thng kê
+thông dng. ng thi môn hc hng dn và giúp sinh viên có th tip cn và ng dng các
+phng pháp x lý, phân tích và nghiên cu thng kê trên phn mm SPSS. T ó có th a ra
+các ánh giá, các quy lut, các d báo cho các hin tng kinh t, vn hóa, xã hi mt cách nhanh
+chóng, chính xác và hiu qu
+
+7080628 3(2-2-5) Kinh t lng ng dng
+Hc phn hc trc: Xác sut thng kê (7010120); Toán cao cp 1 (7010114)
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn v phân tích nh lng các hin tng
+kinh t, phng pháp kim nh s phù hp và  tin cy ca các gi thuyt kinh t trong quá
+trình hoch nh chính ca t chc. Ngoài ra môn hc còn chú trng ging dy cho sinh viên các
+k thut ng dng công ngh thông tin trong phân tích d liu nh lng kinh t phc v cho
+hoch nh chính sách ca t chc
+Ni dung: Môn hc gii thiu nhng khái nim c bn v phân tích hi quy, áp dng  thc
+hin phân tích mô hình hi quy n và mô hình hi quy bi. Gii thiu phng tính toán các h
+s hi quy, phng sai, sai s chun ca các loi mô hình hi quy  t ó gii quyt các bài toán
+v kim nh s phù hp và  tin cy ca các gi thuyt kinh t trong quá trình a ra quyt nh
+ca các ch th khác nhau. Môn hc còn hng n vic giúp sinh viên nhn bit nhng khuyt
+tt in hình có th gp trong các mô hình hi quy  t ó  xut hng khc phc nhm tng
+ chính xác ca các mô hình này trong thc t. Ngoài ra, môn hc gii thiu k thut ng dng
+công ngh thông tin trong phân tích d liu nh lng cho các mô hình kinh t
+
+7080634 3(3-0-6) Qun tr d án CNTT
+Hc phn hc trc: Nhp môn ngành CNTT (7080514 )
+Mc tiêu: Nm c các vn  chung v tm quan trng và nhng khó khn khi phát trin mt
+d án CNTT.Nm bt quy trình và các mô hình phát trin phn mm. Nm bt chi tit các công
+vic cn làm khi qun lý mt d án CNTT: c lng, lp k hoch, qun lý ri ro, qun lý cht
+lng, qun lý cu hình, qun lý nhân s
+Ni dung: Hc phn gii thiu nhng kin thc chung v phn mm, c tính ca phn mm và
+quy trình phát trin ca phn mm. ng thi cung cp các kin thc v d án phn mm, quy
+trình d án và các công on ca d án phn mm bao gm: c lng d án: gii thiu các
+phng pháp o và c lng d án; lch trình d án: lp lch và các công c tr giúp lp lch;
+qun lý ri ro: gii thiu các ri ro sy ra vi d án và các phng pháp khc phc; qun lý cht
+lng: gii thiu các chun cht lng; qun lý cu hình: qun lý phiên bn và qun lý thay i;
+qun lý nhân s: cách thc t chc và qun lý tài nguyên con ngi ca d án
+
+7080637 3(3-0-6) Qun tr các ngun lc thông tin
+Hc phn hc trc: Phát trin phn mm ng dng trong kinh t và qun lý (7080612)
+Mc tiêu: Có kin thc qun tr ngun lc thông tin trong mt t chc kinh t, xã hi, c bit
+là trong doanh nghip. Trang b cho sinh viên cách thc qun lý lao ng thông tin trong mt t
+chc kinh t xã hi. T chc các b phn chc nng thông tin trong t chc. Cách thc trang b
+ngun lc thông tin trong t chc cng nh tái thit quy trình kinh doanh
+Ni dung: Hc phn Qun tr các ngun lc thông tin cung cp cho sinh viên hiu rõ các khái
+nim c s ca qun tr ngun lc thông tin; tm quan trng chin lc; nhng chc nng qun
+tr chính i vi ngun lc thông tin trên toàn doanh nghip. Giúp ngi hc bit cách t chc và
+trin khai b phn qun tr ngun lc thông tin; cách thc lp k hoch ngun lc thông tin, cách
+thc tích hp HTTT vào quy trình kinh doanh  nâng cao hiu qu khai thác ngun lc thông tin
+và to ra sc mnh cnh tranh cho doanh nghip
+
+7080627 3(3-0-6) Kinh t thông tin
+Hc phn hc trc:
+Mc tiêu: Hc phn Kinh t thông tin trang b cho sinh viên nhng khái nim c bn nht ca
+Kinh t thông tin; các ch tiêu, thành phn c bn ca nn kinh t thông tin; nghiên cu thc trng,
+c hi và thách thc phát trin kinh t thông tin  Vit nam
+Ni dung: Trang b kin thc tng quan v kinh t thông tin, Tìm hiu các hot ng thông tin
+và ch tiêu ca nn kinh t TT. Các giá tr trong nn KTTT và các công c ca nn kinh t Thông
+tin, ây là ng lc là khâu then cht phát trin thông tin kinh t. Tìm hiu các c hi, thách thc
+và thc trng phát trin kinh t TT. Hng dn sinh viên nm rõ các ch trng, chính sách ln
+phát trin kinh t TT  Vit Nam
+7080635 3(3-0-6) Marketing in t
+Hc phn hc trc:
+Mc tiêu: Hc phn trang b cho sinh viên nhng kin thc c bn v marketing in t, kin
+thc truyn thông mng xã hi và chin lc truyn thông mng xã hi, kin thc v Email
+marketing, các k thut ti u hóa công c tìm kim và phân tích website
+Ni dung: Ni dung hc phn gii thiu tng quan v Marketing in t, Truyn thông mng xã
+hi và các chin lc truyn thông mng xã hi, Email marketing, Ti u hóa công c tìm kim
+(SEO) trong marketing in t, Phân tích website trong marketing in t, Ti u hóa chuyn i
+trong marketing in t
+7080636 3(1-4-4) Tin hc vn phòng nâng cao
+Hc phn hc trc: Tin hc i cng (7080201 hoc 7080202)
+Mc tiêu: Hc phn nhm cng c, nâng cao kin thc và k nng s dng phn mm Microsoft
+Ofice (Microsoft Word nâng cao, Microsoft Excel nâng cao và Microsoft PowerPoint nâng cao).
+Rèn luyn các k nng ng dng tin hc vn phòng trong hc tp và nghiên cu khoa hc ca
+sinh viên. Ngoài ra, hc phn cng cung cp kin thc theo chun k nng s dng công ngh
+thông tin ca B thông tin và truyn thông nhm phc v sinh viên thi chun u ra tin hc và thi
+chng ch tin hc quc t MOS, IC3
+Ni dung: Gii thiu các ng dng nâng cao trong Microsoft Word: nh dng vn bn nâng cao,
+thit t môi trng làm vic ti u, tham chiu và liên kt, trng, biu mu, biên tp vn bn
+trong ch  cng tác, in vn bn. Gii thiu các ng dng nâng cao ca bng tính in t
+Microsoft Excel. Gii thiu các nhóm hàm: Hàm Toán hc và lng giác, hàm thng kê, hàm
+logic, hàm tìm kim và tham chiu, hàm x lý xâu kí t, hàm ngày tháng, hàm thi gian, hàm
+kinh t và tài chính, hàm c s d liu. Gii thiu các công c khai thác và phân tích d liu, các
+công c qun lý tình hung, biên tp và ln vt. Gii thiu các ng dng nâng cao trong Microsoft
+PowePoint: To tp trình chiu, lp k hoch cho vic trình chiu, trang thuyt trình ch và các
+mu, chèn và hiu chnh các i tng  ha, liên kt, nhúng, nhp/xut các trang chiu, qun
+lý các bn trình chiu
+
+7080631 3(2-2-5) Trí tu nhân to trong marketing
+Hc phn hc trc: 7080122 Trí tu nhân to + BTL, 7080220 Ngôn ng lp trình Python,
+7080510 K ngh tri thc và hc máy
+Mc tiêu: Cung cp các kin thc c bn v marketing, marketing in t, vai trò ca marketing
+trong hot ng kinh doanh và nhng yu t quan trng trong quá trình to ra các giá tr t khách
+hàng và mi quan h vi khách hàng. Cung cp kin thc v mt s mô hình trí tu nhân to và
+hc máy (AI-ML) có th áp dng  nâng cao hiu qu marketing. Cung cp kin thc c bn v
+cách nhn din, phân tích và mô hình hóa d liu marketing  áp dng vào mô hình trí tu nhân
+to và hc máy. Cung cp các k thut cn thit  xây dng mô hình.
+Ni dung: Hc phn trang b cho ngi hc nhng kin thc tng quan v marketing, nhng yu
+t quan trng trong quá trình to dng các giá tr t khách hàng và mi quan h vi khách hàng.
+Hc phn cng cung cp kin thc v mt s mô hình trí tu nhân to, mô hình hc máy phù hp
+có th s dng trong chin lc marketing nh: các mô hình hc máy trong phân tích d báo, các
+thut toán AI trong h tr giao tip vi khách hàng, nâng cao tri nghim ca khách hàng. Bên
+cnh ó cung cp nhng kin thc cn thit giúp ngi hc có th nhn din nhng ni dung,
+nhng vn  trong marketing có th dùng mô hình AI-ML nh: phân khúc khách hàng (Customer
+segmentation), d báo s thay i ca khách hàng c bit là khách hàng có kh nng ri i
+(Customer churn prediction), d báo giá tr khách hàng mang li (Customer lifetime value
+forecasting), cá nhân hóa tip th vi tng khách hàng,.... T ó ngi hc s tng bc mô hình
+hóa c bài toán và trin khai ng dng AI-ML trong marketing.
+7080617 2(0-4-2) Thc tp tt nghip THKT
+Hc phn hc trc: tt c các hc phn ca chuyên ngành
+Mc tiêu: Làm quen vi công tác chuyên môn ngoài thc t, cng c, m rng kin thc ã hc,
+rèn luyn k nng thc hành ngh nghip k Tin hc Kinh t, thu thp các s liu chuyên ngành
+ làm  án tt nghi
+Ni dung: Hng dn xây dng  cng thc tp; thc tp và thu thp tài liu, s liu phc v
+cho vic thc hin  án tt nghip theo hng ng dng cho các doanh nghip, các c quan hành
+chính nhà nc; nghim thu thc tp
+7080604 8(0-16-8)  án tt nghip TKKT
+Hc phn hc trc:
+Mc tiêu: Cng c, tng hp, m rng và nâng cao kin thc thu c trong khóa hc, c bit
+là v các môn hc chuyên môn Kinh t và Tin hc ng dng cho lnh vc kinh t, tài chính. Kim
+tra, ánh giá kt qu hc tp toàn din ca sinh viên chuyên ngành Tin hc Kinh t trc khi ra
+trng.
+Ni dung: Các kin thc c bn nn tng v kinh t, tài chính và qun lý doanh nghip, qun tr
+d án; Các kin thc v c s d liu, xây dng c s d liu qun lý chuyên ngành; các kin
+thc v lp trình ng dng, lp trình qun lý; Thc hin  án theo các ni dung chuyên  c
+giáo viên hng dn.
+D. Mng máy tính
+7080728 3(3-0-6) An Ninh Mng + Bài tp ln
+Hc phn hc trc: 7080717 (Mng máy tính + BTL)
+Mc tiêu: Sinh viên nhn bit c tm quan trng ca thông tin, d liu và c s cn thit
+phi bo v d liu và an toàn thông tin.Nm c các i tng và các phng thc tn công
+trên mng. Nm c các bc trong mt cuc tn công mng. Nm c các mc  bo v
+mng, phòng tránh tn công. Nm c các k thut mã hóa bo mt thông tin s dng khóa công
+khai và k thut xác thc s dng ch ký in t. Hiu c nguyên lý hot ng ca các h
+thng Firewall, VPN, IDS, IPS, AntiVirus.
+
+Sau khi kt thúc hc phn sinh viên bit cách xây dng và vn hành các h thng Email có bo
+mt, ng dng chng ch s,bit cách xây dng và vn hành các h thng Website có bo mt,
+ng dng chng ch s. Cu hình và vn hành h thng Firewall. Cu hình và vn hành h thng
+mng riêng o ­VPN. Cu hình và vn hành h thng phát hin xâm nhp IDS và IPS. Cu hình
+và vn hành các h thng AntiVirus. Có k nng t hc, t nghiên cu các vn  chuyên ngành.
+Có k nng làm vic nhóm và thuyt trình. Có k nng hng dn ngi s dng nâng cao kh
+nng bo mt và an toàn cho h thng mng máy tính
+Ni dung: Hc phn tp trung vào các ni dung Tng quan v an ninh mng. Các bc tn công
+vào h thng mng. Mt mã, chng thc và toàn vn d liu. An toàn Web và Email. Các k thut
+và ng dng bo m an ninh mng.
+7080720 3 (2-2-5) Qun tr h thng + BTL
+Hc phn hc trc: 7080721 (Qun tr mng + BTL)
+Mc tiêu: Hc phn cung cp cho sinh viên nhng kin thc v môi trng qun tr h thng
+Window Server. Các dch v qun tr h thng mng trên nn tng Window Server. Lp k hoch
+thit k, cu hình trin khai, vn hành và duy trì h thng mng trên môi trng Windows Server.
+Ni dung: Ni dung ca hc phn cung cp kin thc và k nng qun tr h thng mng trên
+nn tng Window Server. Cách thc trin khai, vn hành và duy trì các dch v mng, h thng
+lu tr, tài khon ngi dùng, nhóm ngi dùng, chính sách nhóm, chính sách bo mt.
+7080721 3 (2-2-5) Qun tr mng + BTL
+Hc phn hc trc: Không
+Mc tiêu: Trang b cho sinh viên kin thc, k nng c bn và nâng cao v qun tr mng LAN
+và WAN. Hc phn này gii thiu nguyên lý làm vic ca các thit b mng  lp vt lý, lp liên
+kt d liu và lp mng. Hc phn cng gii thiu các nguyên lý làm vic ca các giao thc mng
+t lp vt lý n lp ng dng và các công c mô phng, cu hình chy th trên các công c mô
+phng mng và thit b mng tht.
+Ni dung: Hc phn gii thiu tng quan v h thng mng LAN và WAN; Nguyên lý làm vic
+ca các thit b mng; Nguyên lý làm vic ca các giao thc mng; Các công ngh mng LAN,
+VLAN, mng WAN; Thc hành cu hình trin khai các thit b mng thông qua s dng phn
+mm mô phng và thit b thc t.
+7080729 3 (0-0-9)  án Mng máy tính
+Hc phn hc trc: 7080721(Qun tr mng), 7080703(C s an ninh mng)
+Mc tiêu: Hc phn này nhm cng c và m rng kin thc chuyên ngành cho sinh viên, giúp
+sinh viên bit cách kt hp nhun nhuyn gia các kin thc ã hc vi các bài toán ngoài thc
+t.
+Ni dung: Hc phn c xây dng nhm tng kt và kim tra các kin thc quan trng mà sinh
+viên ã c tip thu. Thông qua hc phn, sinh viên s có c hi ôn li và nm vng các khái
+nim liên quan n qun tr mng, qun tr h thng, an ninh mng, lp trình mng.
+7080723 2(0-0-6) Thc tp tt nghip MMT
+Mc tiêu: Sinh viên nm c ni dung ca  tài nghiên cu/tìm hiu/lp trình c giao. Sinh
+viên có th bt ua làm  tài  án tt nghip trong hc phn này.
+
+Sinh viên có kh nng t nghiên cu/tìm hiu ni dung  tài c giao di s hng dn ca
+ging viên; Trình bày ni dung  tài di dng quyn báo cáo; Thuyt trình ni dung  tài trc
+hi ng chm ca B môn s dng slide;
+Ni dung: Sinh viên t chn hoc c ging viên hng dn giao  tài nghiên cu/tìm hiu v
+công ngh thông tin và truyn thông vit báo cáo theo mu và trình bày kt qu thc hin trc
+hi ng chm ca B môn s dng slide. Sinh viên có th bt u làm  tài  án tt nghip
+trong hc phn này; trong trng hp này, kt qu thc tp s là tng quan v bài toán  tài tt
+nghip, công c gii quyt, phân tích thit k h thng.
+7080715 8(0-0-24)  án tt nghip MMT
+Mc tiêu: Sinh viên nm c ni dung ca  tài tt nghip c giao.
+
+Sinh viên có kh nng: T nghiên cu/tìm hiu/lp trình ni dung  tài c giao di s hng
+dn ca ging viên; Vit  án tt nghip theo mu ca B môn; Thuyt trình ni dung  tài
+c giao trc hi ng chm ca B môn s dng slide.
+Nori dung: Sinh viên t chn hoc c ging viên hng dn giao  tài tt nghip, thc hin
+ tài di s hng dn ca ging viên, vit  án tt nghip theo mu và trình bày kt qu thc
+hin trc hi ng chm ca B môn s dng slide.
+7080716 3(3-0-6) Mã ngun m chuyên ngành mng + BTL
+Hc phn hc trc:
+Mc tiêu: Trang b cho sinh viên các kin thc v các dch v mng trên máy ch mã ngun m
+Ubuntu Server. Các dch v mng nh SSH, Web, FTP, DHCP, DNS, Mail trên Ubuntu Server.
+Ni dung: Ni dung hc phn gm 4 chng:
+
+Chng 1. Gii thiu v Ubuntu Server.
+
+Chng 2. Hng dn cài t Ubuntu Server.
+
+Chng 3. Hng dn s dng Ubuntu Server.
+
+Chng 4. Các dch v mng trên Ubuntu Server.
+7080724 2(2-0-2) Ting Anh chuyên ngành mng
+Hc phn hc trc: các hc phn Ting Anh 1, Ting Anh 2
+Mc tiêu: Sinh viên nm c và ôn tp mt s kin thc v ng pháp;Sinh viên nm c các
+thut ng chuyên ngành trong lnh vc công ngh thông tin;Sinh viên nm c phong cách trình
+bài tài liu ting Anh ca lnh vc k thut
+Ni dung: Hc phn Ting anh chuyên ngành mng da trên c s kin thc c bn ca chuyên
+ngành công ngh thông tin nói chung và ngành mng máy tính nói riêng. Các bài hc kt hp gia
+ting Anh tng quát và ting Anh chuyên ngành k thut cho phép ngi hc tìm hiu v thut
+ng và cách din gii ch . Hc phn cng cung cp các hot ng luyn k nng nghe, nói và
+c hiu ting Anh k thut, phát trin vn t vng và phong cách trình bày tài liu khoa hc k
+thut.
+7080732 3(3-0-6) Truyn d liu và mng máy tính nâng cao+BTL
+Hc phn hc trc:
+Mc tiêu: Sinh viên nm c các kín thc c bn v lnh vc truyn s liu gia các h thng
+máy tính. Nm c mô hình tng quát ca mt h thng truyn s liu. Nm c khái nim v
+tín hiu và các c trng vt lý ca tín hiu. Nm c các nguyên nhân gây suy gim và méo
+dng tín hiu khi truyn i qua kênh truyn.Nm c các khái nim v thông lng, bng thông
+... ca kênh truyn. Nm c các c im ca mt s kênh truyn thông dng. Nm c mt
+s k thut mã hóa và iu ch .Nm c kin thc v mng din rng WAN, các k thut WAN,
+các thit b WAN, các chun WAN, chuyn mch kênh và chuyn mch gói. Nm c các k
+thut tìm ng trong mng din rng và các giao thc nh tuyn Hiu và cu hình c các
+giao thc lp 2: PPP, HDLC, Frame relay.
+Ni dung: Ni dung chính ca môn hc bao gm các vn  chính sau:Tng quan v truyn d
+liu: Mô hình tng quát ca mt mng truyn d liu, lch s phát trin, phân loi mng truyn s
+liu; chun hóa và các t chc chun hóa, mt s giao tip vt lý; Tín hiu và c trng vt lý ca
+tín hiu; Suy gim và bin dng tín hiu; Hiu sut kênh truyn. Môi trng truyn dn. Các mã
+kênh truyn. Các k thut iu ch s ASK, FSK, PSK, QAM. S hóa tín hiu tng t. K thut
+iu ch d liu tng t sang tín hiu tng t. Mô hình mng WAN, các chun WAN, thit b
+WAN, các giao thc trong mng WAN.. K thut chuyn mch kênh; k thut chuyn mch
+gói.Tng quan v nh tuyn. Các k thut tìm ng. Các giao thc nh tuyn (RIP, OSPF,
+EIGRP..). Giao thc HDLC. Giao thc PPP. K thut chuyn mch khung Frame Relay.
+7080730 3(2-1-6) Lp trình mng + BTL
+Hc phn hc trc:: K thut lp trình (7080216), Cu trúc d liu và gii thut (7080206),
+C s d liu (7080207)
+Mc tiêu: Sinh viên: hiu c kin trúc ca Internet, mô hình ca các dch v trên Internet và
+các thut ng thông dng trên Internet. Hiu c mô hình OSI và TCP/IP, các giao thc ph
+bin ca ng dng mng. Nm c kin thc lp trình java vi th vin giao din Swing.Nm
+c các th vin x lý lung d liu trong Java..Nm c các th vin x lý a ch trong Java.
+Nm c khái nim lp trình a lung, ng b và các th vin h tr trong Java.Nm c khái
+nim socket và th vin h tr socket cho giao thc TCP trong Java.
+Ni dung: Hc phn cung cp kin thc v phát trin ng dng mng vi ngôn ng Java. Các ni
+dung c gii thiu trong hc phn bao gm gii thiu mô hình Client-Server, nhc li kin thc
+mng máy tính, mô hình OSI, TCP/IP. Các protocol ca ng dng mng, nhc li v Java và lp
+trình hng i tng, cách s dng Eclipse và b giao din Swing. Các th vin lp trình mng
+trong Java x lý lung d liu, a ch, lp trình a tuyn, socket cho TCP
+7080731 3(3-0-6) Thit k mng + BTL
+Hc phn hc trc: Mng máy tính+BTL (7080717), Qun tr mng + BTL(7080721), Qun
+tr h thng + BTL(7080720)
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn v kin thc tng quát v tin trình xây
+dng mng LAN, WAN nói chung; các phng pháp thit k mng bao gm các giai on vòng
+i phát trin ca mng và cách tip cn top-down; và các mô hình cu trúc mng làm c s cho
+vic thit k mng. Kin thc v mng cc b bao gm công ngh mng LAN ph bin nht hin
+nay là Ethernet, thành phn ca mng LAN, mng LAN o gm lý thuyt và thc hành, công
+ngh mng LAN không dây c ng dng ph bin; và các vn  thit k mng LAN. Kin
+thc v mng din rng bao gm các thnh phn phn cng và phn mm ca mng din rng;
+các công ngh kt ni WAN, các vn  trong thit k mng WAN và mt s vn  v m bo
+an ninh mng và qun lý mng hiu qu. Phát trin k nng t hc, t nghiên cu  tài chuyên
+ngành. K nng làm vic c lp, làm vic theo nhóm và thuyt trình. Phân tích, thc hành và
+ánh giá các bc thit k mng. Kh nng vn dng mô hình thit k và gii pháp công ngh 
+gii quyt vn  thc tin
+Ni dung: Hc phn Thit k mng cung cp kin thc t c bn n m rng ca ván  thit
+k mt h thng mng t nh ti ln. Hc phn bao gm các khái nim, thit b, tiêu chun, kh
+nng hot ng, chc nng thit b, các mô hình mng, công ngh kt ni. Hc phn cng a ra
+các phng pháp, quy trình thit k mng cc b và din rng.
+E. H thng thông tin
+7080234 3(2-2-5) Chun k nng s dng Công ngh thông tin
+Hc phn trc:
+Mc tiêu: Cung cp cho sinh viên nhng kin thc c bn v s dng Công ngh Thông tin h
+tr vic thi chun u ra môn Tin hc: Hiu bit v Công ngh Thông tin, S dng máy tính c
+bn, X lý vn bn c bn, S dng bng tính c bn, S dng trình chiu c bn, S dng
+Internet c bn.
+Ni dung: Cung cp cho sinh viên nhng kin thc kin thc c bn v s dng Công ngh Thông
+tin. Môn hc c chia làm các module nh sau:
+· Mt s khái nim c bn trong Công ngh Thông tin
+· S dng máy tính c bn
+· X lý vn bn c bn
+· S dng bng tính c bn
+· S dng trình chiu c bn
+· S dng Internet c bn
+
+7080212 3(3-0-6) H thng phân tán
+Hc phn trc: C s d liu (7080206)
+Mc tiêu: Cung cp cho sinh viên các kin thc c bn v các h thng phân tán.
+Ni dung: Khái nim c bn v x lý d liu phân tán và h phân tán. c trng và thit k các
+h phân tán, kin trúc và mô hình, các gii pháp c bn v truyn thông, tính tng tranh và kh
+nng chu li ca h thng.
+7080204 3(3-0-6) Các h c s tri thc
+Hc phn trc: Cu trúc d liu và gii thut (7080206), C s d liu (7080206)
+Mc tiêu: Trang b các kin thc c bn v tri thc, các h c s tri thc, các phng pháp biu
+din tri thc, và t chc suy din trên c s các tri thc ã biu din.
+Ni dung: Tng quan v h c s tri thc. Biu din và suy lun tri thc. H hc. Kt hp c s
+tri thc và c s d liu. H thng m cho các bin liên tc
+7080214 3(3-0-6) Kho d liu + BTL
+Hc phn trc: C s d liu (7080206)
+Mc tiêu: Cung cp cho sinh viên nm c nhu cu và ng dng ca kho d liu. Mô hình hóa
+c các vn  trong thc t.
+Ni dung: Phng pháp lun và lý thuyt c s d liu v vic xây dng mt kho d liu và ng
+dng vào x lý phân tích trc tuyn. Phng pháp tích hp c s d liu
+7080213 3(3-0-6) Hc máy + BTL
+Hc phn trc: Cu trúc d liu và gii thut (7080206), C s lp trình (7080208)
+Mc tiêu: Trang b các kin thc c bn v hc máy nh: các phng pháp hc (hc có và không
+có giám sát, hc tng cng), các bài toán nh phân loi, hi quy. Gii thiu mt s phng pháp
+hc máy nh K-mean, cây quyt nh, mng nron và mt s ng dng
+Ni dung: Tng quan v hc máy. Các mô hình hc máy. Thut toán K-mean. Cây quyt nh.
+Mng nron.
+7080210 3(0-0-6)  án H thng thông tin
+Hc hc trc: C s d liu (7080206), C s lp trình (7080208), K thut lp trình HT vi
+C++ + BTL (7080208), H thng phân tán (7080212), Hc máy (7080213)
+Mc tiêu: Hc phn này nhm cng c và m rng kin thc chuyên ngành cho sinh viên, giúp
+sinh viên bit cách kt hp nhun nhuyn gia các kin thc ã hc vi các bài toán ngoài thc
+t.
+Ni dung hc phn: Hc phn c xây dng nhm tng kt và kim tra các kin thc quan
+trng mà sinh viên ã c tip thu. Thông qua hc phn, sinh viên s có c hi ôn li và nm
+vng các khái nim liên quan n phân tích và thit k h thng c th, bc u làm quen vi
+các qui trình phát trin d án phn mm, vn dng nhng kin thc ca các hc phn khác nhau
+ xây dng mt sn phm phn mm hoàn chnh.
+7080217 3(3-0-6) Lp trình nâng cao
+Hc phn trc: C s lp trình (7080203), K thut lp trình hng i tng C++ + BTL
+(7080208)
+Mc tiêu: Cung cp cho sinh viên các kin thc cn thit  phát trin ng dng Windows Form
+và ng dng CSDL trên công ngh DotNet. S dng thành tho b IDE (Integrated Development
+Environment) phát trin ng dng Windows Form và ng dng CSDL trên b Visual Studio .Net.
+Ni dung: Công ngh lp trình trên b Visual Studio.Net. Xây dng ng dng vi Console. K
+thut lp trình hng i tng vi C#.NET. Các cu trúc d liu c bn và các cu trúc d liu
+tng quát nâng cao. Các k thut và phng pháp phát trin ng dng trên Windows Form và kt
+ni CSDL.
+7080230 3(3-0-6) Các công ngh a phng tin
+Hc phn trc: C s lp trình (7080208), K thut lp trình C++ (7080208)
+Mc tiêu: Trang b cho ngi hc mt s hiu bit c bn v Công ngh Multimedia và ng dng
+trong x lý âm thanh, x lý hình nh, x lý video, animation.
+Ni dung: Môn hc gii thiu v công ngh Multimedia. Khái nim, vai trò và ng dng ca công
+ngh Multimedia. Âm thanh và công ngh x lý âm thanh. Trong Các công c h tr x lý nh
+và video.
+7080205 3(3-0-6) Các h thng thông tin thông minh
+Hc phn trc: Phân tích thit k h thng thông tin (7080103), C s d liu (7080206), Cu
+trúc d liu & gii thut (7080204)
+Mc tiêu: Sinh viên nm c các khái nim, k thut c bn v các h thng thông tin thông minh.
+Có kin c bn v mt s loi h thng thông tin thông minh ph bin. Các khái nim, xu hng
+mi trong vic phát trin các h thng thông minh.
+Ni dung: Tng quan v các h thng thông tin thông minh, các k thut nn tng là hc máy.
+Mt s lp các h thng thông tin thông minh hin có nh: các h thng da trên tri thc, các h
+thng tác t thông minh. Xu hng phát trin các h thng thông tin thông minh.
+7080202 3(3-0-6) An toàn và Bo mt h thng thông tin
+Hc phn trc: C s d liu (7080206), Mng máy tính (7080706)
+Mc tiêu: Trang b cho sinh viên nhng kin thc c bn nht v An toàn và bo mt h thng
+thông tin t ó giúp cho sinh viên có th nm bt c mt vài nhng công vic phi làm  có
+th m bo mc  bo mt và  tin cy ca mt h thng thông tin.
+
+Sinh viên có c các kin thc c bn: khái nim cn bn, các mô hình v an toàn h thng
+thông tin và hiu c công vic ca chuyên gia m bo an toàn h thng, ng thi nm c
+c s v các h mã mt (c in, hin i), ánh giá  an toàn và mt s ng dng ca mã mt:
+ch ký s, xác thc ngi dùng, trao i khoá, bo v bn quyn, ng dng trong giao thc truyn
+thông bo mt. Sinh viên cng có kh nng ánh giá  tin cy, xác nh các l hng bo mt, e
+da và xây dng các chính sách bo mt,  ra các gii pháp an toàn cho các h thng tin hc.
+Ni dung: Tng quan v an toàn và bo mt h thng thông tin. Các phng pháp mã hóa c in.
+Chun mã d liu DES (Data Encryption Standard). Mt mã công khai. Các s  ch ký.
+7080223 3 (3-0-6) Qun tr d án HTTT
+Hc phn trc: C s d liu (7080206), H qun tr c s d liu (7080211)
+Mc tiêu: Trang b các kin thc c bn v thông tin, Các h thông tin. Các kin thc c bn v
+qun tr, qun tr d án h thng thông tin.
+Ni dung: Khái nim h thng thông tin trong qun tr, tin trình phát trin ca mt h thng thông
+tin: khi to, phân tích, k hoch, ánh giá thông tin. Tm quan trng ca vic qun lý thông tin.
+Quá trình và các ràng buc ca vic  ra quyt nh.
+7080220 3(3-0-6) Ngôn ng lp trình Python + BTL
+Hc phn trc: C s lp trình (7080208)
+Mc tiêu: Cung cp cho sinh viên nhng kin thc c bn và k nng v lp trình Python, các
+khái nim c bn ca Python; Các kiu d liu chun ca Python; iu khin lung và vòng lp;
+Hàm, Module và File I/O; X lý ngoi l (Exception Handling).
+Ni dung: Các khái nim c bn ca ngôn ng Python. iu khin lung và vòng lp. Các kiu
+d liu chun. Hàm, Module và File I/O. X lý ngoi l (Exception Handling). Python nâng cao.
+7080224 2(0-0-6) Thc tp tt nghip HTTT
+Hc phn trc:
+Mc tiêu:
+- V kin thc: Sinh viên nm c ni dung ca  tài nghiên cu/tìm hiu/lp trình c giao
+(v các công ngh, công c lp trình, lp trình thut toán, vit phn mm ...). Sinh viên có th bt
+u làm  tài  án tt nghip trong hc phn này.
+-V k nng: T nghiên cu/tìm hiu/lp trình ni dung  tài c giao di s hng dn ca
+ging viên; Trình bày ni dung  tài di dng quyn báo cáo; Thuyt trình ni dung  tài trc
+hi ng chm ca B môn s dng slides;
+Ni dung:
+Sinh viên t chn hoc c ging viên hng dn giao  tài nghiên cu/tìm hiu/lp trình v
+các công ngh, công c lp trình, lp trình các thut toán, vit phn mm ..., vit báo cáo theo mu
+và trình bày kt qu thc hin trc hi ng chm ca B môn s dng slide. Sinh viên có th
+bt u làm  tài  án tt nghip trong hc phn này; trong trng hp này, kt qu thc tp s
+là tng quan v bài toán  tài tt nghip, công c gii quyt, phân tích thit k h thng ...
+7080218 8(0-0-24)  án tt nghip HTTT
+Hc phn trc: Thc tp tt nghip (7080224)
+Mc tiêu:
+- V kin thc: Ni dung ca  tài tt nghip c giao.
+-V k nng: T nghiên cu/tìm hiu/lp trình ni dung  tài c giao di s hng dn ca
+ging viên; Vit  án tt nghip theo mu ca B môn; Thuyt trình ni dung  tài c giao
+trc hi ng chm ca B môn s dng slidse.
+Ni dung: Sinh viên t chn hoc c ging viên hng dn giao  tài tt nghip, thc hin 
+tài di s hng dn ca ging viên, vit  án tt nghip theo mu và trình bày kt qu thc
+hin trc hi ng chm ca B môn s dng slides.
+F. Công ngh phn mm
+7080121 4 (4-2-6) Toán ri rc cho CNTT
+Hc phn trc: Nhp môn ngành CNTT
+Mc tiêu:
+- V kin thc: Các kin thc c bn v thut toán, phng pháp  quy, lý thuyt t hp, lý
+thuyt  th và các dng bài toán liên quan.
+- V k nng: Có th chy tng bc ca thut toán vi u vào c th; ánh giá c  phc
+tp ca thut toán; Cách xây dng thut toán  quy; Gii c các bài toán m, bài toán tn ti,
+bài toán lit kê, bài toán ti u c bn; Biu din c các dng  th c bn trên máy tính và có
+th lp trình c các bài toán c bn sau: tìm kim trên  th;  th Euler;  th Hamilton; cây
+và cây khung ca  th; tìm ng i ngn nht và tìm lung cc i trong mng.
+Ni dung: Thut toán và  quy: khái nim thut toán, các c trng ca thut toán, ngôn ng
+thut toán,  phc tp ca thut toán,  quy; Lý thuyt t hp: S lc v t hp, bài toán m,
+bài toán tn ti, bài toán lit kê, bài toán ti u; Lý thuyt  th: các khái nim c bn, biu din
+ th trên máy tính, các thut toán tìm kim trên  th,  th Euler và  th Hamilton, cây và
+cây khung ca  th, bài toán ng i ngn nht, bài toán lung cc i trong mng.
+
+7080102 2 (1-1-4) Chuyên  (nh hng doanh nghip phn mm)
+Hc phn trc: 7080208 (C s lp trình)
+Mc tiêu:
+- V kin thc: Mt ngôn ng, công c hay nn tng ang dùng  phát trin phn mm ti doanh
+nghip phi hp ào to
+- V k nng: Các k nng liên quan
+Ni dung: Phi hp vi mt doanh nghip phn mm ào to sinh viên v mt ngôn ng, công
+c hay nn tng ang dùng  phát trin phn mm ti doanh nghip
+7080104 2 (1-1-4) Công ngh phn mm
+Hc phn trc: 7080208 (C s lp trình)
+Mc tiêu:
+- V kin thc: Kin thc c s v phát trin phn mm mt cách công nghip và phân bit c
+làm phn mm vi vic vit chng trình mt cách thun túy.
+- V k nng: Có các k nng c bn làm vic theo nhóm phát trin phn mm; T nghiên cu,
+tìm hiu tài liu; T dch các sách ting anh chuyên ngành
+Ni dung: Phn mm và k ngh phn mm; mô hình tin trình; qun tr d án phn mm; phân
+tích và c t yêu cu phn mm; thit k phn mm; lp trình; kim th; bo trì phn mm
+7080106 3 (0-9-0)  án CNPM
+Hc phn trc: Lp trình .NET 1 (7080108)
+Mc tiêu:
+- V kin thc: Ni dung ca  tài nghiên cu/tìm hiu/lp trình c giao (v các công ngh,
+công c lp trình, kim th; lp trình thut toán, vit phn mm ...).
+- V k nng: T nghiên cu/tìm hiu/lp trình ni dung  tài c giao di s hng dn ca
+ging viên; Trình bày ni dung  tài di dng quyn báo cáo; Thuyt trình ni dung  tài c
+giao trc hi ng chm ca B môn s dng slide; Làm vic theo nhóm.
+Ni dung: Sinh viên t chn hoc c ging viên hng dn giao  tài nghiên cu/tìm hiu/lp
+trình v các công ngh, công c lp trình, kim th; lp trình các thut toán, vit phn mm ...,
+vit báo cáo theo mu và trình bày kt qu thc hin trc hi ng chm ca B môn s dng
+slide.
+7080108 3 (2-1-6) Lp trình .NET 1 + BTL
+Hc phn trc: 4080206 - C s d liu, 4080208 - K thut lp trình hng i tng vi C++
++ BTL
+Mc tiêu:
+- V kin thc: Lp trình c các ng dng Windows s dng nn tng công ngh .NET.
+- V k nng: S dng c phn mm Visual Studio .Net  xây dng c ng dng windows
+form (t n gin n phc tp); S dng phn mm Microsoft SQL Server  xây dng c s
+d liu cho ng dng cn phát trin trên C#; Rèn luyn k nng làm vic theo nhóm thông qua
+làm  tài bài tp ln, thuyt trình và tho lun
+Ni dung: Gii thiu v .Net Framework; Hng dn sinh viên thit k giao din ngi dùng cho
+phn mm; Hng dn các kiu d liu trong C#; Hng dn by li trong C#; Hng dn lp
+trình hng i tng vi C#; Hng dn lp trình CSDL vi C#.
+7080114 2(2-0-4) Phân tích, thit k hng i tng vi UML
+Hc phn trc:
+Mc tiêu:
+- V kin thc: Nm bt c các phng pháp phân tích yêu cu và thit k h thng theo tip
+cn hng i tng; mô t c h thng phn mm bng các biu  UML.
+-V k nng: S dng thành tho phn mm Visual Paradigm  thit k các biu  Usecase;
+óng gói và chuyn bn thit k
+Ni dung: Tng quan v phân tích và thit k hng i tng; Tng quan v UML; Mô hình
+Usecase; Biu  tnh; Biu  ng
+7080119 2(0-6-0) Thc tp tt nghip CNPM
+Hc phn trc:
+Mc tiêu:
+- V kin thc: Sinh viên nm c ni dung ca  tài nghiên cu/tìm hiu/lp trình c giao
+(v các công ngh, công c lp trình, lp trình thut toán, vit phn mm ...). Sinh viên có th bt
+u làm  tài  án tt nghip trong hc phn này.
+-V k nng: T nghiên cu/tìm hiu/lp trình ni dung  tài c giao di s hng dn ca
+ging viên; Trình bày ni dung  tài di dng quyn báo cáo; Thuyt trình ni dung  tài trc
+hi ng chm ca B môn s dng slides;
+Ni dung:
+Sinh viên t chn hoc c ging viên hng dn giao  tài nghiên cu/tìm hiu/lp trình v
+các công ngh, công c lp trình, lp trình các thut toán, vit phn mm ..., vit báo cáo theo mu
+và trình bày kt qu thc hin trc hi ng chm ca B môn s dng slide. Sinh viên có th
+bt u làm  tài  án tt nghip trong hc phn này; trong trng hp này, kt qu thc tp s
+là tng quan v bài toán  tài tt nghip, công c gii quyt, phân tích thit k h thng ...
+7080110 8 (0-24-0)  án tt nghip CNPM
+Hc phn trc: (7080119) Thc tp tt nghip CNPM
+Mc tiêu:
+- V kin thc: Ni dung ca  tài tt nghip c giao.
+-V k nng: T nghiên cu/tìm hiu/lp trình ni dung  tài c giao di s hng dn ca
+ging viên; Vit  án tt nghip theo mu ca B môn; Thuyt trình ni dung  tài c giao
+trc hi ng chm ca B môn s dng slides.
+Ni dung: Sinh viên t chn hoc c ging viên hng dn giao  tài tt nghip, thc hin 
+tài di s hng dn ca ging viên, vit  án tt nghip theo mu và trình bày kt qu thc
+hin trc hi ng chm ca B môn s dng slides.
+
+VIII. Các chng trình chun tham kho
+
+8.1. So sánh chng trình ào to
+
+ Chng     Toán/ Khoa hc             C s ngành/Chuyên     K nng       Tng
+   trình                                     ngành
+
+TUL       S TC  T l                 S TC  T l         S TC  T l
+UET-
+VNU       18    12.4                53    36.6        3         2.1
+DUT
+La Trobe  35    25.7                61    44.9        4         2.9
+Salford
+          26    17.3                73.5  49.0        4         2.7
+
+                                    360   100
+
+                                    420   100
+       Chng trình ào to c tham kho trên khung chng trình ào to ngành K thut Công ngh
+       Thông tin ca:
+        [1]. B giáo dc và ào to "Chng trình khung".
+        [2]. Trng i hc Bách khoa à Nng (DUT): "Bn mô t Chng trình ào to K s
+Công ngh thông tin"
+        [3]. Trng i hc Thu Li (TLU): "Chng trình ào to K s Công ngh thông tin"
+        [4]. Trng H Công ngh - i hc Quc gia Hà Ni (UET-VNU) ­ "Chng trình c
+nhân Công ngh thông tin"
+        [5]. La Trobe University, Australia (La Trobe) "Bachelor of Information Technology"
+        [6]. Salford University, UK (Salford): "Bachelor of Computer Science"
+
+IX. PHÊ DUYT CHNG TRÌNH ÀO TO    Khoa Công ngh thông tin
+               Phòng ào to i hc
+
+HIU TRNG
+

@@ -872,16 +872,9 @@ def build_progress_snapshot(db: Session, user_id: int, target_gpa: float | None 
     specialization = user.specialization if user else None
     snapshot = _build_snapshot(db, user_id, specialization=specialization)
 
-    official_tc = (
-        round(float(user.official_earned_credits), 1)
-        if user and user.official_earned_credits is not None
-        else None
-    )
-    # Use the transcript's own "Số tín chỉ tích lũy" value as the authoritative figure
-    # when available — it matches what the registrar computed, eliminating the ±3 TC drift
-    # caused by courses mapped differently in the local DB.
-    if official_tc is not None:
-        snapshot.earned_credits = official_tc
+    # Note: official_earned_credits đã DROP ở refactor 2026-05-05.
+    # earned_credits giờ luôn tính từ user_grades (passed=True) trong _build_snapshot.
+    official_tc = None
     earned_credits_for_spec = snapshot.earned_credits
 
     from sqlalchemy import or_
@@ -1304,13 +1297,12 @@ def build_recommendations(
     safe_limit = max(1, min(int(limit), 20))
     user = db.query(models.User).filter(models.User.id == user_id).first()
     specialization = user.specialization if user else None
-    difficulty_pref = user.difficulty_preference if user else None  # "easy"|"balanced"|"challenging"
-    if career_goal is None and user and user.career_goal:
-        career_goal = user.career_goal
+    difficulty_pref = None  # Deprecated 2026-05-05 — column dropped
+    # Deprecated 2026-05-05: user.career_goal dropped — career goal chỉ qua param truyền vào
+    pass
     snapshot = _build_snapshot(db, user_id, specialization=specialization)
 
-    if user and user.official_earned_credits is not None:
-        snapshot.earned_credits = round(float(user.official_earned_credits), 1)
+    # Note: official_earned_credits đã DROP — earned_credits tính live từ grades.
 
     # Prerequisites map (cached)
     prereqs = _get_all_prereqs_cached(db)
@@ -1386,15 +1378,8 @@ def build_recommendations(
 
     baseline_ability = snapshot.avg_score10 if snapshot.avg_score10 is not None else 6.5
 
-    # ── Skill overlap (career_skills của user vs course_skills) ────────────
+    # Deprecated 2026-05-05: user.career_skills field dropped — skill overlap disabled
     user_career_skills: set[str] = set()
-    if user and user.career_skills:
-        try:
-            user_career_skills = {
-                str(s).upper() for s in (user.career_skills or []) if s
-            }
-        except Exception:
-            user_career_skills = set()
 
     course_skill_map: dict[str, list[tuple[str, float]]] = {}
     if user_career_skills:
@@ -2115,24 +2100,17 @@ def build_semester_roadmap(
     future_target = max(1, target_terms - completed_count_est)
 
     if explicit_max_credits is None:
-        if user and user.max_credits_per_term:
-            # User có pace cá nhân (theo GPA tier) → tôn trọng
-            max_credits_per_term = float(user.max_credits_per_term)
+        # Deprecated 2026-05-05: user.max_credits_per_term dropped — luôn tính dynamic
+        total_rem_est = (
+            sum(_course_credits(c) for c in non_elective)
+            + sum(s.credits for s in elective_slots)
+        )
+        if future_target > 0 and total_rem_est > 0:
+            import math
+            computed = math.ceil(total_rem_est / future_target)
+            max_credits_per_term = float(max(14, min(25, computed)))
         else:
-            # Tính từ tổng TC còn lại / số HK target → spread tự nhiên
-            total_rem_est = (
-                sum(_course_credits(c) for c in non_elective)
-                + sum(s.credits for s in elective_slots)
-            )
-            if future_target > 0 and total_rem_est > 0:
-                import math
-                # Ceil để đủ chỗ chứa môn 4 TC + 2 môn 3 TC = 10 TC trong 1 HK
-                # mà ko bị stuck nếu lẻ TC. Round lên integer cho hiển thị sạch.
-                computed = math.ceil(total_rem_est / future_target)
-                # Clamp [14, 25]: 14 đủ cho 1 môn lớn + 2 môn nhỏ; 25 = trần quy chế
-                max_credits_per_term = float(max(14, min(25, computed)))
-            else:
-                max_credits_per_term = 18.0
+            max_credits_per_term = 18.0
     else:
         max_credits_per_term = float(explicit_max_credits)
     max_credits_per_term = max_credits_per_term or 18.0
@@ -2628,11 +2606,9 @@ def build_analytics(db: Session, user_id: int) -> dict:
             study_pace = "behind"
 
     # Recommended credits for next term
-    user_max = float(user.max_credits_per_term) if user and user.max_credits_per_term else None
+    # Cột users.max_credits_per_term đã DROP ở Phase 4 (2026-05-05) — chỉ dùng heuristic theo GPA
     gpa_val = snapshot.avg_score4 or 0.0
-    if user_max:
-        rec_credits = user_max
-    elif gpa_val >= 3.2:
+    if gpa_val >= 3.2:
         rec_credits = 21.0
     elif gpa_val >= 2.5:
         rec_credits = 18.0

@@ -8,7 +8,6 @@ class RegisterIn(BaseModel):
     password: str
     full_name: Optional[str] = None
     specialization: Optional[str] = None
-    career_goal: Optional[str] = None
 
     @field_validator("username")
     @classmethod
@@ -59,11 +58,11 @@ class UserOut(BaseModel):
     specialization: Optional[str] = None
     cohort: Optional[str] = None
     managed_specialization: Optional[str] = None
-    is_head_of_department: bool = False
     teacher_code: Optional[str] = None
     is_first_login: bool = False
-    email: Optional[str] = None
-    grades_locked: bool = False  # SV: True = bảng điểm đã admin import, không tự upload đè được
+    class_group_id: Optional[int] = None  # student only
+    class_group_code: Optional[str] = None  # joined từ class_groups (vd "DCCTCT66_07A")
+    grades_locked: bool = False  # Deprecated 2026-05-05 — luôn False, kept for API compat
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -236,6 +235,7 @@ class GradeUploadOut(BaseModel):
     inserted: int
     updated: int = 0
     skipped_unknown: int
+    skipped_admin_verified: int = 0  # số môn skip vì đã có điểm xác thực từ admin
     issues: List[GradeUploadIssue]
     gpa4_before: float | None = None
     gpa4_after: float | None = None
@@ -500,35 +500,12 @@ class GradePreviewOut(BaseModel):
     specialization_changed: Optional[bool] = None
 
 
-# ── User Profile ───────────────────────────────────────────────────────────────
+# ── User Profile (deprecated 2026-05-05) ─────────────────────────────────────
+# Profile customization (career_goal, max_credits_per_term, difficulty_preference)
+# đã bỏ — schema giữ stub cho backward-compat nếu UI cũ còn gọi.
 
 class UserProfileIn(BaseModel):
-    max_credits_per_term: Optional[float] = None
-    career_goal: Optional[str] = None
     target_gpa: Optional[float] = None
-    difficulty_preference: Optional[str] = None  # "easy" | "balanced" | "challenging"
-
-    @field_validator("difficulty_preference")
-    @classmethod
-    def validate_difficulty(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in ("easy", "balanced", "challenging"):
-            raise ValueError("difficulty_preference must be 'easy', 'balanced', or 'challenging'")
-        return v
-
-    @field_validator("career_goal")
-    @classmethod
-    def validate_career_goal(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            v = str(v).strip()
-            return v or None
-        return None
-
-    @field_validator("max_credits_per_term")
-    @classmethod
-    def validate_max_credits(cls, v: Optional[float]) -> Optional[float]:
-        if v is not None and not (6.0 <= v <= 30.0):
-            raise ValueError("max_credits_per_term must be between 6 and 30")
-        return v
 
     @field_validator("target_gpa")
     @classmethod
@@ -539,10 +516,7 @@ class UserProfileIn(BaseModel):
 
 
 class UserProfileOut(BaseModel):
-    max_credits_per_term: Optional[float] = None
-    career_goal: Optional[str] = None
     target_gpa: Optional[float] = None
-    difficulty_preference: Optional[str] = None
 
 
 # ── Semester Offerings ─────────────────────────────────────────────────────────
@@ -731,19 +705,23 @@ class AdminUserItem(BaseModel):
     full_name: Optional[str] = None
     role: str
     specialization: Optional[str] = None
-    career_goal: Optional[str] = None
-    official_earned_credits: Optional[float] = None
-    grade_count: int = 0
-    avg_score4: Optional[float] = None
+    cohort: Optional[str] = None
+    # email field removed 2026-05-05 (Phase 6)
     default_password: Optional[str] = None
-    # Khoá bảng điểm (admin có thể toggle)
-    grades_locked: bool = False
-    # SV quá hạn: span năm học từ term điểm > 5 năm + TC < threshold tốt nghiệp
-    is_overdue: bool = False
+    # Class group (for student rows only) — admin xem SV thuộc lớp nào
+    class_group_id: Optional[int] = None
+    class_group_code: Optional[str] = None
     # Advisor assignment (for student rows only)
     advisor_id: Optional[int] = None
     advisor_teacher_code: Optional[str] = None
     advisor_full_name: Optional[str] = None
+    # Deprecated 2026-05-05 — kept for API compat (luôn None/0/False)
+    career_goal: Optional[str] = None
+    official_earned_credits: Optional[float] = None
+    grade_count: int = 0
+    avg_score4: Optional[float] = None
+    grades_locked: bool = False
+    is_overdue: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -786,88 +764,16 @@ class UpdateFullNameIn(BaseModel):
         return v
 
 
+# Deprecated 2026-05-05: GoogleAuthIn schema đã bỏ — Google OAuth không dùng nữa.
+# Stub giữ để backward compat tránh import error.
 class GoogleAuthIn(BaseModel):
-    credential: str  # Google ID token from GSI
-
-    @field_validator("credential")
-    @classmethod
-    def validate_credential(cls, v: str) -> str:
-        v = str(v or "").strip()
-        if not v:
-            raise ValueError("Google credential is required")
-        return v
+    credential: str = ""
 
 
-class SetupAccountIn(BaseModel):
-    email: str
-    new_password: str
-    confirm_password: str
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, v: str) -> str:
-        v = v.strip().lower()
-        if "@" not in v or "." not in v.split("@")[-1]:
-            raise ValueError("Email không hợp lệ")
-        return v
-
-    @field_validator("new_password")
-    @classmethod
-    def validate_new_password(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Mật khẩu phải ít nhất 8 ký tự")
-        if not any(c.isupper() for c in v):
-            raise ValueError("Phải có ít nhất 1 chữ hoa")
-        if not any(c.islower() for c in v):
-            raise ValueError("Phải có ít nhất 1 chữ thường")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Phải có ít nhất 1 chữ số")
-        return v
-
-    @field_validator("confirm_password")
-    @classmethod
-    def passwords_match(cls, v: str, info) -> str:
-        if "new_password" in info.data and v != info.data["new_password"]:
-            raise ValueError("Mật khẩu xác nhận không khớp")
-        return v
-
-
-class ForgotPasswordIn(BaseModel):
-    email: str
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, v: str) -> str:
-        v = v.strip().lower()
-        if "@" not in v or "." not in v.split("@")[-1]:
-            raise ValueError("Email không hợp lệ")
-        return v
-
-
-class ResetPasswordIn(BaseModel):
-    token: str
-    new_password: str
-    confirm_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def validate_new_password(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Mật khẩu phải ít nhất 8 ký tự")
-        if not any(c.isupper() for c in v):
-            raise ValueError("Phải có ít nhất 1 chữ hoa")
-        if not any(c.islower() for c in v):
-            raise ValueError("Phải có ít nhất 1 chữ thường")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Phải có ít nhất 1 chữ số")
-        return v
-
-    @field_validator("confirm_password")
-    @classmethod
-    def passwords_match(cls, v: str, info) -> str:
-        if "new_password" in info.data and v != info.data["new_password"]:
-            raise ValueError("Mật khẩu xác nhận không khớp")
-        return v
+# SetupAccountIn / ForgotPasswordIn / ResetPasswordIn REMOVED 2026-05-05 (Phase 6)
+# Mô hình mới: bỏ first-login modal + bỏ forgot password flow.
+# SV đổi pw qua POST /auth/change-password (ChangePasswordIn).
+# SV quên pw → admin reset qua POST /admin/users/{id}/reset-password.
 
 
 class ChangePasswordIn(BaseModel):
@@ -1012,25 +918,6 @@ class EstimateReachOut(BaseModel):
     count: int
 
 
-# ── User Messages (Admin → Student personal messages) ─────────────────────────
-
-class UserMessageIn(BaseModel):
-    title: str
-    body: str
-    type: str = "info"   # "info" | "warning" | "success" | "danger"
-
-
-class UserMessageOut(BaseModel):
-    id: int
-    sender_username: Optional[str] = None
-    recipient_id: Optional[int] = None
-    title: str
-    body: str
-    type: str
-    is_read: bool
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Advisor ───────────────────────────────────────────────────────────────────
@@ -1118,8 +1005,9 @@ class AdminAdvisorItem(BaseModel):
     teacher_code: Optional[str] = None
     full_name: Optional[str] = None
     managed_specialization: Optional[str] = None
-    is_head_of_department: bool = False
+    # email field removed 2026-05-05 (Phase 6)
     student_count: int = 0
+    class_count: int = 0  # Số lớp GV đang chủ nhiệm
     default_password: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -1129,6 +1017,7 @@ class AdminCreateAdvisorIn(BaseModel):
     teacher_code: str          # Mã GV (VD: KHMT001, GV001) — cũng là username đăng nhập
     full_name: str
     managed_specialization: Optional[str] = None
+    # email field removed 2026-05-05 (Phase 6)
 
     @field_validator("teacher_code")
     @classmethod
@@ -1149,15 +1038,14 @@ class AdminCreateAdvisorIn(BaseModel):
             raise ValueError("Họ và tên không được để trống")
         return v
 
+    # email validator removed 2026-05-05 (Phase 6)
+
+
 
 class AdminUpdateAdvisorIn(BaseModel):
     full_name: Optional[str] = None
     managed_specialization: Optional[str] = None
-    is_head_of_department: Optional[bool] = None
-
-
-class TransferHeadIn(BaseModel):
-    new_head_advisor_id: int
+    # email field removed 2026-05-05 (Phase 6)
 
 
 class AdminCreateAdvisorOut(BaseModel):
@@ -1166,7 +1054,7 @@ class AdminCreateAdvisorOut(BaseModel):
     teacher_code: Optional[str] = None
     full_name: Optional[str] = None
     managed_specialization: Optional[str] = None
-    is_head_of_department: bool = False
+    # email field removed 2026-05-05 (Phase 6)
     role: str
     password_plain: str  # mật khẩu tạm cần đổi khi đăng nhập lần đầu
 
@@ -1312,6 +1200,11 @@ class AdminCreateUserIn(BaseModel):
     username: str
     full_name: Optional[str] = None
     role: Optional[str] = "student"
+    # email field removed 2026-05-05 (Phase 6)
+    class_code: Optional[str] = None  # Mã lớp; nếu set → tự derive specialization + advisor
+
+    # email validator removed 2026-05-05 (Phase 6)
+
 
 
 class AdminUpdateUserIn(BaseModel):
@@ -1319,7 +1212,8 @@ class AdminUpdateUserIn(BaseModel):
     full_name: Optional[str] = None
     cohort: Optional[str] = None
     specialization: Optional[str] = None  # gửi "" để clear (chưa CN)
-    email: Optional[str] = None
+    # email field removed 2026-05-05 (Phase 6)
+    class_code: Optional[str] = None  # đổi lớp → trigger sync advisor
 
 
 class AdminCreateUserOut(BaseModel):
@@ -1327,6 +1221,9 @@ class AdminCreateUserOut(BaseModel):
     username: str
     full_name: Optional[str] = None
     role: str
+    # email field removed 2026-05-05 (Phase 6)
+    class_group_id: Optional[int] = None
+    class_group_code: Optional[str] = None
     password_plain: Optional[str] = None  # chỉ trả về khi hệ thống tự sinh
 
 
@@ -1366,8 +1263,8 @@ class DeptAdvisorItem(BaseModel):
     id: int
     username: str
     full_name: Optional[str] = None
-    is_head_of_department: bool = False
     student_count: int = 0
+    class_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -1383,7 +1280,6 @@ class NewTeacherInfo(BaseModel):
     teacher_code: str
     full_name: str
     managed_specialization: Optional[str] = None
-    is_head_of_department: bool = False
 
     @field_validator("teacher_code")
     @classmethod
@@ -1545,3 +1441,145 @@ class IntegratedRoadmapOut(BaseModel):
     fit_percent: int = 0
     terms: List[IntegratedTermOut] = []
     dry_run: bool = False
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CLASS GROUP MANAGEMENT (Lớp sinh hoạt — GVCN ↔ SV)
+# ════════════════════════════════════════════════════════════════════════════
+
+import re as _re_class
+
+# Format chuẩn: DCCTCT{cohort:2}_{spec_2digit:2}{letter:1}
+# vd: DCCTCT66_07A → cohort=66, spec_short=07 (→ 7480201_07), letter=A
+_CLASS_CODE_RE = _re_class.compile(r"^DCCTCT(\d{2})_(\d{2})([A-Z])$")
+
+# Map mã chuyên ngành 2 chữ → spec code đầy đủ (đối xứng với _SPEC_DISPLAY ở main.py)
+_SPEC_SHORT_TO_FULL = {
+    "07": "7480201_07",
+    "06": "7480201_06",
+    "05": "7480201_05",
+    "09": "7480201_09",
+    "04": "7480201_04",
+    "08": "7480201_08",
+}
+
+
+def parse_class_code(code: str) -> tuple[str, str, str]:
+    """Parse mã lớp → (cohort, specialization, letter).
+
+    Raises ValueError nếu format sai.
+    """
+    code = (code or "").strip().upper()
+    m = _CLASS_CODE_RE.match(code)
+    if not m:
+        raise ValueError(
+            f"Mã lớp '{code}' sai format. Đúng: DCCTCT{{2 số khoá}}_{{2 số CN}}{{1 chữ cái}}, "
+            f"vd DCCTCT66_07A"
+        )
+    cohort, spec_short, letter = m.group(1), m.group(2), m.group(3)
+    spec_full = _SPEC_SHORT_TO_FULL.get(spec_short)
+    if not spec_full:
+        raise ValueError(
+            f"Mã chuyên ngành '{spec_short}' không hợp lệ. "
+            f"Hỗ trợ: {sorted(_SPEC_SHORT_TO_FULL.keys())}"
+        )
+    return cohort, spec_full, letter
+
+
+class ClassGroupOut(BaseModel):
+    id: int
+    code: str
+    name: str
+    cohort: str
+    specialization: str
+    advisor_id: int
+    advisor_teacher_code: Optional[str] = None
+    advisor_full_name: Optional[str] = None
+    student_count: int = 0
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminCreateClassIn(BaseModel):
+    code: str
+    name: Optional[str] = None  # nếu trống → auto-gen từ code
+    advisor_teacher_code: str   # Mã GV chủ nhiệm — bắt buộc
+
+    @field_validator("code")
+    @classmethod
+    def check_code(cls, v: str) -> str:
+        v = (v or "").strip().upper()
+        # Validate format ngay tại schema layer
+        parse_class_code(v)
+        return v
+
+    @field_validator("advisor_teacher_code")
+    @classmethod
+    def check_advisor_tc(cls, v: str) -> str:
+        v = (v or "").strip().upper()
+        if not v:
+            raise ValueError("Mã GV chủ nhiệm bắt buộc")
+        return v
+
+
+class AdminUpdateClassIn(BaseModel):
+    """Partial update — chỉ field gửi mới update."""
+    name: Optional[str] = None
+    advisor_teacher_code: Optional[str] = None  # đổi GVCN → trigger sync
+
+
+class ClassImportError(BaseModel):
+    row: int
+    code: Optional[str] = None
+    reason: str
+
+
+class AdminClassesImportOut(BaseModel):
+    created_count: int
+    updated_count: int = 0
+    skipped_count: int = 0
+    errors: List[ClassImportError] = []
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# ADMIN REVIEWS DASHBOARD (course rating moderation)
+# ════════════════════════════════════════════════════════════════════════════
+
+class AdminReviewItem(BaseModel):
+    id: int
+    user_id: int
+    student_username: str
+    student_full_name: Optional[str] = None
+    course_code: str
+    course_name: Optional[str] = None
+    rating: int
+    review: Optional[str] = None
+    is_anonymous: bool
+    admin_feedback: Optional[str] = None
+    hidden: bool = False
+    hidden_by_username: Optional[str] = None
+    hidden_at: Optional[datetime] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminReviewListOut(BaseModel):
+    total: int
+    reviews: List[AdminReviewItem]
+
+
+class AdminRatingSummaryOut(BaseModel):
+    """Aggregate rating summary cho 1 môn — phục vụ tab Đánh giá trong side panel admin."""
+    course_code: str
+    course_name: Optional[str] = None
+    avg_rating: Optional[float] = None      # None nếu chưa có review
+    total: int = 0                          # tất cả review (gồm hidden)
+    visible_count: int = 0                  # chưa ẩn
+    hidden_count: int = 0                   # đã ẩn
+    breakdown: dict[str, int] = {}          # {"1": n, "2": n, ..., "5": n} — chỉ visible
+
+
+# ForgotPasswordEduIn/Out REMOVED 2026-05-05 (Phase 6) — bỏ self-service forgot.
+# Admin reset password thay thế (POST /admin/users/{id}/reset-password).
